@@ -7,7 +7,7 @@ def pytest_configure(config: pytest.Config):
     api_key = os.getenv("DASHSCOPE_API_KEY")
 
     if api_key is None:
-        pytest.exit("Environment variable 'MY_REQUIRED_ENV_VAR' is not set. Aborting tests.")
+        pytest.exit("Environment variable 'DASHSCOPE_API_KEY' is not set. Aborting tests.")
     else:
         # 将环境变量保存到全局配置中，以便后续测试使用
         config.option.api_key = api_key

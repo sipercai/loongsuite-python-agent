@@ -38,7 +38,7 @@ class MessageKey:
     ROLE = "role"
     CONTENT = "content"
 
-class RequestAttributesExtractor(object):
+class ModelRequestAttributesExtractor(object):
 
     def extract(self, *args: Tuple[type, Any], **kwargs: Mapping[str, Any]) -> Iterable[Tuple[str, AttributeValue]]:
         request = kwargs
@@ -78,7 +78,7 @@ SPEC_MAP = {
     ResponseKey.TEXT: GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS
 }
 
-class ResponseAttributesExtractor(object):
+class ModelResponseAttributesExtractor(object):
 
     def extract(self, reponse : ModelResponse) -> Iterable[Tuple[str, AttributeValue]]:
         for request_key in SPEC_MAP:
