@@ -16,11 +16,14 @@ from contextlib import contextmanager
 from opentelemetry.util.types import AttributeValue
 from opentelemetry.trace import INVALID_SPAN
 from agentscope.models.response import ModelResponse
-
 from functools import wraps
+from aliyun.semconv.logger import getLogger
+from os import environ
 
-ENABLE_AGENTSCOPE_INSTRUMENTOR = "ENABLE_AGENTSCOPE_INSTRUMENTOR"
-
+logger = getLogger(__name__)
+OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT = (
+    "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
+)
 class _WithTracer(ABC):
     def __init__(self, tracer: trace_api.Tracer, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -41,6 +44,7 @@ class _WithTracer(ABC):
         try:
             span = self._tracer.start_span(name=span_name, attributes=dict(attributes))
         except Exception:
+            logger.exception("Failed to start span")
             span = INVALID_SPAN
         with trace_api.use_span(
                 span,
@@ -69,14 +73,11 @@ class AgentscopeRequestWrapper(_WithTracer):
         )
         return response
 
-    def _is_enable(self):
-        enable_instrumentor = os.getenv(ENABLE_AGENTSCOPE_INSTRUMENTOR)
-        if enable_instrumentor is None:
-            return True
-        if enable_instrumentor.lower() == "false":
-            return False
-        else:
-            return True
+    def _is_enable(self) -> bool:
+        capture_content = environ.get(
+            OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT, "false"
+        )
+        return capture_content.lower() == "true"
 
     def __call__(
             self,
@@ -123,6 +124,7 @@ class AgentscopeRequestWrapper(_WithTracer):
                         with_span=with_span,
                     )
                 except Exception:
+                    logger.exception(f"Failed to finalize response of type {type(response)}")
                     with_span.finish_tracing()
 
             return response

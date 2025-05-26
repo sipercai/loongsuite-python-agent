@@ -32,8 +32,8 @@ SPEC_MAP = {
 
 class RequestAttributesExtractor(object):
 
-    def extract(self, *args: Tuple[type, Any], **kargs: Mapping[str, Any]) -> Iterable[Tuple[str, AttributeValue]]:
-        request = kargs
+    def extract(self, *args: Tuple[type, Any], **kwargs: Mapping[str, Any]) -> Iterable[Tuple[str, AttributeValue]]:
+        request = kwargs
         for i in range(len(args)):
             request[REQUEST_KEY_LIST[i]] = args[i]
         for request_key in request:

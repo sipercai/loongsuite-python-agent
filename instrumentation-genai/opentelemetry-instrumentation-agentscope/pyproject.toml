@@ -10,7 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.8, <3.13"
 authors = [
-    { name = "OpenTelemetry Authors", email = "lurious.lyh@alibaba-inc.com" },
+    { name = "LoongSuite Python Agent Authros", email = "qp467389@alibaba-inc.com" },
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
 #    "opentelemetry-api~=1.25.0",
