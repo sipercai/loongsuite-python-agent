@@ -8,8 +8,9 @@ from opentelemetry.util.types import AttributeValue
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
-class RequestKey:
+from agentscope.models.response import ModelResponse
 
+class RequestKey:
     MESSAGES = "messages"
     STREAM = "stream"
     TOOLS = "tools"
@@ -20,15 +21,22 @@ REQUEST_KEY_LIST = [
     RequestKey.TOOLS,
 ]
 
+class ResponseKey:
+    TEXT = "text"
+    EMBEDDING = "embedding"
+    IMAGE_URLS = "image_urls"
+    RAW = "raw"
+    PARSED = "parsed"
+    STEAM = "stream"
+    TOOL_CALLS = "tool_calls"
+
+RESPONSE_KEY_LIST = [
+    ResponseKey.TEXT,
+]
+
 class MessageKey:
     ROLE = "role"
     CONTENT = "content"
-
-SPEC_MAP = {
-    RequestKey.MESSAGES: GenAIAttributes.GEN_AI_PROMPT,
-    RequestKey.STREAM: GenAIAttributes.GEN_AI_OPENAI_REQUEST_RESPONSE_FORMAT,
-    RequestKey.TOOLS: GenAIAttributes.GEN_AI_TOOL_DESCRIPTION
-}
 
 class RequestAttributesExtractor(object):
 
@@ -51,7 +59,7 @@ class RequestAttributesExtractor(object):
 
             if request_key == RequestKey.STREAM:
                 stream_val = request[request_key]
-                yield SPEC_MAP[request_key], stream_val
+                yield GenAIAttributes.GEN_AI_OPENAI_REQUEST_RESPONSE_FORMAT, stream_val
             if request_key == RequestKey.TOOLS:
                 tools = request[request_key]
                 for idx in range(len(tools)):
@@ -64,3 +72,19 @@ class RequestAttributesExtractor(object):
                             yield f"{GenAIAttributes.GEN_AI_TOOL_DESCRIPTION}.{idx}.tool.description", f"{function['description']}"
                         if 'parameters' in function:
                             yield f"{GenAIAttributes.GEN_AI_TOOL_NAME}.{idx}.tool.parameters", f"{function['parameters']}"
+
+
+SPEC_MAP = {
+    ResponseKey.TEXT: GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS
+}
+
+class ResponseAttributesExtractor(object):
+
+    def extract(self, reponse : ModelResponse) -> Iterable[Tuple[str, AttributeValue]]:
+        for request_key in SPEC_MAP:
+            if hasattr(reponse, request_key):
+                if request_key == ResponseKey.TEXT:
+                    prompt_val = getattr(reponse, request_key)
+                    yield SPEC_MAP[request_key], prompt_val
+                else:
+                    yield SPEC_MAP[request_key], getattr(reponse, request_key)
