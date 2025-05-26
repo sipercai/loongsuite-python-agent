@@ -1,5 +1,7 @@
-from opentelemetry.instrumentation.agentscope._request_attributes_extractor import RequestAttributesExtractor
-from opentelemetry.instrumentation.agentscope._response_attributes_exatractor import ResponseAttributesExtractor
+from opentelemetry.instrumentation.agentscope._model_call_attributes_extractor import(
+     RequestAttributesExtractor,
+     ResponseAttributesExtractor,
+)
 from opentelemetry.instrumentation.agentscope._with_span import _WithSpan
 from typing import (
     Any,
