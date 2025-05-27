@@ -155,7 +155,7 @@ docker run --rm --name jaeger \
 
 #### Launch LoongCollector
 
-1.  Install the latest LoongCollector code based on its [documentation](https://ilogtail.gitbook.io/ilogtail-docs) .
+1.  Install the latest LoongCollector code based on its [documentation](https://observability.cn/project/loongcollector/quick-start/).
     
 2.  Add the following configuration in the `conf/continuous_pipeline_config/local/oltp.yaml` directory:
     
