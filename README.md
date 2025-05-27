@@ -11,7 +11,7 @@ LoongSuite includes the following key components:
 
 ## Quick start
 
-LoongSuite Python Agent provides observability for Python applications. Taking `agentscope` as an example, this document demonstrates how to use OpenTelemetry to collect OTLP data and forward it via LoongCollector to Jaeger.
+LoongSuite Python Agent provides observability for Python applications. Taking [agentscope](https://github.com/modelscope/agentscope) as an example, this document demonstrates how to use OpenTelemetry to collect OTLP data and forward it via LoongCollector to Jaeger.
 
 ### INSTALL
 
@@ -155,7 +155,7 @@ docker run --rm --name jaeger \
 
 #### Launch LoongCollector
 
-1.  Download and compile the latest LoongCollector code based on its [documentation](https://github.com/alibaba/loongcollector) .
+1.  Install the latest LoongCollector code based on its [documentation](https://ilogtail.gitbook.io/ilogtail-docs) .
     
 2.  Add the following configuration in the `conf/continuous_pipeline_config/local/oltp.yaml` directory:
     
@@ -206,7 +206,7 @@ python demo.py
 
 Access the Jaeger UI to view the collected trace data. You should now see trace information being properly received.
 
-![image.png](https://alidocs.oss-cn-zhangjiakou.aliyuncs.com/res/5VLqXLbPEkvavqX1/img/1ca1f528-989c-40cb-b377-68ab0a856d71.png)
+![image.png](docs/_assets/img/quickstart-results.png)
 
 ## Resoures
 * AgentScope: https://github.com/modelscope/agentscope
