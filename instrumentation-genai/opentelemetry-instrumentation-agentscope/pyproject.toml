@@ -58,4 +58,4 @@ include = [
 packages = ["src/opentelemetry"]
 
 [project.entry-points.opentelemetry_instrumentor]
-agentscope = "opentelemetry.instrumentation.agengscope:AgentScopeInstrumentor"
+agentscope = "opentelemetry.instrumentation.agentscope:AgentScopeInstrumentor"
