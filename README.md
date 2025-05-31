@@ -1,4 +1,5 @@
 # loongsuite-python-agent
+<img src="docs/_assets/img/loongsuite-logo.png" width="600" height="100">
 
 ## Introduction
 Loongsuite Python Agent is a key component of LoongSuite, Alibaba's unified observability data collection suite, providing instrumentation for Python applications. 
