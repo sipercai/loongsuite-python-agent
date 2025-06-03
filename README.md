@@ -6,9 +6,12 @@ Loongsuite Python Agent is a key component of LoongSuite, Alibaba's unified obse
 
 LoongSuite includes the following key components:
 * [LoongCollector](https://github.com/alibaba/loongcollector): universal node agent, which prodivdes log collection, prometheus metric collection, and network and security collection capabilities based on eBPF.
-* LoongSuite Python Agent: a process agent providing instrumentaion for python applications.
+* [LoongSuite Python Agent](https://github.com/alibaba/loongsuite-python-agent): a process agent providing instrumentaion for python applications.
 * [LoongSuite Go Agent](https://github.com/alibaba/opentelemetry-go-auto-instrumentation): a process agent for golang with compile time instrumentation.
 * Other upcoming language agent.
+
+Loongsuite Python Agent is also a customized distribution of upstream [OTel Python Agent](https://github.com/open-telemetry/opentelemetry-python-contrib), with enhanced support for popular AI agent framework. 
+The implementation follows the latest GenAI [semantic conventions](https://github.com/open-telemetry/semantic-conventions).
 
 ## Quick start
 
