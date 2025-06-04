@@ -1,5 +1,5 @@
 
-from mcp.client.session import ClientSession, AsyncClientSession, MCPServer
+from opentelemetry.instrumentation.mcp import ClientSession, AsyncClientSession, MCPServer
 
 # 同步使用
 def test_sync_example():
