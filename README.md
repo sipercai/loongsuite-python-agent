@@ -218,7 +218,7 @@ We are looking forward to your feedback and suggestions. You can join
 our [DingTalk group](https://qr.dingtalk.com/action/joingroup?code=v1,k1,VaFSqbGiRY0iAL3GGd18DRWDyb1HpgOuyfDzsX3Drng=&_dt_no_comment=1&origin=11?)
 to engage with us.
 
-<img src="docs/_assets/dingtalk-chat-group.png" height="200">
+<img src="docs/_assets/img/dingtalk-chat-group.jpg" height="200">
 
 ## Resoures
 * AgentScope: https://github.com/modelscope/agentscope
