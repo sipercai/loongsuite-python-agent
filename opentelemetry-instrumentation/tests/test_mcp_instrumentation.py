@@ -46,7 +46,7 @@ class TestMCPInstrumentation(TestBase):
         self.instrumentor.instrument()
 
         # 模拟异步 MCP 客户端连接
-        from mcp.client.session import AsyncClientSession
+        from opentelemetry.instrumentation.mcp.client.session import AsyncClientSession
         client = AsyncClientSession()
         await client.connect("test-server")
 
