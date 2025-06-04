@@ -28,7 +28,7 @@ class TestMCPInstrumentation(TestBase):
         self.instrumentor.instrument()
 
         # 模拟 MCP 客户端连接
-        from mcp.client.session import ClientSession
+        from opentelemetry.instrumentation.mcp.client.session import ClientSession
         client = ClientSession()
         client.connect("test-server")
 
