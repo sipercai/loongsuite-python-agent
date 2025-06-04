@@ -220,7 +220,7 @@ to engage with us.
 
 | User Group              | Developer Group           |
 |-------------------------|---------------------------|
-| <img src="docs/_assets/img/dingtalk-chat-group.jpg" height="150"> | <img src="docs/_assets/img/dingtalk-chat-group.jpg" height="150"> |
+| <img src="docs/_assets/img/dingtalk-chat-group.jpg" height="150"> | <img src="docs/_assets/img/dev-group.jpg" height="150"> |
 
 ## Resoures
 * AgentScope: https://github.com/modelscope/agentscope
