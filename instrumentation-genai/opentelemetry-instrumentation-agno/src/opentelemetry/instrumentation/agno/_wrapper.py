@@ -4,6 +4,8 @@ from opentelemetry.instrumentation.agno._extractor import (
     AgentRunResponseExactor,
     FunctionCallRequestExactor,
     FunctionCallResponseExactor,
+    ModelRequestExactor,
+    ModelResponseExactor,
 )
 from typing import (
     Any,
@@ -87,9 +89,7 @@ class AgnoAgentWrapper(_WithTracer):
         kwargs: Mapping[str, Any],
     ) -> Any:
         arguments = bind_arguments(wrapped, *args, **kwargs)
-        if not self._enable_genai_capture():
-            return wrapped(*args, **kwargs)
-        if instance is None:
+        if not self._enable_genai_capture() or instance is None:
             return wrapped(*args, **kwargs)
         with self._start_as_current_span(
             span_name="Agent.run",
@@ -128,9 +128,7 @@ class AgnoAgentWrapper(_WithTracer):
         kwargs: Mapping[str, Any],
     ) -> Any:
         arguments = bind_arguments(wrapped, *args, **kwargs)
-        if not self._enable_genai_capture():
-            return wrapped(*args, **kwargs)
-        if instance is None:
+        if not self._enable_genai_capture() or instance is None:
             return wrapped(*args, **kwargs)
         with self._start_as_current_span(
             span_name="Agent.run",
@@ -262,9 +260,7 @@ class AgnoFunctionCallWrapper(_WithTracer):
         args: Tuple[type, Any],
         kwargs: Mapping[str, Any],
     ) -> Any:
-        if not self._enable_genai_capture():
-            return wrapped(*args, **kwargs)
-        if instance is None:
+        if not self._enable_genai_capture() or instance is None:
             return wrapped(*args, **kwargs)
         with self._start_as_current_span(
             span_name="ToolCall",
@@ -302,9 +298,7 @@ class AgnoFunctionCallWrapper(_WithTracer):
         args: Tuple[type, Any],
         kwargs: Mapping[str, Any],
     ) -> Any:
-        if not self._enable_genai_capture():
-            return await wrapped(*args, **kwargs)
-        if instance is None:
+        if not self._enable_genai_capture() or instance is None:
             return await wrapped(*args, **kwargs)
         with self._start_as_current_span(
             span_name="ToolCall",
@@ -331,6 +325,183 @@ class AgnoFunctionCallWrapper(_WithTracer):
                     extra_attributes=dict(resp_attr),
                 )
                 return response
+            except Exception:
+                logger.exception(f"Failed to finalize response of type {type(response)}")
+                with_span.finish_tracing()
+
+class AgnoModelWrapper(_WithTracer):
+
+    def __init__(self, tracer, *args, **kwargs):
+        super().__init__(tracer, *args, **kwargs)
+        self._request_attributes_extractor = ModelRequestExactor()
+        self._response_attributes_extractor = ModelResponseExactor()
+
+    def _enable_genai_capture(self) -> bool:
+        capture_content = environ.get(
+            OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT, "false"
+        )
+        return capture_content.lower() == "true"
+
+    def response(
+        self,
+        wrapped: Callable[..., Any],
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+    ) -> Any:
+        arguments = bind_arguments(wrapped, *args, **kwargs)
+        if not self._enable_genai_capture() or instance is None:
+            return wrapped(*args, **kwargs)
+        with self._start_as_current_span(
+            span_name="Model.response",
+            attributes=self._request_attributes_extractor.extract(instance, arguments),
+            extra_attributes=self._request_attributes_extractor.extract(instance, arguments),
+        ) as with_span:
+            try:
+                response = wrapped(*args, **kwargs)
+            except Exception as exception:
+                with_span.record_exception(exception)
+                status = trace_api.Status(
+                    status_code=trace_api.StatusCode.ERROR,
+                    # Follow the format in OTEL SDK for description, see:
+                    # https://github.com/open-telemetry/opentelemetry-python/blob/2b9dcfc5d853d1c10176937a6bcaade54cda1a31/opentelemetry-api/src/opentelemetry/trace/__init__.py#L588  # noqa E501
+                    description=f"{type(exception).__name__}: {exception}",
+                )
+                with_span.finish_tracing(status=status)
+                raise
+            try:
+                resp_attr = self._response_attributes_extractor.extract([response])
+                with_span.finish_tracing(
+                    status=trace_api.Status(status_code=trace_api.StatusCode.OK),
+                    attributes=dict(resp_attr),
+                    extra_attributes=dict(resp_attr),
+                )
+                return response
+            except Exception:
+                logger.exception(f"Failed to finalize response of type {type(response)}")
+                with_span.finish_tracing()
+
+    def response_stream(
+        self,
+        wrapped: Callable[..., Any],
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+    ) -> Any:
+        arguments = bind_arguments(wrapped, *args, **kwargs)
+        if not self._enable_genai_capture() or instance is None:
+            return wrapped(*args, **kwargs)
+        with self._start_as_current_span(
+            span_name="Model.response_stream",
+            attributes=self._request_attributes_extractor.extract(instance, arguments),
+            extra_attributes=self._request_attributes_extractor.extract(instance, arguments),
+        ) as with_span:
+            try:
+                response = wrapped(*args, **kwargs)
+            except Exception as exception:
+                with_span.record_exception(exception)
+                status = trace_api.Status(
+                    status_code=trace_api.StatusCode.ERROR,
+                    # Follow the format in OTEL SDK for description, see:
+                    # https://github.com/open-telemetry/opentelemetry-python/blob/2b9dcfc5d853d1c10176937a6bcaade54cda1a31/opentelemetry-api/src/opentelemetry/trace/__init__.py#L588  # noqa E501
+                    description=f"{type(exception).__name__}: {exception}",
+                )
+                with_span.finish_tracing(status=status)
+                raise
+            try:
+                responses = []
+                for response in wrapped(*args, **kwargs):
+                    responses.append(response)
+                    yield response
+                resp_attr = self._response_attributes_extractor.extract(responses)
+                with_span.finish_tracing(
+                    status=trace_api.Status(status_code=trace_api.StatusCode.OK),
+                    attributes=dict(resp_attr),
+                    extra_attributes=dict(resp_attr),
+                )
+            except Exception:
+                logger.exception(f"Failed to finalize response of type {type(response)}")
+                with_span.finish_tracing()
+
+    async def aresponse(
+        self,
+        wrapped: Callable[..., Any],
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+    ) -> Any:
+        arguments = bind_arguments(wrapped, *args, **kwargs)
+        if not self._enable_genai_capture() or instance is None:
+            return wrapped(*args, **kwargs)
+        with self._start_as_current_span(
+            span_name="Model.aresponse",
+            attributes=self._request_attributes_extractor.extract(instance, arguments),
+            extra_attributes=self._request_attributes_extractor.extract(instance, arguments),
+        ) as with_span:
+            try:
+                response = await wrapped(*args, **kwargs)
+            except Exception as exception:
+                with_span.record_exception(exception)
+                status = trace_api.Status(
+                    status_code=trace_api.StatusCode.ERROR,
+                    # Follow the format in OTEL SDK for description, see:
+                    # https://github.com/open-telemetry/opentelemetry-python/blob/2b9dcfc5d853d1c10176937a6bcaade54cda1a31/opentelemetry-api/src/opentelemetry/trace/__init__.py#L588  # noqa E501
+                    description=f"{type(exception).__name__}: {exception}",
+                )
+                with_span.finish_tracing(status=status)
+                raise
+            try:
+                resp_attr = self._response_attributes_extractor.extract([response])
+                with_span.finish_tracing(
+                    status=trace_api.Status(status_code=trace_api.StatusCode.OK),
+                    attributes=dict(resp_attr),
+                    extra_attributes=dict(resp_attr),
+                )
+                return response
+            except Exception:
+                logger.exception(f"Failed to finalize response of type {type(response)}")
+                with_span.finish_tracing()
+
+    async def aresponse_stream(
+        self,
+        wrapped: Callable[..., Any],
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+    ) -> Any:
+        arguments = bind_arguments(wrapped, *args, **kwargs)
+        if not self._enable_genai_capture() or instance is None:
+            async for response in wrapped(*args, **kwargs):
+                yield response
+            return
+        with self._start_as_current_span(
+            span_name="Model.aresponse_stream",
+            attributes=self._request_attributes_extractor.extract(instance, arguments),
+            extra_attributes=self._request_attributes_extractor.extract(instance, arguments),
+        ) as with_span:
+            try:
+                response = wrapped(*args, **kwargs)
+            except Exception as exception:
+                with_span.record_exception(exception)
+                status = trace_api.Status(
+                    status_code=trace_api.StatusCode.ERROR,
+                    # Follow the format in OTEL SDK for description, see:
+                    # https://github.com/open-telemetry/opentelemetry-python/blob/2b9dcfc5d853d1c10176937a6bcaade54cda1a31/opentelemetry-api/src/opentelemetry/trace/__init__.py#L588  # noqa E501
+                    description=f"{type(exception).__name__}: {exception}",
+                )
+                with_span.finish_tracing(status=status)
+                raise
+            try:
+                responses = []
+                async for response in wrapped(*args, **kwargs):
+                    responses.append(response)
+                    yield response
+                resp_attr = self._response_attributes_extractor.extract(responses)
+                with_span.finish_tracing(
+                    status=trace_api.Status(status_code=trace_api.StatusCode.OK),
+                    attributes=dict(resp_attr),
+                    extra_attributes=dict(resp_attr),
+                )
             except Exception:
                 logger.exception(f"Failed to finalize response of type {type(response)}")
                 with_span.finish_tracing()
