@@ -247,7 +247,7 @@ class AgnoFunctionCallWrapper(_WithTracer):
     def __init__(self, tracer, *args, **kwargs):
         super().__init__(tracer, *args, **kwargs)
         self._request_attributes_extractor = FunctionCallRequestExactor()
-        slef._response_attributes_extractor = FunctionCallResponseExactor()
+        self._response_attributes_extractor = FunctionCallResponseExactor()
 
     def _enable_genai_capture(self) -> bool:
         capture_content = environ.get(
@@ -255,22 +255,21 @@ class AgnoFunctionCallWrapper(_WithTracer):
         )
         return capture_content.lower() == "true"
 
-    def run(
+    def execute(
         self,
         wrapped: Callable[..., Any],
         instance: Any,
         args: Tuple[type, Any],
         kwargs: Mapping[str, Any],
     ) -> Any:
-        arguments = bind_arguments(wrapped, *args, **kwargs)
         if not self._enable_genai_capture():
             return wrapped(*args, **kwargs)
         if instance is None:
             return wrapped(*args, **kwargs)
         with self._start_as_current_span(
             span_name="ToolCall",
-            attributes=self._request_attributes_extractor.extract(instance,arguments),
-            extra_attributes=self._request_attributes_extractor.extract(instance,arguments),
+            attributes=self._request_attributes_extractor.extract(instance),
+            extra_attributes=self._request_attributes_extractor.extract(instance),
         ) as with_span:
             try:
                 response = wrapped(*args, **kwargs)
@@ -295,4 +294,43 @@ class AgnoFunctionCallWrapper(_WithTracer):
             except Exception:
                 logger.exception(f"Failed to finalize response of type {type(response)}")
                 with_span.finish_tracing()
-    
+
+    async def aexecute(
+        self,
+        wrapped: Callable[..., Any],
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+    ) -> Any:
+        if not self._enable_genai_capture():
+            return await wrapped(*args, **kwargs)
+        if instance is None:
+            return await wrapped(*args, **kwargs)
+        with self._start_as_current_span(
+            span_name="ToolCall",
+            attributes=self._request_attributes_extractor.extract(instance),
+            extra_attributes=self._request_attributes_extractor.extract(instance),
+        ) as with_span:
+            try:
+                response = await wrapped(*args, **kwargs)
+            except Exception as exception:
+                with_span.record_exception(exception)
+                status = trace_api.Status(
+                    status_code=trace_api.StatusCode.ERROR,
+                    # Follow the format in OTEL SDK for description, see:
+                    # https://github.com/open-telemetry/opentelemetry-python/blob/2b9dcfc5d853d1c10176937a6bcaade54cda1a31/opentelemetry-api/src/opentelemetry/trace/__init__.py#L588  # noqa E501
+                    description=f"{type(exception).__name__}: {exception}",
+                )
+                with_span.finish_tracing(status=status)
+                raise
+            try:
+                resp_attr = self._response_attributes_extractor.extract(response)
+                with_span.finish_tracing(
+                    status=trace_api.Status(status_code=trace_api.StatusCode.OK),
+                    attributes=dict(resp_attr),
+                    extra_attributes=dict(resp_attr),
+                )
+                return response
+            except Exception:
+                logger.exception(f"Failed to finalize response of type {type(response)}")
+                with_span.finish_tracing()
