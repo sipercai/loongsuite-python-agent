@@ -59,6 +59,11 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
             name="FunctionCall.execute",
             wrapper=function_call_wrapper.execute,
         )
+        wrap_function_wrapper (
+            module=_TOOLKIT,
+            name="FunctionCall.aexecute",
+            wrapper=function_call_wrapper.aexecute,
+        )
     def _uninstrument(self, **kwargs: Any) -> None:
 
         # Unwrap the agent call function
@@ -80,5 +85,17 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
         wrap_function_wrapper(
             module=_AGENT,
             name="Agent._arun_stream",
+            wrapper=None,
+        )
+
+        # Unwrap the function call
+        wrap_function_wrapper(
+            module=_TOOLKIT,
+            name="FunctionCall.execute",
+            wrapper=None,
+        )
+        wrap_function_wrapper(
+            module=_TOOLKIT,
+            name="FunctionCall.aexecute",
             wrapper=None,
         )
