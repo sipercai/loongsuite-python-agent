@@ -11,7 +11,7 @@ from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
 
-class AgentRunRequestExactor(object):
+class AgentRunRequestExtractor(object):
 
     def extract(self, agent : Any, arguments : Dict[Any, Any]) -> Iterable[Tuple[str, AttributeValue]]:
         if agent.name:
@@ -21,7 +21,7 @@ class AgentRunRequestExactor(object):
             yield GenAIAttributes.GEN_AI_AGENT_ID, f"{agent.session_id}"
 
         if agent.knowledge:
-            pass
+            yield f"{GenAIAttributes.GEN_AI_AGENT_NAME}.knowledge", f"{agent.knowledge.__class__.__name__}"
 
         if agent.tools:
             tool_names = []
@@ -46,19 +46,15 @@ class AgentRunRequestExactor(object):
                 for idx in range(len(messages)):  
                     message = messages[idx]
                     yield f"{GenAIAttributes.GEN_AI_PROMPT}.{idx}.message", f"{json.dumps(message.to_dict(), indent=2)}"
-            elif key == "session_id":
-                pass
-            elif key == "user_id":
-                pass
             elif key == "response_format":
                 yield GenAIAttributes.GEN_AI_OPENAI_REQUEST_RESPONSE_FORMAT, f"{arguments[key]}"
 
-class AgentRunResponseExactor(object):
+class AgentRunResponseExtractor(object):
 
     def extract(self, response : Any) -> Iterable[Tuple[str, AttributeValue]]:
         yield GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS, f"{response.to_json()}"
 
-class FunctionCallRequestExactor(object):
+class FunctionCallRequestExtractor(object):
 
     def extract(self, function_call : Any) -> Iterable[Tuple[str, AttributeValue]]:
 
@@ -72,14 +68,14 @@ class FunctionCallRequestExactor(object):
             yield GenAIAttributes.GEN_AI_TOOL_CALL_ID, f"{function_call.call_id}"
 
         if function_call.arguments:
-            yield "gen_ai.tool.arguments", f"{json.dumps(function_call.arguments, indent=2)}"
+            yield f"{GenAIAttributes.GEN_AI_TOOL_TYPE}.arguments", f"{json.dumps(function_call.arguments, indent=2)}"
 
-class FunctionCallResponseExactor(object):
+class FunctionCallResponseExtractor(object):
 
     def extract(self, response : Any) -> Iterable[Tuple[str, AttributeValue]]:
-        yield "gen_ai.tool.response", f"{response.result}"
+        yield f"{GenAIAttributes.GEN_AI_TOOL_TYPE}.response", f"{response.result}"
 
-class ModelRequestExactor(object):
+class ModelRequestExtractor(object):
 
     def extract(self, model : Any, arguments : Dict[Any, Any]) -> Iterable[Tuple[str, AttributeValue]]:
 
@@ -109,7 +105,7 @@ class ModelRequestExactor(object):
                 for idx in range(len(tools)):
                     yield f"{GenAIAttributes.GEN_AI_TOOL_DESCRIPTION}.{idx}", f"{json.dumps(tools[idx], indent=2)}"
 
-class ModelResponseExactor(object):
+class ModelResponseExtractor(object):
 
     def extract(self, responses: List[Any]) -> Iterable[Tuple[str, AttributeValue]]:
         content = ""
