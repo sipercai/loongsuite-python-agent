@@ -1,2 +1,2 @@
-_instruments = ("agno >= 0.1.1",)
+_instruments = ("agno >= 1.5.0",)
 _supports_metrics = False
