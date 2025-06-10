@@ -1,11 +1,11 @@
 from opentelemetry.instrumentation.agno._with_span import _WithSpan
 from opentelemetry.instrumentation.agno._extractor import (
-    AgentRunRequestExactor,
-    AgentRunResponseExactor,
-    FunctionCallRequestExactor,
-    FunctionCallResponseExactor,
-    ModelRequestExactor,
-    ModelResponseExactor,
+    AgentRunRequestExtractor,
+    AgentRunResponseExtractor,
+    FunctionCallRequestExtractor,
+    FunctionCallResponseExtractor,
+    ModelRequestExtractor,
+    ModelResponseExtractor,
 )
 from typing import (
     Any,
@@ -72,8 +72,8 @@ class AgnoAgentWrapper(_WithTracer):
 
     def __init__(self, tracer, *args, **kwargs):
         super().__init__(tracer, *args, **kwargs)
-        self._request_attributes_extractor = AgentRunRequestExactor()
-        self._response_attributes_extractor = AgentRunResponseExactor()
+        self._request_attributes_extractor = AgentRunRequestExtractor()
+        self._response_attributes_extractor = AgentRunResponseExtractor()
 
     def _enable_genai_capture(self) -> bool:
         capture_content = environ.get(
@@ -131,7 +131,7 @@ class AgnoAgentWrapper(_WithTracer):
         if not self._enable_genai_capture() or instance is None:
             return wrapped(*args, **kwargs)
         with self._start_as_current_span(
-            span_name="Agent.run",
+            span_name="Agent.run_stream",
             attributes=self._request_attributes_extractor.extract(instance,arguments),
             extra_attributes=self._request_attributes_extractor.extract(instance,arguments),
         ) as with_span:
@@ -171,7 +171,7 @@ class AgnoAgentWrapper(_WithTracer):
             response = await wrapped(*args, **kwargs)
             return response
         with self._start_as_current_span(
-            span_name="Agent.run",
+            span_name="Agent.arun",
             attributes=self._request_attributes_extractor.extract(instance,arguments),
             extra_attributes=self._request_attributes_extractor.extract(instance,arguments),
         ) as with_span:
@@ -210,8 +210,9 @@ class AgnoAgentWrapper(_WithTracer):
         if not self._enable_genai_capture() or instance is None:
             async for response in wrapped(*args, **kwargs):
                 yield response
+            return
         with self._start_as_current_span(
-            span_name="Agent.run",
+            span_name="Agent.arun_stream",
             attributes=self._request_attributes_extractor.extract(instance,arguments),
             extra_attributes=self._request_attributes_extractor.extract(instance,arguments),
         ) as with_span:
@@ -244,8 +245,8 @@ class AgnoFunctionCallWrapper(_WithTracer):
 
     def __init__(self, tracer, *args, **kwargs):
         super().__init__(tracer, *args, **kwargs)
-        self._request_attributes_extractor = FunctionCallRequestExactor()
-        self._response_attributes_extractor = FunctionCallResponseExactor()
+        self._request_attributes_extractor = FunctionCallRequestExtractor()
+        self._response_attributes_extractor = FunctionCallResponseExtractor()
 
     def _enable_genai_capture(self) -> bool:
         capture_content = environ.get(
@@ -333,8 +334,8 @@ class AgnoModelWrapper(_WithTracer):
 
     def __init__(self, tracer, *args, **kwargs):
         super().__init__(tracer, *args, **kwargs)
-        self._request_attributes_extractor = ModelRequestExactor()
-        self._response_attributes_extractor = ModelResponseExactor()
+        self._request_attributes_extractor = ModelRequestExtractor()
+        self._response_attributes_extractor = ModelResponseExtractor()
 
     def _enable_genai_capture(self) -> bool:
         capture_content = environ.get(
