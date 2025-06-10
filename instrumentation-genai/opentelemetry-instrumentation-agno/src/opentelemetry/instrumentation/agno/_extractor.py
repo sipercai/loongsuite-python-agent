@@ -4,6 +4,7 @@ from typing import (
     Iterable,
     Tuple,
     Dict,
+    List,
 )
 from opentelemetry.util.types import AttributeValue
 from opentelemetry.semconv._incubating.attributes import (
@@ -77,3 +78,66 @@ class FunctionCallResponseExactor(object):
 
     def extract(self, response : Any) -> Iterable[Tuple[str, AttributeValue]]:
         yield "gen_ai.tool.response", f"{response.result}"
+
+class ModelRequestExactor(object):
+
+    def extract(self, model : Any, arguments : Dict[Any, Any]) -> Iterable[Tuple[str, AttributeValue]]:
+
+        request_kwargs = {}
+        if getattr(model, "request_kwargs", None):
+            request_kwargs = model.request_kwargs
+        if getattr(model, "request_params", None):
+            request_kwargs = model.request_params
+        if getattr(model, "get_request_kwargs", None):
+            request_kwargs = model.get_request_kwargs()
+        if getattr(model, "get_request_params", None):
+            request_kwargs = model.get_request_params()
+
+        if request_kwargs:
+            yield GenAIAttributes.GEN_AI_REQUEST_MODEL, f"{json.dumps(request_kwargs, indent=2)}"
+        
+        for key in arguments.keys():
+            if key == "response_format":
+                yield GenAIAttributes.GEN_AI_OPENAI_REQUEST_RESPONSE_FORMAT,f"{arguments[key]}"
+            elif key == "messages":
+                messages = arguments["messages"]
+                for idx in range(len(messages)):
+                    message = messages[idx]
+                    yield f"{GenAIAttributes.GEN_AI_PROMPT}.{idx}.message", f"{json.dumps(message.to_dict(), indent=2)}"
+            elif key == "tools":
+                tools = arguments["tools"]
+                for idx in range(len(tools)):
+                    yield f"{GenAIAttributes.GEN_AI_TOOL_DESCRIPTION}.{idx}", f"{json.dumps(tools[idx], indent=2)}"
+
+class ModelResponseExactor(object):
+
+    def extract(self, responses: List[Any]) -> Iterable[Tuple[str, AttributeValue]]:
+        content = ""
+        for response in responses:
+        # basic response fields
+            if getattr(response, "role", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.role", response.role
+            if getattr(response, "content", None):
+                content += response.content
+            if getattr(response, "audio", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.audio", json.dumps(response.audio.to_dict(), indent=2)
+            if getattr(response, "image", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.image", json.dumps(response.image.to_dict(), indent=2)
+            for idx, exec in enumerate(getattr(response, "tool_executions", []) or []):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.tool_executions.{idx}", json.dumps(exec.to_dict(), indent=2)
+            # other metadata
+            if getattr(response, "event", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.event", response.event
+            if getattr(response, "provider_data", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.provider_data", json.dumps(response.provider_data, indent=2)
+            if getattr(response, "thinking", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.thinking", response.thinking
+            if getattr(response, "redacted_thinking", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.redacted_thinking", response.redacted_thinking
+            if getattr(response, "reasoning_content", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.reasoning_content", response.reasoning_content
+            if getattr(response, "extra", None):
+                yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.extra", json.dumps(response.extra, indent=2)
+        if len(content):
+            yield f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.content", f"{content}"
+        
