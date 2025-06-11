@@ -18,10 +18,6 @@ class AgentScopeInstrumentor(BaseInstrumentor):  # type: ignore
     An instrumentor for agentscope.
     """
 
-    __slots__ = (
-        "_original_call",
-    )
-
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 

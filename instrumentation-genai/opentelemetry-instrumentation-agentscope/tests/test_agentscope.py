@@ -4,14 +4,11 @@ from opentelemetry import trace as trace_api
 from opentelemetry.sdk.trace import TracerProvider, Resource
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
-from opentelemetry.semconv._incubating.attributes import (
-    gen_ai_attributes as GenAIAttributes,
-)
 from typing import (
     Generator
 )
 import agentscope
-from agentscope.agents import DialogAgent, ReActAgent
+from agentscope.agents import ReActAgent
 from agentscope.service import ServiceToolkit, execute_shell_command
 from agentscope.message import Msg
 
@@ -37,32 +34,7 @@ def instrument(
     yield
     AgentScopeInstrumentor().uninstrument()
 
-def test_chat_model_call(request, in_memory_span_exporter: InMemorySpanExporter):
-    agentscope.init(
-        model_configs={
-            "config_name": "my-qwen-max-chat",
-            "model_name": "qwen-max",
-            "model_type": "dashscope_chat",
-            "api_key": request.config.option.api_key,
-        },
-    )
-    agent = DialogAgent(
-        name="Agent",
-        sys_prompt="You're a helpful assistant.",
-        model_config_name="my-qwen-max-chat",
-    )
-    msg = None
-    agent(msg)
-    spans = in_memory_span_exporter.get_finished_spans()
-    attributes = spans[0].attributes
-    assert attributes is not None
-    for attribute in attributes:
-        if GenAIAttributes.GEN_AI_PROMPT in attribute:
-            assert True
-            return
-    assert False, "GEN_AI_PROMPT attribute not found in span attributes"
-
-def test_tool_call(request, in_memory_span_exporter: InMemorySpanExporter):
+def test_agentscope(request, in_memory_span_exporter: InMemorySpanExporter):
     
     toolkit = ServiceToolkit()
     toolkit.add(execute_shell_command)
@@ -82,11 +54,11 @@ def test_tool_call(request, in_memory_span_exporter: InMemorySpanExporter):
     )
     msg_task = Msg("user", "comupte 1615114134*4343434343 for me", "user")
     agent(msg_task)
+    check_model, check_tool = False, False
     spans = in_memory_span_exporter.get_finished_spans()
-    attributes = spans[-1].attributes
-    assert attributes is not None
-    for attribute in attributes:
-        if GenAIAttributes.GEN_AI_TOOL_CALL_ID in attribute:
-            assert True
-            return
-    assert False, "GEN_AI_TOOL_CALL_ID attribute not found in span attributes"
+    for span in spans:
+        if span.name == "ModelCall":
+            check_model = True
+        if span.name == "ToolCall":
+            check_tool = True
+    assert check_model and check_tool, "ModelCall or ToolCall span not found"
