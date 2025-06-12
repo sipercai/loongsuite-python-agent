@@ -1,10 +1,8 @@
-from opentelemetry.instrumentation.agentscope._model_call_attributes_extractor import(
-    ModelRequestAttributesExtractor,
-    ModelResponseAttributesExtractor,
-)
-from opentelemetry.instrumentation.agentscope._tool_call_attributes_extractor import(
-    ToolRequestAttributesExtractor,
-    ToolResponseAttributesExtractor,
+from opentelemetry.instrumentation.agentscope._extractor import (
+    ModelRequestExtractor,
+    ModelResponseExtractor,
+    ToolRequestExtractor,
+    ToolResponseExtractor,
 )
 from opentelemetry.instrumentation.agentscope._with_span import _WithSpan
 from typing import (
@@ -14,6 +12,8 @@ from typing import (
     Iterator,
     Mapping,
     Tuple,
+    Dict,
+    OrderedDict,
 )
 from abc import ABC
 from opentelemetry import trace as trace_api
@@ -22,13 +22,24 @@ from opentelemetry.util.types import AttributeValue
 from opentelemetry.trace import INVALID_SPAN
 from agentscope.models.response import ModelResponse
 from functools import wraps
-from aliyun.semconv.logger import getLogger
+from logging import getLogger
 from os import environ
+from inspect import signature
 
 logger = getLogger(__name__)
 OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT = (
     "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
 )
+def bind_arguments(method: Callable[..., Any], instance: Any, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    method_signature = signature(method)
+    bound_arguments = method_signature.bind(instance, *args, **kwargs)
+    bound_arguments.apply_defaults()
+    arguments = bound_arguments.arguments
+    arguments = OrderedDict(
+        {key: value for key, value in arguments.items() if key != "self" and value is not None and value != {}}
+    )
+    return arguments
+
 class _WithTracer(ABC):
     def __init__(self, tracer: trace_api.Tracer, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -62,21 +73,8 @@ class AgentscopeRequestWrapper(_WithTracer):
     def __init__(self, tracer, *args, **kwargs):
         super().__init__(tracer, *args, **kwargs)
         self.class_replaced = []
-        self._request_attributes_extractor = ModelRequestAttributesExtractor()
-        self._response_attributes_extractor = ModelResponseAttributesExtractor()
-
-    def _finalize_response(
-            self,
-            response: Any,
-            with_span: _WithSpan,
-    ) -> Any:
-        resp_attr = self._response_attributes_extractor.extract(response)
-        with_span.finish_tracing(
-            status=trace_api.Status(status_code=trace_api.StatusCode.OK),
-            attributes=dict(resp_attr),
-            extra_attributes=dict(resp_attr),
-        )
-        return response
+        self._request_attributes_extractor = ModelRequestExtractor()
+        self._response_attributes_extractor = ModelResponseExtractor()
 
     def _enable_genai_capture(self) -> bool:
         capture_content = environ.get(
@@ -102,14 +100,13 @@ class AgentscopeRequestWrapper(_WithTracer):
             *args: Tuple[type, Any],
             **kwargs: Mapping[str, Any],
         ) -> ModelResponse:
-            if not self._enable_genai_capture():
-                return original_call(model_instance, *args, **kwargs)
-            if instance is None:
+            arguments = bind_arguments(original_call, model_instance, *args, **kwargs)
+            if not self._enable_genai_capture() or instance is None:
                 return original_call(model_instance, *args, **kwargs)
             with self._start_as_current_span(
-                span_name="LLM",
-                attributes=self._request_attributes_extractor.extract(*args),
-                extra_attributes=self._request_attributes_extractor.extract(**kwargs),
+                span_name="ModelCall",
+                attributes=self._request_attributes_extractor.extract(model_instance, arguments),
+                extra_attributes=self._request_attributes_extractor.extract(model_instance, arguments),
             ) as with_span:
                 try:
                     response = original_call(model_instance, *args, **kwargs)
@@ -124,15 +121,17 @@ class AgentscopeRequestWrapper(_WithTracer):
                     with_span.finish_tracing(status=status)
                     raise
                 try:
-                    response = self._finalize_response(
-                        response=response,
-                        with_span=with_span,
+                    resp_attr = self._response_attributes_extractor.extract(response)
+                    with_span.finish_tracing(
+                        status=trace_api.Status(status_code=trace_api.StatusCode.OK),
+                        attributes=dict(resp_attr),
+                        extra_attributes=dict(resp_attr),
                     )
+                    return response
                 except Exception:
                     logger.exception(f"Failed to finalize response of type {type(response)}")
                     with_span.finish_tracing()
 
-            return response
         instance.__class__.__call__ = wrapped_call
         self.class_replaced.append(model_class)
 
@@ -140,8 +139,8 @@ class AgentscopeToolcallWrapper(_WithTracer):
 
     def __init__(self, tracer, *args, **kwargs):
         super().__init__(tracer, *args, **kwargs)
-        self._request_attributes_extractor = ToolRequestAttributesExtractor()
-        self._response_attributes_extractor = ToolResponseAttributesExtractor()
+        self._request_attributes_extractor = ToolRequestExtractor()
+        self._response_attributes_extractor = ToolResponseExtractor()
 
     def _finalize_response(
             self,
