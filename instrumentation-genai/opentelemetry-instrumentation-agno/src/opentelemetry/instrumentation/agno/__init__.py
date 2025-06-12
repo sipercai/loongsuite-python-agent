@@ -63,7 +63,7 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
             name="FunctionCall.execute",
             wrapper=function_call_wrapper.execute,
         )
-        wrap_function_wrapper (
+        wrap_function_wrapper(
             module=_TOOLKIT,
             name="FunctionCall.aexecute",
             wrapper=function_call_wrapper.aexecute,
