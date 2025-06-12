@@ -1,4 +1,4 @@
-# Opentelemerty Agentscope Instrumentation
+# OpenTelemerty Agentscope Instrumentation
 Python instrumentation library for AgentScope.
 
 
