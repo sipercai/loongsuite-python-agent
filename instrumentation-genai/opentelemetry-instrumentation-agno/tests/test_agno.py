@@ -61,9 +61,9 @@ def test_agno(in_memory_span_exporter: InMemorySpanExporter):
     check_agent, check_model, check_tool = False, False, False
     spans = in_memory_span_exporter.get_finished_spans()
     for span in spans:
-        if "Agent_run" in span.name:
+        if "Agent.run" in span.name:
             check_agent = True
-        if "Model_response" in span.name:
+        if "Model.response" in span.name:
             check_model = True
         if "ToolCall" in span.name:
             check_tool = True
