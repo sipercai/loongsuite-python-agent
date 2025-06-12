@@ -77,7 +77,7 @@ python demo.py
 
 If everything is working correctly, you should see logs similar to the following
 
-```shell
+```json
 "name": "LLM",
 "context": {
     "trace_id": "0xa6acb5a45fb2b4383e4238ecd5187f85",
@@ -128,7 +128,7 @@ If everything is working correctly, you should see logs similar to th
 
 Launch Jaeger with Docker
 
-```plaintext
+```shell
 docker run --rm --name jaeger \
   -e COLLECTOR_ZIPKIN_HOST_PORT=:9411 \
   -p 6831:6831/udp \
@@ -151,7 +151,7 @@ docker run --rm --name jaeger \
 2.  Add the following configuration in the `conf/continuous_pipeline_config/local/oltp.yaml` directory:
     
 
-```plaintext
+```yaml
 enable: true
 global:
   StructureType: v2
@@ -171,13 +171,13 @@ This configuration specifies that LoongCollector will accept OTLP-formatt
 3.  Launch  LoongCollector with the following command：
     
 
-```plaintext
+```shell
 nohup ./loongcollector > stdout.log 2> stderr.log &
 ```
 
 ## Run the Agentscope Example
 
-```plaintext
+```shell
 opentelemetry-instrument \
 
 --exporter_otlp_protocol grpc \
