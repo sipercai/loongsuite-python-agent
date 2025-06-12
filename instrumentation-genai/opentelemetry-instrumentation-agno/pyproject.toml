@@ -34,12 +34,9 @@ instruments = [
     "agno",
 ]
 test = [
-    "langchain_core == 0.1.8",
-    "langchain == 0.1.0",
-    "langchain_openai == 0.0.2",
-    "langchain-community == 0.0.10",
+    "agno",
+    "pytest",
     "opentelemetry-sdk",
-    "respx",
 ]
 type-check = []
 
