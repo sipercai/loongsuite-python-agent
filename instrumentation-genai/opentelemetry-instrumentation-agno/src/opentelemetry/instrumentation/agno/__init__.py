@@ -7,12 +7,14 @@ from opentelemetry.instrumentation.agno._wrapper import (
     AgnoModelWrapper,
 )
 from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.version import (
     __version__,
 )
 
-"""OpenTelemetry exporters for BlackSheep instrumentation"""
+"""OpenTelemetry exporters for Agno https://github.com/agno-agi/agno"""
+
 _AGENT = "agno.agent"
 _MODULE = "agno.models.base"
 _TOOLKIT = "agno.tools.function"
@@ -93,57 +95,20 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
     def _uninstrument(self, **kwargs: Any) -> None:
 
         # Unwrap the agent call function
-        wrap_function_wrapper(
-            module=_AGENT,
-            name="Agent._run",
-            wrapper=None,
-        )
-        wrap_function_wrapper(
-            module=_AGENT,
-            name="Agent._arun",
-            wrapper=None,
-        )
-        wrap_function_wrapper(
-            module=_AGENT,
-            name="Agent._run_stream",
-            wrapper=None,
-        )
-        wrap_function_wrapper(
-            module=_AGENT,
-            name="Agent._arun_stream",
-            wrapper=None,
-        )
+        import agno.agent
+        unwrap(agno.agent.Agent, "_run")
+        unwrap(agno.agent.Agent, "_arun")
+        unwrap(agno.agent.Agent, "_run_stream")
+        unwrap(agno.agent.Agent, "_arun_stream")
 
         # Unwrap the function call
-        wrap_function_wrapper(
-            module=_TOOLKIT,
-            name="FunctionCall.execute",
-            wrapper=None,
-        )
-        wrap_function_wrapper(
-            module=_TOOLKIT,
-            name="FunctionCall.aexecute",
-            wrapper=None,
-        )
+        import agno.tools.function
+        unwrap(agno.tools.function.FunctionCall, "execute")
+        unwrap(agno.tools.function.FunctionCall, "aexecute")
 
         # Unwrap the model
-        wrap_function_wrapper(
-            module=_MODULE,
-            name="Model.response",
-            wrapper=None,
-        )
-        wrap_function_wrapper(
-            module=_MODULE,
-            name="Model.aresponse",
-            wrapper=None,
-        )
-        wrap_function_wrapper(
-            module=_MODULE,
-            name="Model.response_stream",
-            wrapper=None,
-        )
-        wrap_function_wrapper(
-            module=_MODULE,
-            name="Model.aresponse_stream",
-            wrapper=None,
-        )
+        import agno.models.base
+        unwrap(agno.models.base.Model, "response")
+        unwrap(agno.models.base.Model, "aresponse")
+        unwrap(agno.models.base.Model, "response_stream")
+        unwrap(agno.models.base.Model, "aresponse_stream")
