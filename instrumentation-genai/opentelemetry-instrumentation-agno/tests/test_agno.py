@@ -37,7 +37,7 @@ def instrument(
     yield
     AgnoInstrumentor().uninstrument()
 
-def test_agno(request, in_memory_span_exporter: InMemorySpanExporter):
+def test_agno(in_memory_span_exporter: InMemorySpanExporter):
     agent = Agent(
         model=DeepSeek(id="deepseek-chat"),
         tools=[
