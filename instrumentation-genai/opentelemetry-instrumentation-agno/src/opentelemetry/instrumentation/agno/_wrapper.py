@@ -300,10 +300,11 @@ class AgnoFunctionCallWrapper(_WithTracer):
         args: Tuple[type, Any],
         kwargs: Mapping[str, Any],
     ) -> Any:
+        function_name = instance.function.name
         if not self._enable_genai_capture() or instance is None:
             return await wrapped(*args, **kwargs)
         with self._start_as_current_span(
-            span_name="ToolCall",
+            span_name=f"ToolCall.{function_name}",
             attributes=self._request_attributes_extractor.extract(instance),
             extra_attributes=self._request_attributes_extractor.extract(instance),
         ) as with_span:
