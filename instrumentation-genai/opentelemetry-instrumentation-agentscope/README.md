@@ -61,7 +61,7 @@ for _ in range(3):
     msg = monster(msg)
 ```
 
-### Collecte Data
+### Collect Data
 
 Run the `demo.py` script using OpenTelemetry
 
@@ -157,7 +157,7 @@ global:
   StructureType: v2
 inputs:
   - Type: service_otlp
-    Protocals:
+    Protocols:
       GRPC:
         Endpoint: 0.0.0.0:6666
 flushers:
