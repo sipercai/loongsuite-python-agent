@@ -2,7 +2,6 @@
 
 Agno Python Agent provides observability for Agno applications. This document provides examples of usage and results in the Agno instrumentation. For details on usage and installation of LoongSuite and Jaeger, please refer to [LoongSuite Documentation](https://github.com/alibaba/loongsuite-python-agent/blob/main/README.md).
 
-*Pull Request: [Add support for agno](https://github.com/alibaba/loongsuite-python-agent/pull/13).*
 ## Installation
   
 ```shell
