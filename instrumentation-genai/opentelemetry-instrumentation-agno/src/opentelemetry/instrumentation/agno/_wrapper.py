@@ -56,7 +56,16 @@ class _WithTracer(ABC):
         # two tiers, where the addition of "extra_attributes" is deferred until the end
         # and only after the "attributes" are added.
         try:
-            span = self._tracer.start_span(name=span_name, attributes=dict(attributes))
+            # Check if there is an active span
+            parent_span = trace_api.get_current_span()
+            if parent_span == trace_api.INVALID_SPAN:
+                # No active span, create a new root span
+                span = self._tracer.start_span(name=span_name, attributes=dict(attributes))
+            else:
+                # Active span exists, create a child span
+                ctx = trace_api.set_span_in_context(parent_span)
+                span = self._tracer.start_span(name=span_name, context=ctx, attributes=dict(attributes))
+
         except Exception:
             logger.exception("Failed to start span")
             span = INVALID_SPAN
