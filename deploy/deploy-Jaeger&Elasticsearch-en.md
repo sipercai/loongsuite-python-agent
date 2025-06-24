@@ -16,7 +16,7 @@ kubectl get sc
 
 3. Create a jaeger-es-config.yaml file and add the following content
 
-> Here we use the storage class: alicloud-disk-essd
+> Note: Replace `${StorageClassName}` with the storage class obtained in step 2
 
 ```yaml
 # ConfigMap for Jaeger config
@@ -107,7 +107,7 @@ metadata:
   name: elasticsearch-data
   namespace: jaeger-system
 spec:
-  storageClassName: alicloud-disk-essd  # Use ESSD cloud disk
+  storageClassName:  ${StorageClassName}  # Use available storage class in the cluster
   accessModes:
     - ReadWriteOnce
   resources:
@@ -287,7 +287,7 @@ helm repo update
 
 3. Create values.yaml for Elasticsearch (elasticsearch-values.yaml):
 
-* First confirm the storage class, then configure volumeClaimTemplate.storageClassName, here we use alicloud-disk-essd
+* Please first confirm the available storage class in the cluster, then replace the placeholder "${StorageClassName}" with the actual storage class name in the volumeClaimTemplate configuration.
 
 ```yaml
 clusterName: "elasticsearch"
@@ -408,8 +408,7 @@ kubectl get ingress -n jaeger-system
 
 1. Create Jaeger collector configuration
 
-> Based on official yaml configuration (Change: ES address changed from localhost to elasticsearch): [https://github.com/jaegertracing/jaeger/blob/v2.5.0/cmd/jaeger/config-elasticsearch.yaml](https://github.com/jaegertracing/jaeger/blob/v2.5.0/cmd/jaeger/config-elasticsearch.yaml)
-
+Based on [Jaeger official Elasticsearch configuration template](https://github.com/jaegertracing/jaeger/blob/v2.5.0/cmd/jaeger/config-elasticsearch.yaml) with adjustments, mainly modified the Elasticsearch service address configuration.
 ```plaintext
 service:
   extensions: [jaeger_storage, jaeger_query, healthcheckv2]
@@ -486,7 +485,7 @@ exporters:
     trace_storage: some_storage
 ```
 
-2. Create docker-compose.yaml (with demo application)
+2. Create docker-compose.yaml
 
 ```yaml
 # To run a specific version of Jaeger, use environment variable, e.g.:
@@ -530,21 +529,6 @@ services:
       elasticsearch:
         condition: service_healthy  # Wait for ES health check to pass
     
-  hotrod:
-    image: ${REGISTRY:-}jaegertracing/example-hotrod:${HOTROD_VERSION:-latest}
-    # To run the latest trunk build, find the tag at Docker Hub and use the line below
-    # https://hub.docker.com/r/jaegertracing/example-hotrod-snapshot/tags
-    #image: jaegertracing/example-hotrod-snapshot:0ab8f2fcb12ff0d10830c1ee3bb52b745522db6c
-    ports:
-      - "8080:8080"
-      - "8083:8083"
-    command: ["all"]
-    environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
-    networks:
-      - jaeger-example
-    depends_on:
-      - jaeger
 
 networks:
   jaeger-example:
@@ -572,10 +556,9 @@ docker compose down
 ```yaml
 # View all indexes
 curl -X GET "localhost:9200/_cat/indices?v"
-# curl -X GET "localhost:9200/_cat/indices?v"
 health status index                                 uuid                   pri rep docs.count docs.deleted store.size pri.store.size
-yellow open   jaeger-main-jaeger-service-2025-05-07 Da5bpM4oSrGnn1C3cQMFJw   5   1         11            0     20.6kb         20.6kb
-yellow open   jaeger-main-jaeger-span-2025-05-07    PkPgQl1-QtmGNpWlCEvioQ   5   1       2648            0    464.8kb        464.8kb
+yellow open   jaeger-main-jaeger-service-xxxx-xx-xx  xxxxxxxxxxxxxxxxxxxx   5   1         11            0     20.6kb         20.6kb
+yellow open   jaeger-main-jaeger-span-xxxx-xx-xx     xxxxxxxxxxxxxxxxxxxx   5   1       2648            0    464.8kb        464.8kb
 
 
 
