@@ -1,4 +1,4 @@
-# Jaeger+ Elasticsearch部署文档
+# Jaeger+部署指南：使用 Elasticsearch 作为存储后端
 
 ### K8S 部署（kubectl）
 
@@ -19,7 +19,7 @@ kubectl get sc
 3.  创建一个 jaeger-es-config.yaml 文件，添加以下内容
     
 
-> 这里存储类我们用的是：alicloud-disk-essd
+> 注意：将 `${StorageClassName}` 替换为第 2 步获取的存储类
 
 ```yaml
 # ConfigMap for Jaeger config
@@ -110,7 +110,7 @@ metadata:
   name: elasticsearch-data
   namespace: jaeger-system
 spec:
-  storageClassName: alicloud-disk-essd  # 使用ESSD云盘
+  storageClassName:  ${StorageClassName}  # 使用集群中可用的存储类
   accessModes:
     - ReadWriteOnce
   resources:
@@ -297,7 +297,7 @@ helm repo update
 3.   为 Elasticsearch 创建 values.yaml (elasticsearch-values.yaml):
     
 
-*   需要先确认下存储类，然后配置 volumeClaimTemplate.storageClassName，这里用的是 alicloud-disk-essd
+*   请先确认集群中可用的存储类，然后在 volumeClaimTemplate 配置中将占位符 "${StorageClassName}" 替换为实际的存储类名称。
     
 
 ```yaml
@@ -424,8 +424,7 @@ kubectl get ingress -n jaeger-system
 1.  创建 jaeger collector 配置
     
 
-> 基于官方 yaml 配置（改动点：es 地址从 localhost 改成了elasticsearch）：[https://github.com/jaegertracing/jaeger/blob/v2.5.0/cmd/jaeger/config-elasticsearch.yaml](https://github.com/jaegertracing/jaeger/blob/v2.5.0/cmd/jaeger/config-elasticsearch.yaml)
-
+基于 [Jaeger 官方 Elasticsearch 配置模板](https://github.com/jaegertracing/jaeger/blob/v2.5.0/cmd/jaeger/config-elasticsearch.yaml) 调整，主要修改了 Elasticsearch 服务地址配置。
 ```plaintext
 service:
   extensions: [jaeger_storage, jaeger_query, healthcheckv2]
@@ -502,7 +501,7 @@ exporters:
     trace_storage: some_storage
 ```
 
-2.  创建 docker-compose.yaml（带 demo 应用）
+2.  创建 docker-compose.yaml
     
 
 ```yaml
@@ -547,21 +546,6 @@ services:
       elasticsearch:
         condition: service_healthy  # 等待 ES 健康检查通过
     
-  hotrod:
-    image: ${REGISTRY:-}jaegertracing/example-hotrod:${HOTROD_VERSION:-latest}
-    # To run the latest trunk build, find the tag at Docker Hub and use the line below
-    # https://hub.docker.com/r/jaegertracing/example-hotrod-snapshot/tags
-    #image: jaegertracing/example-hotrod-snapshot:0ab8f2fcb12ff0d10830c1ee3bb52b745522db6c
-    ports:
-      - "8080:8080"
-      - "8083:8083"
-    command: ["all"]
-    environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
-    networks:
-      - jaeger-example
-    depends_on:
-      - jaeger
 
 networks:
   jaeger-example:
@@ -591,10 +575,9 @@ docker compose down
 ```yaml
 # 查看所有索引
 curl -X GET "localhost:9200/_cat/indices?v"
-# curl -X GET "localhost:9200/_cat/indices?v"
 health status index                                 uuid                   pri rep docs.count docs.deleted store.size pri.store.size
-yellow open   jaeger-main-jaeger-service-2025-05-07 Da5bpM4oSrGnn1C3cQMFJw   5   1         11            0     20.6kb         20.6kb
-yellow open   jaeger-main-jaeger-span-2025-05-07    PkPgQl1-QtmGNpWlCEvioQ   5   1       2648            0    464.8kb        464.8kb
+yellow open   jaeger-main-jaeger-service-xxxx-xx-xx  xxxxxxxxxxxxxxxxxxxx   5   1         11            0     20.6kb         20.6kb
+yellow open   jaeger-main-jaeger-span-xxxx-xx-xx     xxxxxxxxxxxxxxxxxxxx   5   1       2648            0    464.8kb        464.8kb
 
 
 
