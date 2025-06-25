@@ -30,7 +30,7 @@ class TestMCPInstrumentation(TestBase):
         # 模拟 MCP 客户端连接
         from .client.client import ClientSession
         client = ClientSession()
-        client.connect("test-server")
+        client.connect(command="python",args=[".client.server.py"],env={"DEBUG": "1"})
 
         # 验证 span 被创建
         spans = self.memory_exporter.get_finished_spans()
@@ -48,7 +48,7 @@ class TestMCPInstrumentation(TestBase):
         # 模拟异步 MCP 客户端连接
         from .client.client import ClientSession
         client = ClientSession()
-        await client.connect("test-server")
+        await client.connect(command="python",args=[".client.server.py"],env={"DEBUG": "1"})
 
         # 验证 span 被创建
         spans = self.memory_exporter.get_finished_spans()
