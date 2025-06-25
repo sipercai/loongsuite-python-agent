@@ -44,7 +44,7 @@ def mcp_client_connect(tracer, event_logger, instruments, capture_content):
                 duration = time.time() - start_time
 
                 # 记录指标
-                instruments.connection_duration.record(duration)
+                instruments.connection_duration.record_duration(duration)
                 instruments.connection_count.add(1, {"status": "success"})
 
                 if span.is_recording():
