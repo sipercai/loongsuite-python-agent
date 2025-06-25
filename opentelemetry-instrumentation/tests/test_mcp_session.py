@@ -1,40 +1,51 @@
 
-from opentelemetry.instrumentation.mcp import ClientSession, AsyncClientSession, MCPServer
+import asyncio
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from mcp.shared.exceptions import McpError
 
-# 同步使用
-def test_sync_example():
-    client = ClientSession()
-    server = MCPServer(name="test-server", command=["python", "server.py"])
+async def comprehensive_integration_test():
+    """使用原生MCP客户端的综合测试"""
 
-    # 连接
-    client.connect(server)
+    server_params = StdioServerParameters(
+        command="python",
+        args=["server.py"],
+        env={"DEBUG": "1"}
+    )
 
-    # 调用工具
-    result = client.call_tool("calculator", {"operation": "add", "a": 1, "b": 2})
-    print(f"Tool result: {result}")
+    try:
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            async with ClientSession(read_stream, write_stream) as session:
+                # 初始化
+                init_result = await session.initialize()
+                print(f"✅ Connected to: {init_result.serverInfo.name} v{init_result.serverInfo.version}")
 
-    # 读取资源
-    resource = client.read_resource("file://example.txt")
-    print(f"Resource content: {resource.contents}")
+                # 测试工具列表
+                tools_result = await session.list_tools()
+                print(f"✅ Found {len(tools_result.tools)} tools")
 
-    # 断开连接
-    client.disconnect()
+                # 测试每个工具
+                for tool in tools_result.tools:
+                    try:
+                        if tool.name == "add":
+                            result = await session.call_tool(tool.name, {"a": 1, "b": 2})
+                            print(f" Tool {tool.name}: {result.content}")
+                        elif tool.name == "echo":
+                            result = await session.call_tool(tool.name, {"message": "test"})
+                            print(f" Tool {tool.name}: {result.content}")
+                    except McpError as e:
+                        print(f" Tool {tool.name} failed: {e}")
 
-# 异步使用
-async def test_async_example():
-    client = AsyncClientSession()
-    server = MCPServer(name="test-server", command=["python", "server.py"])
+                        # 测试资源
+                try:
+                    content, mime_type = await session.read_resource("greeting://TestUser")
+                    print(f" Resource content: {content}")
+                except McpError as e:
+                    print(f"️ Resource test failed: {e}")
 
-    # 异步连接
-    await client.connect(server)
+    except Exception as e:
+        print(f" Test failed: {e}")
 
-    # 异步调用工具
-    result = await client.call_tool("calculator", {"operation": "multiply", "a": 3, "b": 4})
-    print(f"Tool result: {result}")
 
-    # 异步读取资源
-    resource = await client.read_resource("file://data.json")
-    print(f"Resource content: {resource.contents}")
-
-    # 异步断开连接
-    await client.disconnect()
+if __name__ == "__main__":
+    asyncio.run(comprehensive_integration_test())
