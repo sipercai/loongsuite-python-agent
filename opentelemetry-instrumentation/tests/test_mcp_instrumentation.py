@@ -28,7 +28,7 @@ class TestMCPInstrumentation(TestBase):
         self.instrumentor.instrument()
 
         # 模拟 MCP 客户端连接
-        from opentelemetry.instrumentation.mcp.client.session import ClientSession
+        from .client.client import ClientSession
         client = ClientSession()
         client.connect("test-server")
 
@@ -46,8 +46,8 @@ class TestMCPInstrumentation(TestBase):
         self.instrumentor.instrument()
 
         # 模拟异步 MCP 客户端连接
-        from opentelemetry.instrumentation.mcp.client.session import AsyncClientSession
-        client = AsyncClientSession()
+        from .client.client import ClientSession
+        client = ClientSession()
         await client.connect("test-server")
 
         # 验证 span 被创建
@@ -59,6 +59,3 @@ class TestMCPInstrumentation(TestBase):
         """Test uninstrumentation."""
         self.instrumentor.instrument()
         self.instrumentor.uninstrument()
-
-        # 验证 instrumentation 已移除
-        # todo 根据实际的 MCP SDK 结构来验证
