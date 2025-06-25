@@ -1,4 +1,3 @@
-
 # OpenTelemerty Agentscope Instrumentation
 
 Agentscope Python Agent provides observability for Agentscope applications. This document provides examples of usage and results in the Agentscope instrumentation. For details on usage and installation of LoongSuite and Jaeger, please refer to [LoongSuite Documentation](https://github.com/alibaba/loongsuite-python-agent/blob/main/README.md).
@@ -61,17 +60,25 @@ for _ in range(3):
     msg = monster(msg)
 ```
 
-### Collect Data
+### Collect Data
 
-Run the `demo.py` script using OpenTelemetry
+There are two ways to run the `demo.py` script with instrumentation:
+
+#### Option 1: Using OpenTelemetry
 
 ```shell
 opentelemetry-instrument \
-
 --traces_exporter console \
-
 --service_name demo \
+python demo.py
+```
 
+#### Option 2: Using Loongsuite
+
+```shell
+loongsuite-instrument \
+--traces_exporter console \
+--service_name demo \
 python demo.py
 ```
 
@@ -175,21 +182,31 @@ This configuration specifies that LoongCollector will accept OTLP-formatt
 nohup ./loongcollector > stdout.log 2> stderr.log &
 ```
 
-## Run the Agentscope Example
+## Run the Agentscope Example
+
+There are two ways to run the agentscope example:
+
+### Option 1: Using OpenTelemetry
 
 ```shell
 opentelemetry-instrument \
-
 --exporter_otlp_protocol grpc \
-
 --traces_exporter otlp \
-
 --exporter_otlp_insecure true \
-
 --exporter_otlp_endpoint 127.0.0.1:6666 \
-
 --service_name demo \
+python demo.py
+```
 
+### Option 2: Using Loongsuite
+
+```shell
+loongsuite-instrument \
+--exporter_otlp_protocol grpc \
+--traces_exporter otlp \
+--exporter_otlp_insecure true \
+--exporter_otlp_endpoint 127.0.0.1:6666 \
+--service_name demo \
 python demo.py
 ```
 

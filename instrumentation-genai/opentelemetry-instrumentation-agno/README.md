@@ -13,7 +13,7 @@ pip install ./instrumentation-genai/opentelemetry-instrumentation-agno
 
 ### Build the Example
 
-Follow the official [Agno Documentation](https://docs.agno.com/introduction) to create a sample file named `demo.py`
+Follow the official [Agno Documentation](https://docs.agno.com/introduction) to create a sample file named `demo.py`
 ```python
 import os
 os.environ["DEEPSEEK_API_KEY"] = "YOUR-API-KEY"
@@ -40,7 +40,9 @@ agent.print_response(
 
 ### Collect Data
 
-Run the `demo.py` script using OpenTelemetry
+There are two ways to run the `demo.py` script with instrumentation:
+
+### Option 1: Using OpenTelemetry
 
 ```shell 
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
@@ -51,7 +53,20 @@ opentelemetry-instrument \
 --exporter_otlp_insecure true \
 --exporter_otlp_endpoint YOUR-END-POINT \
 --service_name demo \
+python demo.py
+```
 
+### Option 2: Using Loongsuite
+
+```shell 
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+
+loongsuite-instrument \
+--exporter_otlp_protocol grpc \
+--traces_exporter otlp \
+--exporter_otlp_insecure true \
+--exporter_otlp_endpoint YOUR-END-POINT \
+--service_name demo \
 python demo.py
 ```
 
