@@ -3,10 +3,10 @@ from typing import Any, Collection
 from wrapt import wrap_function_wrapper
 
 from opentelemetry._events import get_event_logger
-from .package import _instruments
-from .utils import is_content_enabled
-from ..instrumentor import BaseInstrumentor
-from ..utils import unwrap
+from opentelemetry.instrumentation.mcp.package import _instruments
+from opentelemetry.instrumentation.mcp.utils import is_content_enabled
+from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.metrics import get_meter
 from opentelemetry.semconv.schemas import Schemas
 from opentelemetry.trace import get_tracer
@@ -31,7 +31,7 @@ from .patch import (
 )
 
 
-class MCPInstrumentor(BaseInstrumentor):
+class MCPClientInstrumentor(BaseInstrumentor):
     def init(self):
         self._meter = None
 
