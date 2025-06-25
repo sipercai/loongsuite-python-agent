@@ -9,7 +9,7 @@ async def comprehensive_integration_test():
 
     server_params = StdioServerParameters(
         command="python",
-        args=["server.py"],
+        args=[".client.server.py"],
         env={"DEBUG": "1"}
     )
 
@@ -18,11 +18,11 @@ async def comprehensive_integration_test():
             async with ClientSession(read_stream, write_stream) as session:
                 # 初始化
                 init_result = await session.initialize()
-                print(f"✅ Connected to: {init_result.serverInfo.name} v{init_result.serverInfo.version}")
+                print(f" Connected to: {init_result.serverInfo.name} v{init_result.serverInfo.version}")
 
                 # 测试工具列表
                 tools_result = await session.list_tools()
-                print(f"✅ Found {len(tools_result.tools)} tools")
+                print(f" Found {len(tools_result.tools)} tools")
 
                 # 测试每个工具
                 for tool in tools_result.tools:
