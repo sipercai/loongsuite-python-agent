@@ -9,7 +9,7 @@ async def comprehensive_integration_test():
 
     server_params = StdioServerParameters(
         command="python",
-        args=[".client.server.py"],
+        args=["../example/mcp/server.py"],
         env={"DEBUG": "1"}
     )
 
