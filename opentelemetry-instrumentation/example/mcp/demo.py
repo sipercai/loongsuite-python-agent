@@ -81,7 +81,7 @@ async def demo_mcp_instrumentation():
         await client.disconnect()
         
     except Exception as e:
-        print(f"❌ 演示过程中发生错误: {e}")
+        print(f"❌ 演示过程中发生错误: {str(e)}")
     
     print("=" * 50)
     print("✅ MCP Instrumentation演示完成!")
