@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import time
+import time
 from typing import Any, Dict, Optional
 
 from opentelemetry import trace
@@ -353,4 +353,150 @@ def async_mcp_client_read_resource(tracer, event_logger, instruments, capture_co
 
         return async_wrapper()
 
+    return wrapper
+
+# --- 新增异步包装 ---
+def async_mcp_client_initialize(tracer, event_logger, instruments, capture_content):
+    def wrapper(wrapped, instance, args, kwargs):
+        async def async_wrapper(*a, **kw):
+            with tracer.start_as_current_span(
+                "mcp.client.initialize",
+                kind=SpanKind.CLIENT,
+            ) as span:
+                if span.is_recording():
+                    span.set_attribute(MCPAttributes.MCP_OPERATION_TYPE, "initialize")
+                try:
+                    start_time = time.time()
+                    result = await wrapped(*a, **kw)
+                    duration = time.time() - start_time
+                    # 记录指标
+                    # instruments.connection_duration.record(duration)  # 可选
+                    # instruments.connection_count.add(1, {"status": "success"})
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.OK))
+                    return result
+                except Exception as e:
+                    # instruments.connection_count.add(1, {"status": "error"})
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        span.record_exception(e)
+                    raise
+        return async_wrapper(*args, **kwargs)
+    return wrapper
+
+def async_mcp_client_read_resource(tracer, event_logger, instruments, capture_content):
+    def wrapper(wrapped, instance, args, kwargs):
+        async def async_wrapper(*a, **kw):
+            resource_uri = args[0] if args else kwargs.get('uri', 'unknown')
+            with tracer.start_as_current_span(
+                "mcp.client.read_resource",
+                kind=SpanKind.CLIENT,
+            ) as span:
+                if span.is_recording():
+                    span.set_attribute(MCPAttributes.MCP_OPERATION_TYPE, "read_resource")
+                    span.set_attribute(MCPAttributes.MCP_RESOURCE_URI, resource_uri)
+                try:
+                    start_time = time.time()
+                    result = await wrapped(*a, **kw)
+                    duration = time.time() - start_time
+                    instruments.resource_read_duration.record(duration)
+                    instruments.resource_read_count.add(1, {"status": "success"})
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.OK))
+                        if result and hasattr(result, 'contents'):
+                            resource_size = len(result.contents) if result.contents else 0
+                            span.set_attribute("mcp.resource.size", resource_size)
+                            instruments.resource_size.record(resource_size)
+                    return result
+                except Exception as e:
+                    instruments.resource_read_count.add(1, {"status": "error"})
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        span.record_exception(e)
+                    raise
+        return async_wrapper(*args, **kwargs)
+    return wrapper
+
+def async_mcp_client_call_tool(tracer, event_logger, instruments, capture_content):
+    def wrapper(wrapped, instance, args, kwargs):
+        async def async_wrapper(*a, **kw):
+            tool_name = args[0] if args else kwargs.get('name', 'unknown')
+            sanitized_tool_name = sanitize_tool_name(tool_name)
+            with tracer.start_as_current_span(
+                f"mcp.client.call_tool.{sanitized_tool_name}",
+                kind=SpanKind.CLIENT,
+            ) as span:
+                if span.is_recording():
+                    span.set_attribute(MCPAttributes.MCP_OPERATION_TYPE, "call_tool")
+                    span.set_attribute(MCPAttributes.MCP_TOOL_NAME, tool_name)
+                    if capture_content and len(args) > 1:
+                        span.set_attribute("mcp.tool.arguments", str(args[1])[:1000])
+                try:
+                    start_time = time.time()
+                    result = await wrapped(*a, **kw)
+                    duration = time.time() - start_time
+                    instruments.tool_call_duration.record(duration, {"tool": tool_name})
+                    instruments.tool_call_count.add(1, {"tool": tool_name, "status": "success"})
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.OK))
+                        if capture_content and result:
+                            span.set_attribute("mcp.tool.result", str(result)[:1000])
+                    return result
+                except Exception as e:
+                    instruments.tool_call_count.add(1, {"tool": tool_name, "status": "error"})
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        span.record_exception(e)
+                    raise
+        return async_wrapper(*args, **kwargs)
+    return wrapper
+
+def async_mcp_client_list_tools(tracer, event_logger, instruments, capture_content):
+    def wrapper(wrapped, instance, args, kwargs):
+        async def async_wrapper(*a, **kw):
+            with tracer.start_as_current_span(
+                "mcp.client.list_tools",
+                kind=SpanKind.CLIENT,
+            ) as span:
+                if span.is_recording():
+                    span.set_attribute(MCPAttributes.MCP_OPERATION_TYPE, "list_tools")
+                try:
+                    start_time = time.time()
+                    result = await wrapped(*a, **kw)
+                    duration = time.time() - start_time
+                    # 可选：记录指标
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.OK))
+                    return result
+                except Exception as e:
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        span.record_exception(e)
+                    raise
+        return async_wrapper(*args, **kwargs)
+    return wrapper
+
+def async_mcp_client_send_ping(tracer, event_logger, instruments, capture_content):
+    def wrapper(wrapped, instance, args, kwargs):
+        async def async_wrapper(*a, **kw):
+            with tracer.start_as_current_span(
+                "mcp.client.send_ping",
+                kind=SpanKind.CLIENT,
+            ) as span:
+                if span.is_recording():
+                    span.set_attribute(MCPAttributes.MCP_OPERATION_TYPE, "send_ping")
+                try:
+                    start_time = time.time()
+                    result = await wrapped(*a, **kw)
+                    duration = time.time() - start_time
+                    # 可选：记录指标
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.OK))
+                    return result
+                except Exception as e:
+                    if span.is_recording():
+                        span.set_status(Status(StatusCode.ERROR, str(e)))
+                        span.record_exception(e)
+                    raise
+        return async_wrapper(*args, **kwargs)
     return wrapper
