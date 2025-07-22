@@ -7,12 +7,12 @@ OUTPUT_VALUE = "output.value"
 
 GEN_AI_SPAN_KIND = "gen_ai.span.kind"
 
-GEN_AI_MODEL_NAME = ""
-GEN_AI_REQUEST_MODEL_NAME = ""
-RETRIEVAL_DOCUMENTS = ""
-GEN_AI_INPUT_MESSAGES = ""
-GEN_AI_OUTPUT_MESSAGES = ""
-GEN_AI_USAGE_TOTAL_TOKENS = ""
+GEN_AI_MODEL_NAME = "gen_ai.model_name"
+GEN_AI_REQUEST_MODEL_NAME = "gen_ai.request.model_name"
+RETRIEVAL_DOCUMENTS = "retrieval.documents"
+GEN_AI_INPUT_MESSAGES = "gen_ai.input.messages"
+GEN_AI_OUTPUT_MESSAGES = "gen_ai.output.messages"
+GEN_AI_USAGE_TOTAL_TOKENS = "gen_ai.usage.total_tokens"
 
 
 class SpanKindValues(Enum):
