@@ -1,7 +1,7 @@
 from typing import Any, Callable, Mapping, Tuple
 from opentelemetry import context as context_api
 from opentelemetry import trace as trace_api
-from aliyun.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
+from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 from aliyun.semconv.trace import SpanAttributes
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()

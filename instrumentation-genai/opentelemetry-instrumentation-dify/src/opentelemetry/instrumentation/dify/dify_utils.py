@@ -1,4 +1,4 @@
-from aliyun.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
+from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
 from aliyun.sdk.extension.arms.logger import getLogger
 _logger = getLogger(__name__)
 

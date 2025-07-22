@@ -7,7 +7,7 @@ from aliyun.sdk.extension.arms.logger import getLogger
 from aliyun.sdk.extension.arms.utils.capture_content import set_dict_value, process_content
 from opentelemetry import trace as trace_api
 from opentelemetry.trace.status import Status, StatusCode
-from aliyun.instrumentation.dify._base_wrapper import LLMBaseWrapper
+from opentelemetry.instrumentation.dify._base_wrapper import LLMBaseWrapper
 from aliyun.semconv.trace import AliyunSpanKindValues, SpanAttributes
 
 logger = getLogger(__name__)

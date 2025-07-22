@@ -2,7 +2,7 @@ import threading
 
 from opentelemetry.metrics import get_meter
 from aliyun.sdk.extension.arms.logger import getLogger
-from aliyun.instrumentation.dify.contants import _get_dify_app_name_key
+from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key
 from opentelemetry import trace as trace_api
 from typing import (
     Any,
@@ -15,10 +15,10 @@ from typing import (
     TypeVar,
 )
 from typing_extensions import TypeAlias
-from aliyun.instrumentation.dify.version import __version__
-from aliyun.instrumentation.dify.strategy.factory import StrategyFactory
+from opentelemetry.instrumentation.dify.version import __version__
+from opentelemetry.instrumentation.dify.strategy.factory import StrategyFactory
 
-from aliyun.instrumentation.dify.dify_utils import get_app_name_by_id
+from opentelemetry.instrumentation.dify.dify_utils import get_app_name_by_id
 
 _logger = getLogger(__name__)
 
