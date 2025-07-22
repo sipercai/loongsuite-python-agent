@@ -1,13 +1,19 @@
 import json
 import time
+from logging import getLogger
 
+from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import GEN_AI_USAGE_PROMPT_TOKENS, \
+    GEN_AI_USAGE_COMPLETION_TOKENS, GEN_AI_SYSTEM
+
+from opentelemetry.instrumentation.dify.capture_content import set_dict_value, process_content
 from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
 from opentelemetry.instrumentation.dify.dify_utils import get_workflow_run_id
+from opentelemetry.instrumentation.dify.semconv import GEN_AI_SPAN_KIND, SpanKindValues, GEN_AI_SESSION_ID, \
+    GEN_AI_USER_ID, OUTPUT_VALUE, GEN_AI_MODEL_NAME, GEN_AI_REQUEST_MODEL_NAME, RETRIEVAL_DOCUMENTS, DocumentAttributes, \
+    GEN_AI_INPUT_MESSAGES, GEN_AI_OUTPUT_MESSAGES, GEN_AI_USAGE_TOTAL_TOKENS
 from opentelemetry.instrumentation.dify.strategy.strategy import ProcessStrategy
-from aliyun.semconv.trace import SpanAttributes, AliyunSpanKindValues, DocumentAttributes
 
 #  dify packages path
-from aliyun.sdk.extension.arms.logger import getLogger
 from opentelemetry import trace as trace_api
 from opentelemetry import context as context_api
 from opentelemetry.trace.status import Status, StatusCode
@@ -17,13 +23,10 @@ from typing import (
     Tuple, Dict,
 )
 from opentelemetry.instrumentation.dify.entities import NodeType
-from aliyun.sdk.extension.arms.semconv.attributes import arms_attributes
-from aliyun.sdk.extension.arms.common.utils.metrics_utils import get_llm_common_attributes
 from copy import deepcopy
 from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 from opentelemetry.instrumentation.dify.entities import _EventData
-from aliyun.sdk.extension.arms.utils.capture_content import set_dict_value, process_content
-from opentelemetry.instrumentation.dify.utils import get_timestamp_from_datetime_attr
+from opentelemetry.instrumentation.dify.utils import get_timestamp_from_datetime_attr, get_llm_common_attributes
 
 _logger = getLogger(__name__)
 
@@ -69,7 +72,7 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
                             start_time = time.time_ns()
                             parent_ctx = trace_api.set_span_in_context(event_data.span)
                             span: trace_api.Span = self._tracer.start_span(f"node_run_{event_id}", attributes={
-                                SpanAttributes.GEN_AI_SPAN_KIND: AliyunSpanKindValues.CHAIN.value,
+                                GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value,
                                 "component.name": "dify"}, start_time=start_time, context=parent_ctx)
                             new_ctx = trace_api.set_span_in_context(span)
                             token = context_api.attach(new_ctx)
@@ -93,7 +96,7 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
                     span: trace_api.Span = self._tracer.start_span(
                         f"node_run_{event_id}",
                         attributes={
-                            SpanAttributes.GEN_AI_SPAN_KIND: AliyunSpanKindValues.CHAIN.value,
+                            GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value,
                             "component.name": "dify"},
                         start_time=start_time)
                 else:
@@ -152,7 +155,7 @@ class WorkflowRunStartStrategy(ProcessStrategy):
             if data is not None:
                 return
         span: trace_api.Span = self._tracer.start_span(f"workflow_run_{event_id}", attributes={
-            SpanAttributes.GEN_AI_SPAN_KIND: AliyunSpanKindValues.CHAIN.value, "component.name": "dify"},
+            GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value, "component.name": "dify"},
                                                        start_time=start_time,
                                                        )
         app_id = getattr(run, "app_id", None)
@@ -165,8 +168,8 @@ class WorkflowRunStartStrategy(ProcessStrategy):
                 user_id = inputs_dict["sys.user_id"]
             if "sys.conversation_id" in inputs_dict:
                 session_id = inputs_dict["sys.conversation_id"]
-        span.set_attribute(SpanAttributes.GEN_AI_USER_ID, user_id)
-        span.set_attribute(SpanAttributes.GEN_AI_SESSION_ID, session_id)
+        span.set_attribute(GEN_AI_USER_ID, user_id)
+        span.set_attribute(GEN_AI_SESSION_ID, session_id)
         new_context = trace_api.set_span_in_context(span)
         token = context_api.attach(new_context)
         with self._lock:
@@ -179,9 +182,8 @@ class WorkflowRunStartStrategy(ProcessStrategy):
                 attributes={
                     DIFY_APP_ID_KEY: app_id,
                     _DIFY_APP_NAME_KEY: app_name,
-                    arms_attributes.COMPONENT_NAME: arms_attributes.ComponentNameValue.DIFY.value,
-                    SpanAttributes.GEN_AI_USER_ID: user_id,
-                    SpanAttributes.GEN_AI_SESSION_ID: session_id,
+                    GEN_AI_USER_ID: user_id,
+                    GEN_AI_SESSION_ID: session_id,
                 },
                 node_type=None,
                 start_time=start_time,
@@ -203,7 +205,7 @@ class WorkflowRunStartStrategy(ProcessStrategy):
                 return
         span: trace_api.Span = self._tracer.start_span(
             f"workflow_run_{event_id}",
-            attributes={SpanAttributes.GEN_AI_SPAN_KIND: AliyunSpanKindValues.CHAIN.value, "component.name": "dify"},
+            attributes={GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value, "component.name": "dify"},
             start_time=start_time,)
 
         user_id = "DEFAULT_USER_ID"
@@ -217,8 +219,8 @@ class WorkflowRunStartStrategy(ProcessStrategy):
             if "sys.app_id" in inputs_dict:
                 app_id = inputs_dict["sys.app_id"]
                 app_name = self._handler.get_app_name_by_id(app_id)
-        span.set_attribute(SpanAttributes.GEN_AI_USER_ID, user_id)
-        span.set_attribute(SpanAttributes.GEN_AI_SESSION_ID, session_id)
+        span.set_attribute(GEN_AI_USER_ID, user_id)
+        span.set_attribute(GEN_AI_SESSION_ID, session_id)
         new_context = trace_api.set_span_in_context(span)
         token = context_api.attach(new_context)
         with self._lock:
@@ -231,9 +233,8 @@ class WorkflowRunStartStrategy(ProcessStrategy):
                 attributes={
                     DIFY_APP_ID_KEY: app_id,
                     _DIFY_APP_NAME_KEY: app_name,
-                    arms_attributes.COMPONENT_NAME: arms_attributes.ComponentNameValue.DIFY.value,
-                    SpanAttributes.GEN_AI_USER_ID: user_id,
-                    SpanAttributes.GEN_AI_SESSION_ID: session_id,
+                    GEN_AI_USER_ID: user_id,
+                    GEN_AI_SESSION_ID: session_id,
                 },
                 node_type=None,
                 start_time=start_time,
@@ -299,7 +300,7 @@ class WorkflowRunSuccessStrategy(ProcessStrategy):
             span.end()
         context_api.detach(event_data.otel_token)
         metrics_attributes = get_llm_common_attributes()
-        metrics_attributes["spanKind"] = AliyunSpanKindValues.CHAIN.value
+        metrics_attributes["spanKind"] = SpanKindValues.CHAIN.value
         self._record_metrics(event_data, metrics_attributes)
 
     def _handle_workflow_run_success_v2(self, run, outputs=[]):
@@ -337,7 +338,7 @@ class WorkflowRunSuccessStrategy(ProcessStrategy):
             span.end()
         context_api.detach(event_data.otel_token)
         metrics_attributes = get_llm_common_attributes()
-        metrics_attributes["spanKind"] = AliyunSpanKindValues.CHAIN.value
+        metrics_attributes["spanKind"] = SpanKindValues.CHAIN.value
         self._record_metrics(event_data, metrics_attributes)
 
 
@@ -346,7 +347,7 @@ class WorkflowRunSuccessStrategy(ProcessStrategy):
             return {}
         output_attributes = {}
         output = ""
-        output_key = SpanAttributes.OUTPUT_VALUE
+        output_key = OUTPUT_VALUE
         if "sys.query" in outputs:
             output = outputs["sys.query"]
         elif "answer" in outputs:
@@ -420,7 +421,7 @@ class WorkflowRunFailedStrategy(ProcessStrategy):
             span.end()
         context_api.detach(event_data.otel_token)
         metrics_attributes = get_llm_common_attributes()
-        metrics_attributes["spanKind"] = AliyunSpanKindValues.CHAIN.value
+        metrics_attributes["spanKind"] = SpanKindValues.CHAIN.value
         self._record_metrics(event_data, metrics_attributes, error)
 
     def _handle_workflow_run_failed_v2(self, run, error):
@@ -459,7 +460,7 @@ class WorkflowRunFailedStrategy(ProcessStrategy):
             span.end()
         context_api.detach(event_data.otel_token)
         metrics_attributes = get_llm_common_attributes()
-        metrics_attributes["spanKind"] = AliyunSpanKindValues.CHAIN.value
+        metrics_attributes["spanKind"] = SpanKindValues.CHAIN.value
         self._record_metrics(event_data, metrics_attributes, error)
 
 
@@ -606,21 +607,18 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
                 span.end()
         context_api.detach(event_data.otel_token)
         metrics_attributes = get_llm_common_attributes()
-        span_kind = span_attributes[SpanAttributes.GEN_AI_SPAN_KIND]
+        span_kind = span_attributes[GEN_AI_SPAN_KIND]
         metrics_attributes["spanKind"] = span_kind
-        if span_kind == AliyunSpanKindValues.LLM.value:
-            if model_name := self._get_data(span_attributes, SpanAttributes.GEN_AI_MODEL_NAME, "DEFAULT_MODEL_NAME"):
+        if span_kind == SpanKindValues.LLM.value:
+            if model_name := self._get_data(span_attributes, GEN_AI_MODEL_NAME, "DEFAULT_MODEL_NAME"):
                 metrics_attributes["modelName"] = model_name
-            if input_tokens := self._get_data(span_attributes, SpanAttributes.GEN_AI_USAGE_PROMPT_TOKENS, 0):
+            if input_tokens := self._get_data(span_attributes, GEN_AI_USAGE_PROMPT_TOKENS, 0):
                 input_attributes = deepcopy(metrics_attributes)
                 input_attributes["usageType"] = "input"
-                self.llm_usage_tokens.add(input_tokens, attributes=input_attributes)
-            if output_tokens := self._get_data(span_attributes, SpanAttributes.GEN_AI_USAGE_COMPLETION_TOKENS, 0):
+            if output_tokens := self._get_data(span_attributes, GEN_AI_USAGE_COMPLETION_TOKENS, 0):
                 output_attributes = deepcopy(metrics_attributes)
                 output_attributes["usageType"] = "output"
-                self.llm_usage_tokens.add(output_tokens, attributes=output_attributes)
 
-        self._record_metrics(event_data, metrics_attributes, err)
 
     def _extract_workflow_node_attributes(self, event: Any) -> dict:
         node_type = getattr(event, "node_type", None)
@@ -629,7 +627,7 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
         node_type = getattr(node_type, "value", "DEFAULT_NODE_TYPE")
         span_kind = self._get_span_kind_by_node_type(node_type)
         span_attriubtes = {}
-        span_attriubtes[SpanAttributes.GEN_AI_SPAN_KIND] = span_kind
+        span_attriubtes[GEN_AI_SPAN_KIND] = span_kind
         inputs = getattr(event, "inputs", None)
         input_attributes = self._extract_inputs(inputs)
         if input_attributes is not None:
@@ -637,19 +635,19 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
         outputs = getattr(event, "outputs", None)
         output_attributes = self._extract_outputs(outputs)
         span_attriubtes.update(output_attributes)
-        if span_kind == AliyunSpanKindValues.LLM.value:
+        if span_kind == SpanKindValues.LLM.value:
             llm_attributes = self._extract_llm_attributes(event)
             span_attriubtes.update(llm_attributes)
             metrics_attriubtes = get_llm_common_attributes()
-            if SpanAttributes.GEN_AI_REQUEST_MODEL_NAME in span_attriubtes:
-                metrics_attriubtes["modelName"] = span_attriubtes[SpanAttributes.GEN_AI_REQUEST_MODEL_NAME]
-            if SpanAttributes.GEN_AI_USAGE_PROMPT_TOKENS in span_attriubtes:
-                input_tokens = span_attriubtes[SpanAttributes.GEN_AI_USAGE_PROMPT_TOKENS]
+            if GEN_AI_REQUEST_MODEL_NAME in span_attriubtes:
+                metrics_attriubtes["modelName"] = span_attriubtes[GEN_AI_REQUEST_MODEL_NAME]
+            if GEN_AI_USAGE_PROMPT_TOKENS in span_attriubtes:
+                input_tokens = span_attriubtes[GEN_AI_USAGE_PROMPT_TOKENS]
                 metrics_attriubtes["usageType"] = "input"
-            if SpanAttributes.GEN_AI_USAGE_COMPLETION_TOKENS in span_attriubtes:
-                output_tokens = span_attriubtes[SpanAttributes.GEN_AI_USAGE_COMPLETION_TOKENS]
+            if GEN_AI_USAGE_COMPLETION_TOKENS in span_attriubtes:
+                output_tokens = span_attriubtes[GEN_AI_USAGE_COMPLETION_TOKENS]
                 metrics_attriubtes["usageType"] = "output"
-        if span_kind == AliyunSpanKindValues.RETRIEVER.value:
+        if span_kind == SpanKindValues.RETRIEVER.value:
             retriever_attributes = self._extract_retrieval_attributes(event)
             span_attriubtes.update(retriever_attributes)
         return span_attriubtes
@@ -659,13 +657,13 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
         if (node_type == NodeType.LLM.value
                 or node_type == NodeType.QUESTION_CLASSIFIER.value
                 or node_type == NodeType.PARAMETER_EXTRACTOR.value):
-            span_kind = AliyunSpanKindValues.LLM.value
+            span_kind = SpanKindValues.LLM.value
         elif node_type == NodeType.TOOL.value or node_type == NodeType.HTTP_REQUEST.value:
-            span_kind = AliyunSpanKindValues.TOOL.value
+            span_kind = SpanKindValues.TOOL.value
         elif node_type == NodeType.KNOWLEDGE_RETRIEVAL.value:
-            span_kind = AliyunSpanKindValues.RETRIEVER.value
+            span_kind = SpanKindValues.RETRIEVER.value
         else:
-            span_kind = AliyunSpanKindValues.TASK.value
+            span_kind = SpanKindValues.TASK.value
         return span_kind
 
     def _extract_retrieval_attributes(self, event):
@@ -680,7 +678,7 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
         if result is not None:
             idx = 0
             for document in result:
-                k_prefix = f"{SpanAttributes.RETRIEVAL_DOCUMENTS}.{idx}"
+                k_prefix = f"{RETRIEVAL_DOCUMENTS}.{idx}"
                 if "metadata" in document:
                     metadata = document["metadata"]
                     if "document_id" in metadata:
@@ -702,30 +700,30 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
                 if model := getattr(single_retrieval_config, "model", None):
                     model = single_retrieval_config["model"]
                     if "name" in model:
-                        llm_attributes[SpanAttributes.GEN_AI_REQUEST_MODEL_NAME] = model["name"]
-                        llm_attributes[SpanAttributes.GEN_AI_MODEL_NAME] = model["name"]
+                        llm_attributes[GEN_AI_REQUEST_MODEL_NAME] = model["name"]
+                        llm_attributes[GEN_AI_MODEL_NAME] = model["name"]
                     if "provider" in model:
-                        llm_attributes[SpanAttributes.GEN_AI_SYSTEM] = model["provider"]
+                        llm_attributes[GEN_AI_SYSTEM] = model["provider"]
             if model := getattr(node_data, "model", None):
                 if name := getattr(model, "name", None):
-                    llm_attributes[SpanAttributes.GEN_AI_REQUEST_MODEL_NAME] = name
-                    llm_attributes[SpanAttributes.GEN_AI_MODEL_NAME] = name
+                    llm_attributes[GEN_AI_REQUEST_MODEL_NAME] = name
+                    llm_attributes[GEN_AI_MODEL_NAME] = name
                 if provider := getattr(model, "provider", None):
-                    llm_attributes[SpanAttributes.GEN_AI_SYSTEM] = provider
+                    llm_attributes[GEN_AI_SYSTEM] = provider
 
         if process_data := getattr(event, "process_data", None):
-            llm_attributes[SpanAttributes.GEN_AI_INPUT_MESSAGES] = self._get_input_messages(process_data)
+            llm_attributes[GEN_AI_INPUT_MESSAGES] = self._get_input_messages(process_data)
 
         if outputs := getattr(event, "outputs", None):
-            llm_attributes[SpanAttributes.GEN_AI_OUTPUT_MESSAGES] = self._get_output_messages(outputs)
+            llm_attributes[GEN_AI_OUTPUT_MESSAGES] = self._get_output_messages(outputs)
 
             if usage := self._get_data(outputs, "usage", None):
                 if prompt_tokens := self._get_data(usage, "prompt_tokens", None):
-                    llm_attributes[SpanAttributes.GEN_AI_USAGE_PROMPT_TOKENS] = prompt_tokens
+                    llm_attributes[GEN_AI_USAGE_PROMPT_TOKENS] = prompt_tokens
                 if completion_tokens := self._get_data(usage, "completion_tokens"):
-                    llm_attributes[SpanAttributes.GEN_AI_USAGE_COMPLETION_TOKENS] = completion_tokens
+                    llm_attributes[GEN_AI_USAGE_COMPLETION_TOKENS] = completion_tokens
                 if total_tokens := self._get_data(usage, "total_tokens", None):
-                    llm_attributes[SpanAttributes.GEN_AI_USAGE_TOTAL_TOKENS] = total_tokens
+                    llm_attributes[GEN_AI_USAGE_TOTAL_TOKENS] = total_tokens
         return llm_attributes
 
     def _get_output_messages(self, outputs) -> str:
@@ -769,7 +767,7 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
             return {}
         output_attributes = {}
         output = ""
-        output_key = SpanAttributes.OUTPUT_VALUE
+        output_key = OUTPUT_VALUE
         if "sys.query" in outputs:
             output = outputs["sys.query"]
         elif "answer" in outputs:

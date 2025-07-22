@@ -1,14 +1,15 @@
 import json
+from logging import getLogger
 from typing import Any, Callable, Mapping, Tuple, Generator, Dict
 from copy import deepcopy
 import time
-from aliyun.sdk.extension.arms.logger import getLogger
 
-from aliyun.sdk.extension.arms.utils.capture_content import set_dict_value, process_content
 from opentelemetry import trace as trace_api
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.instrumentation.dify._base_wrapper import LLMBaseWrapper
-from aliyun.semconv.trace import AliyunSpanKindValues, SpanAttributes
+
+from opentelemetry.instrumentation.dify.capture_content import set_dict_value, process_content
+from opentelemetry.instrumentation.dify.semconv import GEN_AI_INPUT_MESSAGES, GEN_AI_OUTPUT_MESSAGES, SpanKindValues
 
 logger = getLogger(__name__)
 
@@ -56,7 +57,7 @@ class PluginLLMHandler(LLMBaseWrapper):
                 set_dict_value(attributes,'gen_ai.request.tool_calls',str(tools))
 
             # 处理 prompt messages
-            attributes[SpanAttributes.GEN_AI_INPUT_MESSAGES] = self._get_input_messages(kwargs)
+            attributes[GEN_AI_INPUT_MESSAGES] = self._get_input_messages(kwargs)
 
             return attributes, kwargs.get('model')
         except Exception as e:
@@ -185,7 +186,7 @@ class PluginLLMHandler(LLMBaseWrapper):
                         attributes['gen_ai.usage.output_tokens'] = output_tokens
                         attributes['gen_ai.usage.total_tokens'] = total_tokens
 
-            attributes[SpanAttributes.GEN_AI_OUTPUT_MESSAGES] = json.dumps([output_message])
+            attributes[GEN_AI_OUTPUT_MESSAGES] = json.dumps([output_message])
             return attributes, input_tokens, output_tokens
         except Exception as e:
             return {}, 0, 0
@@ -248,15 +249,15 @@ class PluginLLMHandler(LLMBaseWrapper):
                         self.record_llm_input_tokens(tokens=input_tokens, model_name=model)
                         self.record_llm_output_tokens(tokens=output_tokens, model_name=model)
                         self.record_first_token_seconds(duration=ttfc, model_name=model,
-                                                        span_kind=AliyunSpanKindValues.LLM.value)
+                                                        span_kind=SpanKindValues.LLM.value)
                         context_attributes = self.extract_attributes_from_context()
                         span.set_attributes(context_attributes)
                         if output_attributes:
                             span.set_attributes(output_attributes)
                             duration = time.time() - first_chunk_time
-                            self.record_call_count(model_name=model, span_kind=AliyunSpanKindValues.LLM.value)
+                            self.record_call_count(model_name=model, span_kind=SpanKindValues.LLM.value)
                             self.record_duration(duration=duration, model_name=model,
-                                                 span_kind=AliyunSpanKindValues.LLM.value)
+                                                 span_kind=SpanKindValues.LLM.value)
                 except Exception as e:
                     logger.debug("Exception occurred during result processing", exc_info=True)
 
@@ -266,7 +267,7 @@ class PluginLLMHandler(LLMBaseWrapper):
             if span:
                 span.set_status(Status(StatusCode.ERROR))
                 span.record_exception(e)
-            self.record_call_error_count(model_name=model, span_kind=AliyunSpanKindValues.LLM.value)
+            self.record_call_error_count(model_name=model, span_kind=SpanKindValues.LLM.value)
             raise
         finally:
             if span and span.is_recording():
@@ -364,9 +365,9 @@ class PluginEmbeddingHandler(LLMBaseWrapper):
                     context_attributes = self.extract_attributes_from_context()
                     span.set_attributes(context_attributes)
                     duration = time.time() - start_time
-                    self.record_call_count(model_name=model, span_kind=AliyunSpanKindValues.EMBEDDING.value)
+                    self.record_call_count(model_name=model, span_kind=SpanKindValues.EMBEDDING.value)
                     self.record_duration(duration=duration, model_name=model,
-                                         span_kind=AliyunSpanKindValues.EMBEDDING.value)
+                                         span_kind=SpanKindValues.EMBEDDING.value)
             except Exception as e:
                 logger.debug("Exception occurred during result processing", exc_info=True)
 
@@ -375,7 +376,7 @@ class PluginEmbeddingHandler(LLMBaseWrapper):
             if span:
                 span.set_status(Status(StatusCode.ERROR))
                 span.record_exception(e)
-            self.record_call_error_count(model_name=model, span_kind=AliyunSpanKindValues.EMBEDDING.value)
+            self.record_call_error_count(model_name=model, span_kind=SpanKindValues.EMBEDDING.value)
             raise
         finally:
             if span and span.is_recording():
@@ -477,9 +478,9 @@ class PluginRerankHandler(LLMBaseWrapper):
                     context_attributes = self.extract_attributes_from_context()
                     span.set_attributes(context_attributes)
                     duration = time.time() - start_time
-                    self.record_call_count(model_name=model, span_kind=AliyunSpanKindValues.RERANKER.value)
+                    self.record_call_count(model_name=model, span_kind=SpanKindValues.RERANKER.value)
                     self.record_duration(duration=duration, model_name=model,
-                                         span_kind=AliyunSpanKindValues.RERANKER.value)
+                                         span_kind=SpanKindValues.RERANKER.value)
             except Exception as e:
                 logger.debug("Exception occurred during result processing", exc_info=True)
 
@@ -488,7 +489,7 @@ class PluginRerankHandler(LLMBaseWrapper):
             if span:
                 span.set_status(Status(StatusCode.ERROR))
                 span.record_exception(e)
-            self.record_call_error_count(model_name=model, span_kind=AliyunSpanKindValues.RERANKER.value)
+            self.record_call_error_count(model_name=model, span_kind=SpanKindValues.RERANKER.value)
             raise
         finally:
             if span and span.is_recording():

@@ -2,7 +2,7 @@ from typing import Any, Callable, Mapping, Tuple
 from opentelemetry import context as context_api
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
-from aliyun.semconv.trace import SpanAttributes
+from opentelemetry.instrumentation.dify.semconv import GEN_AI_SESSION_ID, GEN_AI_USER_ID
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
@@ -40,16 +40,16 @@ class DatasetRetrievalThreadingHandler:
         new_ctx = ctx
         app_name = attributes[_DIFY_APP_NAME_KEY]
         app_id = attributes[DIFY_APP_ID_KEY]
-        user_id = attributes[SpanAttributes.GEN_AI_USER_ID]
-        session_id = attributes[SpanAttributes.GEN_AI_SESSION_ID]
+        user_id = attributes[GEN_AI_USER_ID]
+        session_id = attributes[GEN_AI_SESSION_ID]
         if app_name:
             new_ctx = context_api.set_value(_DIFY_APP_NAME_KEY, app_name, new_ctx)
         if app_id:
             new_ctx = context_api.set_value(DIFY_APP_ID_KEY, app_id, new_ctx)
         if user_id:
-            new_ctx = context_api.set_value(SpanAttributes.GEN_AI_USER_ID, user_id, new_ctx)
+            new_ctx = context_api.set_value(GEN_AI_USER_ID, user_id, new_ctx)
         if session_id:
-            new_ctx = context_api.set_value(SpanAttributes.GEN_AI_SESSION_ID, session_id, new_ctx)
+            new_ctx = context_api.set_value(GEN_AI_SESSION_ID, session_id, new_ctx)
         return new_ctx
 
     def __call__(

@@ -1,14 +1,15 @@
+from logging import getLogger
 from typing import Callable, Tuple, Any, Mapping, Dict
 
 from opentelemetry import trace
 from opentelemetry.trace import Span, Status, StatusCode, Tracer
-from aliyun.sdk.extension.arms.logger import getLogger
+
+from opentelemetry.instrumentation.dify.capture_content import set_dict_value
+from opentelemetry.instrumentation.dify.semconv import SpanKindValues
 
 logger = getLogger(__name__)
 
-from aliyun.sdk.extension.arms.utils.capture_content import set_dict_value
 from opentelemetry.instrumentation.dify._base_wrapper import BaseWrapper, TOOLBaseWrapper
-from aliyun.semconv.trace import SpanAttributes, AliyunSpanKindValues
 import time
 
 
@@ -180,7 +181,7 @@ class RetrieveHandler(BaseWrapper):
             start_time = time.time()
             try:
                 # 记录主要参数
-                span.set_attribute("gen_ai.span.kind", AliyunSpanKindValues.RETRIEVER.value)
+                span.set_attribute("gen_ai.span.kind", SpanKindValues.RETRIEVER.value)
                 input_attributes = self._get_input_attributes(args, kwargs)
                 span.set_attributes(input_attributes)
             except Exception as e:
@@ -192,10 +193,10 @@ class RetrieveHandler(BaseWrapper):
                 # 计算执行时间
                 duration = time.time() - start_time
                 span.set_status(Status(StatusCode.ERROR))
-                self.record_call_error_count(span_kind=AliyunSpanKindValues.RETRIEVER.value)
+                self.record_call_error_count(span_kind=SpanKindValues.RETRIEVER.value)
                 # 记录指标
-                self.record_call_count(span_kind=AliyunSpanKindValues.RETRIEVER.value)
-                self.record_duration(duration=duration, span_kind=AliyunSpanKindValues.RETRIEVER.value)
+                self.record_call_count(span_kind=SpanKindValues.RETRIEVER.value)
+                self.record_duration(duration=duration, span_kind=SpanKindValues.RETRIEVER.value)
                 context_attributes = self.extract_attributes_from_context()
                 span.set_attributes(context_attributes)
                 span.set_attribute("retrieval.error", str(e))
@@ -210,8 +211,8 @@ class RetrieveHandler(BaseWrapper):
                 context_attributes = self.extract_attributes_from_context()
                 span.set_attributes(context_attributes)
                 # 记录指标
-                self.record_call_count(span_kind=AliyunSpanKindValues.RETRIEVER.value)
-                self.record_duration(duration=duration, span_kind=AliyunSpanKindValues.RETRIEVER.value)
+                self.record_call_count(span_kind=SpanKindValues.RETRIEVER.value)
+                self.record_duration(duration=duration, span_kind=SpanKindValues.RETRIEVER.value)
                 span.set_status(Status(StatusCode.OK))
             except Exception as e:
                 logger.debug("Failed to set output attributes in RetrieveHandler", exc_info=True)
