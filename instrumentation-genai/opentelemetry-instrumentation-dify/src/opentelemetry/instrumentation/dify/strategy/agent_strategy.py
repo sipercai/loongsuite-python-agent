@@ -2,14 +2,14 @@ import time
 from typing import Any, Tuple, Mapping
 
 from opentelemetry import context as context_api, trace as trace_api
+from opentelemetry.instrumentation.dify.capture_content import set_span_value
 
 from opentelemetry.instrumentation.dify.contants import DIFY_APP_ID_KEY, _get_dify_app_name_key
 from opentelemetry.instrumentation.dify.entities import _EventData
+from opentelemetry.instrumentation.dify.semconv import GEN_AI_SPAN_KIND, SpanKindValues, GEN_AI_USER_ID, \
+    GEN_AI_SESSION_ID, OUTPUT_VALUE, INPUT_VALUE
 from opentelemetry.instrumentation.dify.strategy.strategy import ProcessStrategy
-from aliyun.sdk.extension.arms.semconv.attributes import arms_attributes
-from aliyun.sdk.extension.arms.utils.capture_content import set_span_value
 
-from aliyun.semconv.trace import SpanAttributes, AliyunSpanKindValues
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
@@ -55,7 +55,7 @@ class AppRunnerStrategy(ProcessStrategy):
                 return None
         span: trace_api.Span = self._tracer.start_span(
             f"chat_{event_id}",
-            attributes={SpanAttributes.GEN_AI_SPAN_KIND: AliyunSpanKindValues.AGENT.value, "component.name": "dify"},
+            attributes={GEN_AI_SPAN_KIND: SpanKindValues.AGENT.value, "component.name": "dify"},
             start_time=start_time,)
 
         app_id = getattr(message, "app_id", None)
@@ -63,17 +63,17 @@ class AppRunnerStrategy(ProcessStrategy):
         session_id = getattr(message, "conversation_id", "DEFAULT_SESSION_ID")
         user_id = getattr(message, "from_account_id", "DEFAULT_USER_ID")
 
-        span.set_attribute(SpanAttributes.GEN_AI_USER_ID, user_id)
-        span.set_attribute(SpanAttributes.GEN_AI_SESSION_ID, session_id)
+        span.set_attribute(GEN_AI_USER_ID, user_id)
+        span.set_attribute(GEN_AI_SESSION_ID, session_id)
         span.set_attribute(DIFY_APP_ID_KEY, app_id)
         span.set_attribute(_DIFY_APP_NAME_KEY, app_name)
-        span.update_name(f"{app_name}({AliyunSpanKindValues.AGENT.value})")
+        span.update_name(f"{app_name}({SpanKindValues.AGENT.value})")
 
         new_context = trace_api.set_span_in_context(span)
         new_context = self._set_value(_DIFY_APP_NAME_KEY, app_name, ctx=new_context)
         new_context = self._set_value(DIFY_APP_ID_KEY, app_id, ctx=new_context)
-        new_context = self._set_value(SpanAttributes.GEN_AI_USER_ID, user_id, ctx=new_context)
-        new_context = self._set_value(SpanAttributes.GEN_AI_SESSION_ID, session_id, ctx=new_context)
+        new_context = self._set_value(GEN_AI_USER_ID, user_id, ctx=new_context)
+        new_context = self._set_value(GEN_AI_SESSION_ID, session_id, ctx=new_context)
         token = context_api.attach(new_context)
         with self._lock:
             self._event_data[event_id] = _EventData(
@@ -85,9 +85,8 @@ class AppRunnerStrategy(ProcessStrategy):
                 attributes={
                     DIFY_APP_ID_KEY: app_id,
                     _DIFY_APP_NAME_KEY: app_name,
-                    arms_attributes.COMPONENT_NAME: arms_attributes.ComponentNameValue.DIFY.value,
-                    SpanAttributes.GEN_AI_USER_ID: user_id,
-                    SpanAttributes.GEN_AI_SESSION_ID: session_id,
+                    GEN_AI_USER_ID: user_id,
+                    GEN_AI_SESSION_ID: session_id,
                 },
                 node_type=None,
                 start_time=start_time,
@@ -139,13 +138,13 @@ class MessageEndStrategy(ProcessStrategy):
             event_data = self._event_data.pop(event_id)
             span: trace_api.Span = event_data.span
             if query := getattr(message, "query", None):
-                set_span_value(span, SpanAttributes.INPUT_VALUE, f"{query}")
+                set_span_value(span, INPUT_VALUE, f"{query}")
             if answer := getattr(message, "answer", None):
-                set_span_value(span, SpanAttributes.OUTPUT_VALUE, f"{answer}")
+                set_span_value(span, OUTPUT_VALUE, f"{answer}")
             if agent_thoughts := getattr(message, "agent_thoughts", None):
                 if isinstance(agent_thoughts, list) and len(agent_thoughts) > 0:
                     last_thought = agent_thoughts[-1]
                     if last_answer := getattr(last_thought, "answer", None):
-                        set_span_value(span, SpanAttributes.OUTPUT_VALUE, f"{last_answer}")
+                        set_span_value(span, OUTPUT_VALUE, f"{last_answer}")
             if span.is_recording():
                 span.end()

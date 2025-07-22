@@ -1,7 +1,7 @@
 import threading
+from logging import getLogger
 
 from opentelemetry.metrics import get_meter
-from aliyun.sdk.extension.arms.logger import getLogger
 from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key
 from opentelemetry import trace as trace_api
 from typing import (
@@ -27,7 +27,7 @@ _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 _EventId: TypeAlias = str
 _ParentId: TypeAlias = str
 
-from aliyun.instrumentation.dify.entities import _EventData
+from opentelemetry.instrumentation.dify.entities import _EventData
 
 _Value = TypeVar("_Value")
 

@@ -1,14 +1,14 @@
+from logging import getLogger
 from typing import Any, Dict
 from abc import ABC
 from opentelemetry.metrics import get_meter
-from aliyun.sdk.extension.arms.semconv.metrics import ArmsCommonServiceMetrics
-from aliyun.sdk.extension.arms.common.utils.metrics_utils import get_llm_common_attributes
-from aliyun.semconv.trace import SpanAttributes
 
 from opentelemetry import trace
 from opentelemetry.trace import Tracer
+
+from opentelemetry.instrumentation.dify.semconv import GEN_AI_USER_ID, GEN_AI_SESSION_ID
+from opentelemetry.instrumentation.dify.utils import get_llm_common_attributes
 from opentelemetry.instrumentation.dify.version import __version__
-from aliyun.sdk.extension.arms.logger import getLogger
 from opentelemetry.context import get_value
 from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 
@@ -33,11 +33,6 @@ class BaseWrapper(ABC):
 
     def _init_metrics(self):
         meter = self._meter
-        self.calls_count = ArmsCommonServiceMetrics(meter).calls_count
-        self.calls_duration_seconds = ArmsCommonServiceMetrics(meter).calls_duration_seconds
-        self.llm_context_size = ArmsCommonServiceMetrics(meter).llm_context_size
-        self.llm_prompt_size = ArmsCommonServiceMetrics(meter).llm_prompt_size
-        self.calls_error_count = ArmsCommonServiceMetrics(meter).call_error_count
 
     def set_span_kind(self, span_kind: str):
         self._span_kind = span_kind
@@ -54,16 +49,16 @@ class BaseWrapper(ABC):
         attributes = {}
         app_name = get_value(_DIFY_APP_NAME_KEY)
         app_id = get_value(DIFY_APP_ID_KEY)
-        user_id = get_value(SpanAttributes.GEN_AI_USER_ID)
-        session_id = get_value(SpanAttributes.GEN_AI_SESSION_ID)
+        user_id = get_value(GEN_AI_USER_ID)
+        session_id = get_value(GEN_AI_SESSION_ID)
         if app_name:
             attributes[_DIFY_APP_NAME_KEY] = app_name
         if app_id:
             attributes[DIFY_APP_ID_KEY] = app_id
         if user_id:
-            attributes[SpanAttributes.GEN_AI_USER_ID] = user_id
+            attributes[GEN_AI_USER_ID] = user_id
         if session_id:
-            attributes[SpanAttributes.GEN_AI_SESSION_ID] = session_id
+            attributes[GEN_AI_SESSION_ID] = session_id
         return attributes
 
     def before_process(self):
@@ -79,7 +74,6 @@ class BaseWrapper(ABC):
             common_attrs["spanKind"] = span_kind
         if attributes:
             common_attrs.update(attributes)
-        self.calls_count.add(1, common_attrs)
 
     def record_duration(self, duration: float, attributes: Dict[str, Any] = None, span_kind: str = None):
         """记录调用持续时间"""
@@ -88,7 +82,6 @@ class BaseWrapper(ABC):
             common_attrs["spanKind"] = span_kind
         if attributes:
             common_attrs.update(attributes)
-        self.calls_duration_seconds.record(duration, common_attrs)
 
     def record_call_error_count(self, attributes: Dict[str, Any] = None, span_kind: str = None):
         """记录调用错误次数"""
@@ -97,8 +90,6 @@ class BaseWrapper(ABC):
             common_attrs["spanKind"] = span_kind
         if attributes:
             common_attrs.update(attributes)
-        self.calls_error_count.add(1, common_attrs)
-
 
 class LLMBaseWrapper(BaseWrapper):
     def __init__(self, tracer: Tracer):
@@ -130,12 +121,6 @@ class LLMBaseWrapper(BaseWrapper):
             return trace_headers
 
 
-    def _init_metrics(self):
-        super()._init_metrics()
-        self.llm_output_token_seconds = ArmsCommonServiceMetrics(self._meter).llm_output_token_seconds
-        self.llm_usage_tokens = ArmsCommonServiceMetrics(self._meter).llm_usage_tokens
-        self.llm_first_token_seconds = ArmsCommonServiceMetrics(self._meter).llm_first_token_seconds
-
     def record_call_count(self, model_name: str, attributes: Dict[str, Any] = None, span_kind: str = "LLM"):
         """记录调用次数"""
         if attributes is None:
@@ -166,7 +151,6 @@ class LLMBaseWrapper(BaseWrapper):
             common_attrs["spanKind"] = span_kind
         if attributes:
             common_attrs.update(attributes)
-        self.llm_output_token_seconds.record(duration, common_attrs)
 
     def record_first_token_seconds(self, duration: float, model_name: str, attributes: Dict[str, Any] = None,
                                    span_kind: str = "LLM"):
@@ -177,7 +161,6 @@ class LLMBaseWrapper(BaseWrapper):
         if attributes:
             common_attrs.update(attributes)
         common_attrs["modelName"] = model_name
-        self.llm_first_token_seconds.record(duration, common_attrs)
 
     def _record_llm_tokens(self, tokens: int, usage_type: str, model_name: str, attributes: Dict[str, Any] = None,
                            span_kind: str = "LLM"):
@@ -189,7 +172,6 @@ class LLMBaseWrapper(BaseWrapper):
             common_attrs.update(attributes)
         common_attrs["usageType"] = usage_type
         common_attrs["modelName"] = model_name
-        self.llm_usage_tokens.add(tokens, common_attrs)
 
     def record_llm_input_tokens(self, tokens: int, model_name: str, attributes: Dict[str, Any] = None,
                                 span_kind: str = "LLM"):

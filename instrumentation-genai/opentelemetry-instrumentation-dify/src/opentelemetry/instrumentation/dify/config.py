@@ -1,6 +1,6 @@
 try:
     HAS_DIFY = True
-    from configs import dify_config
+    from configs import dify_config # type: ignore
 except:
     HAS_DIFY = False
 
