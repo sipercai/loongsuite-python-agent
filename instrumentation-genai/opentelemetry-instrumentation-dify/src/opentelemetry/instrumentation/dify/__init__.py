@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-class AliyunDifyInstrumentor(BaseInstrumentor):  # type: ignore
+class DifyInstrumentor(BaseInstrumentor):  # type: ignore
     """
     An instrumentor for Dify
     """

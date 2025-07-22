@@ -1,6 +1,6 @@
 import logging
 
-from aliyun.opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
+from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
 from wrapt import wrap_function_wrapper
 
 from opentelemetry.instrumentation.dify.handler._aliyun_handler import AliyunHandler
