@@ -1,4 +1,3 @@
-
 from enum import Enum
 from opentelemetry import trace as trace_api
 from opentelemetry import context as context_api

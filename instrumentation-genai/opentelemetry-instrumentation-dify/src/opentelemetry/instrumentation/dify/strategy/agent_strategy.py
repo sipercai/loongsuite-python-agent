@@ -3,9 +3,9 @@ from typing import Any, Tuple, Mapping
 
 from opentelemetry import context as context_api, trace as trace_api
 
-from aliyun.instrumentation.dify.contants import DIFY_APP_ID_KEY, _get_dify_app_name_key
-from aliyun.instrumentation.dify.entities import _EventData
-from aliyun.instrumentation.dify.strategy.strategy import ProcessStrategy
+from opentelemetry.instrumentation.dify.contants import DIFY_APP_ID_KEY, _get_dify_app_name_key
+from opentelemetry.instrumentation.dify.entities import _EventData
+from opentelemetry.instrumentation.dify.strategy.strategy import ProcessStrategy
 from aliyun.sdk.extension.arms.semconv.attributes import arms_attributes
 from aliyun.sdk.extension.arms.utils.capture_content import set_span_value
 

@@ -4,8 +4,8 @@ from typing import Any, Tuple, Mapping
 
 from opentelemetry.metrics import get_meter
 
-from aliyun.instrumentation.dify.dify_utils import get_message_data
-from aliyun.instrumentation.dify.version import __version__
+from opentelemetry.instrumentation.dify.dify_utils import get_message_data
+from opentelemetry.instrumentation.dify.version import __version__
 from aliyun.sdk.extension.arms.semconv.metrics import ArmsCommonServiceMetrics
 from aliyun.sdk.extension.arms.utils.capture_content import set_dict_value
 from aliyun.semconv.trace import SpanAttributes

@@ -1,12 +1,12 @@
 import logging
 from typing import Any, Collection
 
-from aliyun.instrumentation.dify.package import _instruments
-from aliyun.instrumentation.dify.wrapper import set_wrappers
+from opentelemetry.instrumentation.dify.package import _instruments
+from opentelemetry.instrumentation.dify.wrapper import set_wrappers
 from opentelemetry import trace as trace_api
-from aliyun.opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
+from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
 
-from aliyun.instrumentation.dify.config import is_version_supported, MIN_SUPPORTED_VERSION, MAX_SUPPORTED_VERSION
+from opentelemetry.instrumentation.dify.config import is_version_supported, MIN_SUPPORTED_VERSION, MAX_SUPPORTED_VERSION
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

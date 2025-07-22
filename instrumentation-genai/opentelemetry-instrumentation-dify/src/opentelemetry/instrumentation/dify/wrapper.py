@@ -3,13 +3,13 @@ import logging
 from aliyun.opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
 from wrapt import wrap_function_wrapper
 
-from aliyun.instrumentation.dify.handler._aliyun_handler import AliyunHandler
-from aliyun.instrumentation.dify.handler._plugin_llm_handler import PluginLLMHandler, PluginEmbeddingHandler, PluginRerankHandler
-from aliyun.instrumentation.dify.handler._graph_engine_thread_pool_handler import GraphEngineThreadPoolHandler, DatasetRetrievalThreadingHandler
-from aliyun.instrumentation.dify.handler._rag_handler import ToolInvokeHandler, RetrieveHandler
-from aliyun.instrumentation.dify.handler._rag_handler import VectorSearchHandler
-from aliyun.instrumentation.dify.handler._rag_handler import FullTextSearchHandler
-from aliyun.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
+from opentelemetry.instrumentation.dify.handler._aliyun_handler import AliyunHandler
+from opentelemetry.instrumentation.dify.handler._plugin_llm_handler import PluginLLMHandler, PluginEmbeddingHandler, PluginRerankHandler
+from opentelemetry.instrumentation.dify.handler._graph_engine_thread_pool_handler import GraphEngineThreadPoolHandler, DatasetRetrievalThreadingHandler
+from opentelemetry.instrumentation.dify.handler._rag_handler import ToolInvokeHandler, RetrieveHandler
+from opentelemetry.instrumentation.dify.handler._rag_handler import VectorSearchHandler
+from opentelemetry.instrumentation.dify.handler._rag_handler import FullTextSearchHandler
+from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

@@ -6,11 +6,11 @@ from aliyun.sdk.extension.arms.common.utils.metrics_utils import get_llm_common_
 from aliyun.semconv.trace import SpanAttributes
 
 from opentelemetry import trace
-from opentelemetry.trace import Span, Tracer
-from aliyun.instrumentation.dify.version import __version__
+from opentelemetry.trace import Tracer
+from opentelemetry.instrumentation.dify.version import __version__
 from aliyun.sdk.extension.arms.logger import getLogger
 from opentelemetry.context import get_value
-from aliyun.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
+from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 
 _logger = getLogger(__name__)
 

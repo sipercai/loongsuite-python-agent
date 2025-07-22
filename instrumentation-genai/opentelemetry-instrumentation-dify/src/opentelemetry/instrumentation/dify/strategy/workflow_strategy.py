@@ -1,9 +1,9 @@
 import json
 import time
 
-from aliyun.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
-from aliyun.instrumentation.dify.dify_utils import get_workflow_run_id
-from aliyun.instrumentation.dify.strategy.strategy import ProcessStrategy
+from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
+from opentelemetry.instrumentation.dify.dify_utils import get_workflow_run_id
+from opentelemetry.instrumentation.dify.strategy.strategy import ProcessStrategy
 from aliyun.semconv.trace import SpanAttributes, AliyunSpanKindValues, DocumentAttributes
 
 #  dify packages path
@@ -16,14 +16,14 @@ from typing import (
     Mapping,
     Tuple, Dict,
 )
-from aliyun.instrumentation.dify.entities import NodeType
+from opentelemetry.instrumentation.dify.entities import NodeType
 from aliyun.sdk.extension.arms.semconv.attributes import arms_attributes
 from aliyun.sdk.extension.arms.common.utils.metrics_utils import get_llm_common_attributes
 from copy import deepcopy
-from aliyun.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
-from aliyun.instrumentation.dify.entities import _EventData
+from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
+from opentelemetry.instrumentation.dify.entities import _EventData
 from aliyun.sdk.extension.arms.utils.capture_content import set_dict_value, process_content
-from aliyun.instrumentation.dify.utils import get_timestamp_from_datetime_attr
+from opentelemetry.instrumentation.dify.utils import get_timestamp_from_datetime_attr
 
 _logger = getLogger(__name__)
 

@@ -1,9 +1,9 @@
 from typing import Any
 
-from aliyun.instrumentation.dify.strategy.strategy import ProcessStrategy
-from aliyun.instrumentation.dify.strategy.workflow_strategy import WorkflowNodeInitStrategy, WorkflowRunStartStrategy, WorkflowRunSuccessStrategy, WorkflowRunFailedStrategy, \
+from opentelemetry.instrumentation.dify.strategy.strategy import ProcessStrategy
+from opentelemetry.instrumentation.dify.strategy.workflow_strategy import WorkflowNodeInitStrategy, WorkflowRunStartStrategy, WorkflowRunSuccessStrategy, WorkflowRunFailedStrategy, \
     WorkflowNodeStartStrategy, WorkflowNodeFinishStrategy, WorkflowNodeExecutionFailedStrategy
-from aliyun.instrumentation.dify.strategy.agent_strategy import AppRunnerStrategy, MessageEndStrategy
+from opentelemetry.instrumentation.dify.strategy.agent_strategy import AppRunnerStrategy, MessageEndStrategy
 
 
 class StrategyFactory:

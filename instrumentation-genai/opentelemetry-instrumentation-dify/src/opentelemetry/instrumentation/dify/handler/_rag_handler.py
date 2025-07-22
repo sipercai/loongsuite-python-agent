@@ -7,7 +7,7 @@ from aliyun.sdk.extension.arms.logger import getLogger
 logger = getLogger(__name__)
 
 from aliyun.sdk.extension.arms.utils.capture_content import set_dict_value
-from aliyun.instrumentation.dify._base_wrapper import BaseWrapper, TOOLBaseWrapper
+from opentelemetry.instrumentation.dify._base_wrapper import BaseWrapper, TOOLBaseWrapper
 from aliyun.semconv.trace import SpanAttributes, AliyunSpanKindValues
 import time
 
