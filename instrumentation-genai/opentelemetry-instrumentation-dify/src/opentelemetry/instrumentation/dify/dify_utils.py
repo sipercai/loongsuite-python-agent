@@ -1,7 +1,4 @@
-from logging import getLogger
-
 from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
-_logger = getLogger(__name__)
 
 try:
     from models.model import App
@@ -9,7 +6,6 @@ try:
     from models.model import Message
     dify_dependencies_available = True
 except ImportError as e:
-    _logger.warning(f"Error importing dify dependencies: {e}")
     dify_dependencies_available = False
 
 def get_app_name_by_id(app_id: str) -> str:

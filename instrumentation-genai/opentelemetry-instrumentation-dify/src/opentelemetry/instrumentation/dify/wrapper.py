@@ -1,5 +1,3 @@
-import logging
-
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
 from wrapt import wrap_function_wrapper
 
@@ -10,9 +8,6 @@ from opentelemetry.instrumentation.dify.handler._rag_handler import ToolInvokeHa
 from opentelemetry.instrumentation.dify.handler._rag_handler import VectorSearchHandler
 from opentelemetry.instrumentation.dify.handler._rag_handler import FullTextSearchHandler
 from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
 
 _WORKFLOW_NODE_MODULE = "core.workflow.nodes.base.node"
 _RAG_RETRIEVAL_MODULE = "core.rag.retrieval.dataset_retrieval"
