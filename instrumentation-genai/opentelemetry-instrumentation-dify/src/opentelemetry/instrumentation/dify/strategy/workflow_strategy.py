@@ -1,6 +1,5 @@
 import json
 import time
-from logging import getLogger
 
 from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import GEN_AI_USAGE_PROMPT_TOKENS, \
     GEN_AI_USAGE_COMPLETION_TOKENS, GEN_AI_SYSTEM
@@ -28,7 +27,6 @@ from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, 
 from opentelemetry.instrumentation.dify.entities import _EventData
 from opentelemetry.instrumentation.dify.utils import get_timestamp_from_datetime_attr, get_llm_common_attributes
 
-_logger = getLogger(__name__)
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 

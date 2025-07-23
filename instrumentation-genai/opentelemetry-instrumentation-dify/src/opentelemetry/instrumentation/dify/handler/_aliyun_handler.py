@@ -20,8 +20,6 @@ from opentelemetry.instrumentation.dify.strategy.factory import StrategyFactory
 
 from opentelemetry.instrumentation.dify.dify_utils import get_app_name_by_id
 
-_logger = getLogger(__name__)
-
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
 _EventId: TypeAlias = str

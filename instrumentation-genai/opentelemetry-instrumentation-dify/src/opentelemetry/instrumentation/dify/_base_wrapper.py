@@ -1,4 +1,3 @@
-from logging import getLogger
 from typing import Any, Dict
 from abc import ABC
 from opentelemetry.metrics import get_meter
@@ -12,7 +11,6 @@ from opentelemetry.instrumentation.dify.version import __version__
 from opentelemetry.context import get_value
 from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 
-_logger = getLogger(__name__)
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
