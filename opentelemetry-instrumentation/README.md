@@ -4,14 +4,17 @@
 
 这是一个为MCP (Message Control Protocol) 客户端提供OpenTelemetry可观测性的instrumentation库。它能够自动追踪MCP客户端的操作，包括连接、工具调用、资源读取等，并生成相应的spans和metrics。
 
+**✅ 完全符合OpenTelemetry MCP语义约定规范**
+
 ## 功能特性
 
 ### ✅ 已实现功能
 - **异步MCP操作追踪**: 支持所有异步MCP客户端操作
-- **标准化命名规范**: 遵循OpenTelemetry语义约定
+- **OpenTelemetry规范兼容**: 完全遵循官方MCP语义约定
 - **整合的Metrics**: 使用标签方式减少metrics数量
 - **异常处理优化**: 分离instrumentation和业务逻辑异常处理
 - **完整的测试覆盖**: 包含单元测试和集成测试
+- **详细的Trace信息**: 包含消息大小、请求参数、响应内容等详细信息
 
 ### 🔧 支持的MCP操作
 - `initialize` - 客户端初始化
@@ -75,18 +78,36 @@ MCPClientInstrumentor().instrument(
 
 每个MCP操作都会生成相应的span：
 
-#### 标准命名格式
+#### 标准命名格式（符合OpenTelemetry MCP语义约定）
 - `mcp.client.initialize` - 客户端初始化
 - `mcp.client.list_tools` - 列出工具
-- `tools/call {tool_name}` - 工具调用
-- `resources/read {resource_uri}` - 资源读取
+- `mcp.client.call_tool` - 工具调用
+- `mcp.client.read_resource` - 资源读取
 - `mcp.client.send_ping` - 发送ping
 
-#### 属性
+#### 核心属性
 - `mcp.method.name` - 操作类型
 - `mcp.tool.name` - 工具名称（仅工具调用）
 - `mcp.resource.uri` - 资源URI（仅资源读取）
 - `mcp.resource.size` - 资源大小（仅资源读取）
+
+#### 详细属性
+- `mcp.request.size` - 请求大小（字节）
+- `mcp.response.size` - 响应大小（字节）
+- `mcp.response.type` - 响应类型
+- `mcp.tool.arguments` - 工具调用参数
+- `mcp.tool.result` - 工具调用结果
+- `mcp.content.count` - 内容数量
+- `mcp.content.types` - 内容类型
+- `mcp.contents.count` - 资源内容数量
+- `mcp.contents.types` - 资源内容类型
+- `mcp.tools.count` - 工具数量
+- `mcp.tools.list` - 工具列表
+
+#### 错误属性
+- `mcp.error.message` - 错误消息
+- `mcp.error.type` - 错误类型
+- `mcp.error.code` - 错误代码
 
 ### Metrics
 
@@ -123,14 +144,16 @@ python demo.py
 
 ## 更新日志
 
-### 最新版本 (根据文档建议优化)
+### 最新版本 (符合OpenTelemetry MCP语义约定规范)
 
 #### 🎯 主要改进
-1. **Metrics整合**: 将8个独立metrics整合为4个，使用标签区分操作类型
-2. **命名规范标准化**: 采用社区标准的span命名格式
-3. **属性名称优化**: 使用 `mcp.method.name` 替代 `mcp.operation.type`
-4. **代码清理**: 删除所有无用的同步函数
-5. **异常处理优化**: 分离instrumentation和业务逻辑异常处理
+1. **OpenTelemetry规范兼容**: 完全遵循官方MCP语义约定
+2. **标准化命名**: 使用 `mcp.client.{method}` 格式
+3. **详细Trace信息**: 添加消息大小、请求参数、响应内容等详细信息
+4. **Metrics整合**: 将8个独立metrics整合为4个，使用标签区分操作类型
+5. **属性名称优化**: 使用标准化的MCP属性名称
+6. **代码清理**: 删除所有无用的同步函数
+7. **异常处理优化**: 分离instrumentation和业务逻辑异常处理
 
 #### 📊 Metrics变化
 **之前**: 8个独立metrics
@@ -146,16 +169,35 @@ python demo.py
 
 #### 🔍 Span命名变化
 **之前**:
-- `mcp.client.call_tool.{tool_name}`
-- `mcp.client.read_resource`
-
-**现在**:
 - `tools/call {tool_name}`
 - `resources/read {resource_uri}`
 
-#### 🏷️ 属性变化
-**之前**: `mcp.operation.type`
-**现在**: `mcp.method.name`
+**现在** (符合OpenTelemetry规范):
+- `mcp.client.call_tool`
+- `mcp.client.read_resource`
+
+#### 🏷️ 新增详细属性
+- `mcp.request.size` - 请求大小
+- `mcp.response.size` - 响应大小
+- `mcp.response.type` - 响应类型
+- `mcp.tool.arguments` - 工具参数
+- `mcp.content.count` - 内容数量
+- `mcp.content.types` - 内容类型
+- `mcp.contents.count` - 资源内容数量
+- `mcp.contents.types` - 资源内容类型
+- `mcp.tools.count` - 工具数量
+- `mcp.tools.list` - 工具列表
+
+#### 🚨 错误处理增强
+- `mcp.error.message` - 详细错误消息
+- `mcp.error.type` - 错误类型
+- `mcp.error.code` - 错误代码
+
+## 规范参考
+
+本实现完全遵循以下OpenTelemetry规范：
+- [OpenTelemetry MCP语义约定](https://github.com/open-telemetry/semantic-conventions/blob/dc77673926c7b236f62440cf70f1dcc79bebc575/docs/gen-ai/mcp.md)
+- [OpenTelemetry通用语义约定](https://opentelemetry.io/docs/specs/semconv/)
 
 ## 贡献
 
