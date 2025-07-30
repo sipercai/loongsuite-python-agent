@@ -8,6 +8,7 @@ MCP client operations with OpenTelemetry.
 
 import asyncio
 import os
+import sys
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
@@ -44,10 +45,16 @@ async def demo_mcp_instrumentation():
         
         # 连接到MCP服务器
         print("📡 连接到MCP服务器...")
+        # 使用完整的Python路径，并确保环境变量正确
+        python_executable = sys.executable
         await client.connect(
-            command="python",
+            command=python_executable,
             args=["server.py"],
-            env={"DEBUG": "1"}
+            env={
+                "DEBUG": "1",
+                "PYTHONPATH": os.environ.get("PYTHONPATH", ""),
+                "PATH": os.environ.get("PATH", "")
+            }
         )
         
         # 列出可用工具
