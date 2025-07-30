@@ -55,7 +55,13 @@ class ClientSession:
                 self._exit_stack = None
             self._session = None
             self._connected = False
-            raise McpError(f"Connection failed: {e}")
+            # 创建ErrorData对象
+            from mcp import types
+            error_data = types.ErrorData(
+                code=1,  # 使用默认错误代码
+                message=f"Connection failed: {str(e)}"
+            )
+            raise McpError(error_data)
 
     async def disconnect(self):
         """断开与MCP服务器的连接"""
@@ -78,7 +84,12 @@ class ClientSession:
     def _ensure_connected(self):
         """确保已连接到服务器"""
         if not self._connected or not self._session:
-            raise McpError("Not connected to server")
+            from mcp import types
+            error_data = types.ErrorData(
+                code=1,  # 使用默认错误代码
+                message="Not connected to server"
+            )
+            raise McpError(error_data)
 
     async def list_tools(self) -> List[types.Tool]:
         """列出可用工具"""

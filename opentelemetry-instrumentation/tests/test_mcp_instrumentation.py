@@ -36,7 +36,7 @@ class TestMCPInstrumentation:
         spans = self.span_exporter.get_finished_spans()
         assert len(spans) == 1
         assert spans[0].name == "mcp.client.initialize"
-        assert spans[0].attributes.get("mcp.operation.type") == "initialize"
+        assert spans[0].attributes.get("mcp.method.name") == "initialize"
 
     @patch('mcp.client.session.ClientSession.read_resource', new_callable=AsyncMock)
     async def test_read_resource_instrumentation(self, mock_read_resource):
@@ -47,8 +47,8 @@ class TestMCPInstrumentation:
         await client.read_resource("test://resource")
         spans = self.span_exporter.get_finished_spans()
         assert len(spans) == 1
-        assert spans[0].name == "mcp.client.read_resource"
-        assert spans[0].attributes.get("mcp.operation.type") == "read_resource"
+        assert spans[0].name == "resources/read test://resource"
+        assert spans[0].attributes.get("mcp.method.name") == "resources/read"
         assert spans[0].attributes.get("mcp.resource.uri") == "test://resource"
 
     @patch('mcp.client.session.ClientSession.call_tool', new_callable=AsyncMock)
@@ -60,8 +60,8 @@ class TestMCPInstrumentation:
         await client.call_tool("test_tool", {"param": "value"})
         spans = self.span_exporter.get_finished_spans()
         assert len(spans) == 1
-        assert spans[0].name == "mcp.client.call_tool.test_tool"
-        assert spans[0].attributes.get("mcp.operation.type") == "call_tool"
+        assert spans[0].name == "tools/call test_tool"
+        assert spans[0].attributes.get("mcp.method.name") == "tools/call"
         assert spans[0].attributes.get("mcp.tool.name") == "test_tool"
 
     @patch('mcp.client.session.ClientSession.list_tools', new_callable=AsyncMock)
@@ -74,7 +74,7 @@ class TestMCPInstrumentation:
         spans = self.span_exporter.get_finished_spans()
         assert len(spans) == 1
         assert spans[0].name == "mcp.client.list_tools"
-        assert spans[0].attributes.get("mcp.operation.type") == "list_tools"
+        assert spans[0].attributes.get("mcp.method.name") == "list_tools"
 
     @patch('mcp.client.session.ClientSession.send_ping', new_callable=AsyncMock)
     async def test_send_ping_instrumentation(self, mock_send_ping):
@@ -86,7 +86,7 @@ class TestMCPInstrumentation:
         spans = self.span_exporter.get_finished_spans()
         assert len(spans) == 1
         assert spans[0].name == "mcp.client.send_ping"
-        assert spans[0].attributes.get("mcp.operation.type") == "send_ping"
+        assert spans[0].attributes.get("mcp.method.name") == "send_ping"
 
     async def test_uninstrument(self):
         self.instrumentor.instrument(tracer_provider=self.tracer_provider, meter_provider=self.meter_provider)
