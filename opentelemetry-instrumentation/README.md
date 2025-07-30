@@ -1,4 +1,4 @@
- # OpenTelemetry MCP Instrumentation
+# OpenTelemetry MCP Instrumentation
 
 ## 概述
 
@@ -76,7 +76,7 @@ MCPClientInstrumentor().instrument(
 
 ### Spans
 
-每个MCP操作都会生成相应的span：
+每个MCP操作都会生成相应的span，完全符合OpenTelemetry规范：
 
 #### 标准命名格式（符合OpenTelemetry MCP语义约定）
 - `mcp.client.initialize` - 客户端初始化
@@ -122,6 +122,91 @@ MCPClientInstrumentor().instrument(
 - `mcp.tool.name` - 工具名称（低基数属性）
 - `mcp.resource.uri` - 资源URI
 - `status` - 操作状态（success/error）
+
+## 业务意义说明
+
+### Spans 业务意义
+
+#### 1. `mcp.client.initialize`
+**业务意义**: 追踪MCP客户端与服务器的初始化过程
+- **用途**: 监控连接建立时间、协议版本兼容性
+- **关键指标**: 初始化耗时、成功率、协议版本信息
+
+#### 2. `mcp.client.list_tools`
+**业务意义**: 追踪获取可用工具列表的操作
+- **用途**: 监控工具发现过程、可用工具数量
+- **关键指标**: 工具列表获取时间、工具数量、工具类型分布
+
+#### 3. `mcp.client.call_tool`
+**业务意义**: 追踪工具调用的执行过程
+- **用途**: 监控工具执行性能、参数传递、结果处理
+- **关键指标**: 工具执行时间、参数大小、结果大小、成功率
+
+#### 4. `mcp.client.read_resource`
+**业务意义**: 追踪资源读取操作
+- **用途**: 监控资源访问性能、内容大小、资源类型
+- **关键指标**: 资源读取时间、资源大小、内容类型分布
+
+#### 5. `mcp.client.send_ping`
+**业务意义**: 追踪连接健康检查
+- **用途**: 监控连接状态、网络延迟
+- **关键指标**: Ping响应时间、连接稳定性
+
+### Metrics 业务意义
+
+#### 1. `mcp.client.operation.duration`
+**业务意义**: 监控所有MCP操作的执行时间
+- **用途**: 性能分析、瓶颈识别、SLA监控
+- **应用场景**: 
+  - 识别慢操作
+  - 性能趋势分析
+  - 容量规划
+
+#### 2. `mcp.client.operation.count`
+**业务意义**: 统计MCP操作的调用次数
+- **用途**: 使用量监控、错误率统计、业务活跃度
+- **应用场景**:
+  - 业务活跃度监控
+  - 错误率计算
+  - 使用模式分析
+
+#### 3. `mcp.client.connection.duration`
+**业务意义**: 监控连接建立时间
+- **用途**: 网络性能分析、连接优化
+- **应用场景**:
+  - 网络延迟监控
+  - 连接池优化
+  - 服务器性能评估
+
+#### 4. `mcp.client.connection.count`
+**业务意义**: 统计连接建立次数
+- **用途**: 连接模式分析、资源使用监控
+- **应用场景**:
+  - 连接频率监控
+  - 资源使用分析
+  - 异常连接检测
+
+### 关键属性业务意义
+
+#### 请求/响应相关
+- **`mcp.request.size`**: 监控请求数据量，用于网络带宽分析和性能优化
+- **`mcp.response.size`**: 监控响应数据量，用于存储和传输成本分析
+- **`mcp.response.type`**: 分析响应类型分布，了解业务模式
+
+#### 工具调用相关
+- **`mcp.tool.name`**: 识别最常用的工具，优化热门工具性能
+- **`mcp.tool.arguments`**: 分析工具调用模式，优化参数传递
+- **`mcp.tools.count`**: 监控可用工具数量，评估服务完整性
+
+#### 资源访问相关
+- **`mcp.resource.uri`**: 分析资源访问模式，优化热门资源
+- **`mcp.resource.size`**: 监控资源大小，用于存储规划
+- **`mcp.contents.count`**: 分析资源内容复杂度
+
+#### 错误处理相关
+- **`mcp.error.message`**: 详细错误信息，用于问题诊断
+- **`mcp.error.type`**: 错误类型分类，用于错误模式分析
+- **`mcp.error.code`**: 标准化错误代码，用于自动化处理
 
 ## 开发
 
