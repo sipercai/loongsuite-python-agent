@@ -11,5 +11,4 @@ def get_timestamp_from_datetime_attr(obj, attr_name):
 
 def get_llm_common_attributes() -> dict:
     return {"callType": "gen_ai",
-            "callKind": "custom_entry",
-            "rpcType": 2100}
+            "callKind": "custom_entry"}

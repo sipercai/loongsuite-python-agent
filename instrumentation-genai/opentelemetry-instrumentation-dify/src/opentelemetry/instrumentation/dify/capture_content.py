@@ -55,5 +55,7 @@ def process_content(content: str | None) -> str:
         return to_size(content)
 
 def to_size(content:str) -> str:
+    if content is None:
+        return "<0size>"
     size = len(content)
     return f"<{size}size>"

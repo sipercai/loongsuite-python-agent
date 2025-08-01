@@ -2,7 +2,7 @@ from logging import getLogger
 from typing import Callable, Tuple, Any, Mapping, Dict
 
 from opentelemetry import trace
-from opentelemetry.trace import Span, Status, StatusCode, Tracer
+from opentelemetry.trace import Status, StatusCode
 
 from opentelemetry.instrumentation.dify.capture_content import set_dict_value
 from opentelemetry.instrumentation.dify.semconv import SpanKindValues
