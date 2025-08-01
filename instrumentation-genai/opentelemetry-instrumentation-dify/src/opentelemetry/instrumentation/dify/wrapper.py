@@ -7,7 +7,8 @@ from opentelemetry.instrumentation.dify.handler._graph_engine_thread_pool_handle
 from opentelemetry.instrumentation.dify.handler._rag_handler import ToolInvokeHandler, RetrieveHandler
 from opentelemetry.instrumentation.dify.handler._rag_handler import VectorSearchHandler
 from opentelemetry.instrumentation.dify.handler._rag_handler import FullTextSearchHandler
-from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
+from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2, \
+    is_wrapper_version_2_for_plugin, is_wrapper_version_1_for_plugin
 
 _WORKFLOW_NODE_MODULE = "core.workflow.nodes.base.node"
 _RAG_RETRIEVAL_MODULE = "core.rag.retrieval.dataset_retrieval"
@@ -149,9 +150,9 @@ def set_workflow_cycle_wrapper_version_1(handler):
 
 
 def set_plugin_wrapper(tracer):
-    if is_wrapper_version_1():
+    if is_wrapper_version_1_for_plugin():
         set_plugin_wrapper_version_1(tracer)
-    elif is_wrapper_version_2():
+    elif is_wrapper_version_2_for_plugin():
         set_plugin_wrapper_version_2(tracer)
     else:
         return

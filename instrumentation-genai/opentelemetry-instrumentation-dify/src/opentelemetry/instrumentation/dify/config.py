@@ -50,11 +50,20 @@ def is_version_supported():
     except:
         return False
 
+
 def is_wrapper_version_1():
     try:
         current_version = dify_config.CURRENT_VERSION
         return (_compare_versions(current_version, "0.8.3") >= 0
                 and _compare_versions(current_version, "1.3.1") <= 0)
+    except:
+        return False
+
+def is_wrapper_version_1_for_plugin():
+    try:
+        current_version = dify_config.CURRENT_VERSION
+        return (_compare_versions(current_version, "0.8.3") >= 0
+                and _compare_versions(current_version, "1.3.1") < 0)
     except:
         return False
 
@@ -65,5 +74,14 @@ def is_wrapper_version_2():
                 and _compare_versions(current_version, "1.4.3") <= 0)
     except:
         return False
+
+def is_wrapper_version_2_for_plugin():
+    try:
+        current_version = dify_config.CURRENT_VERSION
+        return (_compare_versions(current_version, "1.3.1") >= 0
+                and _compare_versions(current_version, "1.4.3") <= 0)
+    except:
+        return False
+
 
 
