@@ -25,7 +25,6 @@ class BaseWrapper(ABC):
             None,
             schema_url="https://opentelemetry.io/schemas/1.11.0",
         )
-        self._logger = getLogger(__name__)
         self._app_list: Dict[str, str] = {}
         self._init_metrics()
 

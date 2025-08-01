@@ -57,7 +57,7 @@ class _BoundedDict(OrderedDict[str, _Value]):
         super().__setitem__(key, value)
 
 
-class AliyunHandler:
+class FlowHandler:
     def __init__(self, tracer: trace_api.Tracer):
         self._tracer = tracer
         self._meter = get_meter(

@@ -1,7 +1,7 @@
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
 from wrapt import wrap_function_wrapper
 
-from opentelemetry.instrumentation.dify.handler._aliyun_handler import AliyunHandler
+from opentelemetry.instrumentation.dify.handler._flow_handler import FlowHandler
 from opentelemetry.instrumentation.dify.handler._plugin_llm_handler import PluginLLMHandler, PluginEmbeddingHandler, PluginRerankHandler
 from opentelemetry.instrumentation.dify.handler._graph_engine_thread_pool_handler import GraphEngineThreadPoolHandler, DatasetRetrievalThreadingHandler
 from opentelemetry.instrumentation.dify.handler._rag_handler import ToolInvokeHandler, RetrieveHandler
@@ -21,7 +21,7 @@ def set_wrappers(tracer) -> None:
 
 
 def set_flow_wrapper(tracer) -> None:
-    handler = AliyunHandler(tracer=tracer)
+    handler = FlowHandler(tracer=tracer)
 
     # WorkflowCycleManage
     # 埋点位置：请求处理线程(generate) 后置 queue_manager监听的workflow相关事件（workflow型应用：workflow/chatflow）
