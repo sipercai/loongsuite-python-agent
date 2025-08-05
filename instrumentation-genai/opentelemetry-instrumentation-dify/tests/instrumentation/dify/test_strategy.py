@@ -24,8 +24,8 @@ class TestWorkflowRunStartStrategy(unittest.TestCase):
         # Initialize the strategy with the mock handler
         self.strategy = WorkflowRunStartStrategy(self.mock_handler)
 
-    @patch("aliyun.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
-    @patch("aliyun.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
+    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
+    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
     def test_handle_workflow_run_start_v1(self, mock_get_timestamp, mock_get_workflow_run_id):
         # Mock run object
         run = MagicMock()
@@ -58,8 +58,8 @@ class TestWorkflowRunStartStrategy(unittest.TestCase):
         )
         self.mock_handler._logger.warning.assert_not_called()
 
-    @patch("aliyun.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
-    @patch("aliyun.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
+    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
+    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
     def test_handle_workflow_run_start_v2(self, mock_get_timestamp, mock_get_workflow_run_id):
         # Mock run object
         run = MagicMock()
@@ -101,7 +101,7 @@ class TestWorkflowRunFailedStrategy(unittest.TestCase):
 
         self.strategy = WorkflowRunFailedStrategy(self.mock_handler)
 
-    @patch("aliyun.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
+    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
     def test_handle_workflow_run_failed_v1(self, mock_get_workflow_run_id):
         run = MagicMock()
         run.app_id = "test_app_id"
@@ -114,7 +114,7 @@ class TestWorkflowRunFailedStrategy(unittest.TestCase):
         self.mock_handler._logger.warning.assert_not_called()
         self.mock_handler._tracer.start_span.assert_not_called()
 
-    @patch("aliyun.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
+    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
     def test_handle_workflow_run_failed_v2(self, mock_get_workflow_run_id):
         run = MagicMock()
         run.inputs = {"sys.app_id": "test_app_id", "sys.user_id": "test_user", "sys.conversation_id": "test_session"}
@@ -138,7 +138,7 @@ class TestWorkflowNodeStartStrategy(unittest.TestCase):
         # Initialize the strategy with the mock handler
         self.strategy = WorkflowNodeStartStrategy(self.mock_handler)
 
-    @patch("aliyun.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
+    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
     def test_workflow_node_start_to_stream_response(self, mock_get_timestamp):
         # Mock event object
         event = MagicMock()
