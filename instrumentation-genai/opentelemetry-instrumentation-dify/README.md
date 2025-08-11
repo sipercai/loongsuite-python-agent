@@ -2,10 +2,10 @@
 
 Dify Python Agent provides observability for Dify applications. This document provides examples of usage and results in the Dify instrumentation. For details on usage and installation of LoongSuite and Jaeger, please refer to [LoongSuite Documentation](https://github.com/alibaba/loongsuite-python-agent/blob/main/README.md).
 
-## Installation Dify Instrumentation
+## Installing Dify Instrumentation
 
 ```shell
-#DifyInstrumentor
+# DifyInstrumentor
 git clone https://github.com/alibaba/loongsuite-python-agent.git
 cd loongsuite-python-agent
 pip install ./instrumentation-genai/opentelemetry-instrumentation-dify
@@ -28,7 +28,7 @@ OTEL_SERVICE_NAME = <service_name>
 
 ### Option 1: Modify Entry Source Code
 
-Modify the project's entry file (`api/app.py`) and add the Loongsuit initialization logic at the beginning of the file:
+Modify the project's entry file (`api/app.py`) and add the LoongSuite initialization logic at the beginning of the file:
 
 ```python
 # Import OpenTelemetry auto instrumentation module
