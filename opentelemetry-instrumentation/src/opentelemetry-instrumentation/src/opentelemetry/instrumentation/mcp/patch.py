@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from opentelemetry import trace
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, Status, StatusCode
-from .utils import sanitize_tool_name, is_content_enabled
+from .utils import sanitize_tool_name, is_content_enabled, is_input_capture_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +46,14 @@ class MCPAttributes:
 
 
 def _calculate_message_size(obj) -> int:
-    """计算消息大小（字节"""
+    """计算消息大小（字节）- 暂时简化实现，后续优化"""
     try:
         if obj is None:
             return 0
         if isinstance(obj, (str, bytes)):
             return len(obj)
+        # 暂时不记录复杂对象的大小，避免json dumps的hack方式
+        # 后续可以通过更合适的方式来实现
         return 0
     except Exception:
         return 0
@@ -219,8 +221,9 @@ def async_mcp_client_call_tool(tracer, event_logger, instruments):
             tool_name = args[0] if args else kwargs.get('name', 'unknown')
             sanitized_tool_name = sanitize_tool_name(tool_name)
             
-            # 在wrapper内部动态检查是否启用内容捕获
+            # 在wrapper内部动态检查是否启用内容捕获和输入参数捕获
             capture_content = is_content_enabled()
+            capture_input = is_input_capture_enabled()
             
             # 根据OpenTelemetry规范：mcp.client.{method}
             with tracer.start_as_current_span(
@@ -231,11 +234,12 @@ def async_mcp_client_call_tool(tracer, event_logger, instruments):
                     span.set_attribute(MCPAttributes.MCP_METHOD_NAME, "call_tool")
                     span.set_attribute(MCPAttributes.MCP_TOOL_NAME, tool_name)
                     
-                    # 记录请求参数详情
-                    tool_args = _extract_tool_arguments(args, kwargs)
-                    if tool_args:
-                        span.set_attribute(MCPAttributes.MCP_TOOL_ARGUMENTS, str(tool_args)[:1000])
-                        span.set_attribute(MCPAttributes.MCP_REQUEST_SIZE, _calculate_message_size(tool_args))
+                    # 根据环境变量开关决定是否记录请求参数详情
+                    if capture_input:
+                        tool_args = _extract_tool_arguments(args, kwargs)
+                        if tool_args:
+                            span.set_attribute(MCPAttributes.MCP_TOOL_ARGUMENTS, str(tool_args)[:1000])
+                            span.set_attribute(MCPAttributes.MCP_REQUEST_SIZE, _calculate_message_size(tool_args))
                     
                     # 如果启用内容捕获，记录工具参数
                     if capture_content and len(args) > 1:
@@ -281,135 +285,6 @@ def async_mcp_client_call_tool(tracer, event_logger, instruments):
                         "mcp.tool.name": tool_name,
                         "status": "error"
                     })
-                    if span.is_recording():
-                        span.set_status(Status(StatusCode.ERROR, str(e)))
-                        span.record_exception(e)
-                        span.set_attribute(MCPAttributes.MCP_ERROR_MESSAGE, str(e))
-                        span.set_attribute(MCPAttributes.MCP_ERROR_TYPE, type(e).__name__)
-                    raise
-        return async_wrapper(*args, **kwargs)
-    return wrapper
-
-
-def async_mcp_client_read_resource(tracer, event_logger, instruments):
-    """异步MCP客户端读取资源包装器"""
-    def wrapper(wrapped, instance, args, kwargs):
-        async def async_wrapper(*a, **kw):
-            resource_uri = args[0] if args else kwargs.get('uri', 'unknown')
-            
-            # 在wrapper内部动态检查是否启用内容捕获和输入参数捕获
-            capture_content = is_content_enabled()
-            capture_input = is_input_capture_enabled()
-            
-            # 根据OpenTelemetry规范：mcp.client.{method}
-            with tracer.start_as_current_span(
-                "mcp.client.read_resource",
-                kind=SpanKind.CLIENT,
-            ) as span:
-                if span.is_recording():
-                    span.set_attribute(MCPAttributes.MCP_METHOD_NAME, "read_resource")
-                    span.set_attribute(MCPAttributes.MCP_RESOURCE_URI, resource_uri)
-                    
-                    # 根据环境变量开关决定是否记录输入参数详情
-                    if capture_input and len(args) > 0:
-                        span.set_attribute("mcp.resource.input.args", str(args)[:1000])
-                    if capture_input and kwargs:
-                        span.set_attribute("mcp.resource.input.kwargs", str(kwargs)[:1000])
-                
-                try:
-                    start_time = time.time()
-                    result = await wrapped(*a, **kw)
-                    duration = time.time() - start_time
-                    
-                    # 记录操作指标
-                    instruments.operation_duration.record(duration, {
-                        "mcp.method.name": "read_resource",
-                        "mcp.resource.uri": resource_uri
-                    })
-                    instruments.operation_count.add(1, {
-                        "mcp.method.name": "read_resource",
-                        "mcp.resource.uri": resource_uri,
-                        "status": "success"
-                    })
-                    
-                    if span.is_recording():
-                        span.set_status(Status(StatusCode.OK))
-                        
-                        # 记录响应详情
-                        response_details = _extract_response_details(result)
-                        span.set_attribute(MCPAttributes.MCP_RESPONSE_SIZE, response_details["response_size"])
-                        span.set_attribute("mcp.response.type", response_details["response_type"])
-                        
-                        if result and hasattr(result, 'contents'):
-                            resource_size = len(result.contents) if result.contents else 0
-                            span.set_attribute(MCPAttributes.MCP_RESOURCE_SIZE, resource_size)
-                            
-                            # 记录内容详情
-                            if result.contents:
-                                span.set_attribute(MCPAttributes.MCP_CONTENTS_COUNT, len(result.contents))
-                                content_types = [type(item).__name__ for item in result.contents]
-                                span.set_attribute(MCPAttributes.MCP_CONTENTS_TYPES, str(content_types)[:500])
-                                
-                                # 如果启用内容捕获，记录内容详情
-                                if capture_content:
-                                    for i, content in enumerate(result.contents):
-                                        if hasattr(content, 'text'):
-                                            span.set_attribute(f"mcp.content.{i}.text", str(content.text)[:500])
-                                        if hasattr(content, 'mimeType'):
-                                            span.set_attribute(f"mcp.content.{i}.mime_type", str(content.mimeType))
-                    
-                    return result
-                except Exception as e:
-                    instruments.operation_count.add(1, {
-                        "mcp.method.name": "read_resource",
-                        "mcp.resource.uri": resource_uri,
-                        "status": "error"
-                    })
-                    if span.is_recording():
-                        span.set_status(Status(StatusCode.ERROR, str(e)))
-                        span.record_exception(e)
-                        span.set_attribute(MCPAttributes.MCP_ERROR_MESSAGE, str(e))
-                        span.set_attribute(MCPAttributes.MCP_ERROR_TYPE, type(e).__name__)
-                    raise
-        return async_wrapper(*args, **kwargs)
-    return wrapper
-
-
-def async_mcp_client_send_ping(tracer, event_logger, instruments):
-    """异步MCP客户端发送ping包装器"""
-    def wrapper(wrapped, instance, args, kwargs):
-        async def async_wrapper(*a, **kw):
-            # 在wrapper内部动态检查是否启用内容捕获
-            capture_content = is_content_enabled()
-            
-            # 根据OpenTelemetry规范：mcp.client.{method}
-            with tracer.start_as_current_span(
-                "mcp.client.send_ping",
-                kind=SpanKind.CLIENT,
-            ) as span:
-                if span.is_recording():
-                    span.set_attribute(MCPAttributes.MCP_METHOD_NAME, "send_ping")
-                
-                try:
-                    start_time = time.time()
-                    result = await wrapped(*a, **kw)
-                    duration = time.time() - start_time
-                    
-                    # 记录操作指标
-                    instruments.operation_duration.record(duration, {"mcp.method.name": "send_ping"})
-                    instruments.operation_count.add(1, {"mcp.method.name": "send_ping", "status": "success"})
-                    
-                    if span.is_recording():
-                        span.set_status(Status(StatusCode.OK))
-                        
-                        # 记录响应详情
-                        response_details = _extract_response_details(result)
-                        span.set_attribute(MCPAttributes.MCP_RESPONSE_SIZE, response_details["response_size"])
-                        span.set_attribute("mcp.response.type", response_details["response_type"])
-                    
-                    return result
-                except Exception as e:
-                    instruments.operation_count.add(1, {"mcp.method.name": "send_ping", "status": "error"})
                     if span.is_recording():
                         span.set_status(Status(StatusCode.ERROR, str(e)))
                         span.record_exception(e)
