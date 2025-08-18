@@ -39,31 +39,32 @@ class MCPClientInstrumentor(BaseInstrumentor):
         meter_provider = kwargs.get("meter_provider")
         self._meter = get_meter(__name__, "", meter_provider, schema_url=Schemas.V1_28_0.value)
         instruments = Instruments(self._meter)
-        # 包装异步方法
+        
+        # 包装异步方法，实现动态切换
         wrap_function_wrapper(
             module="mcp.client.session",
             name="ClientSession.initialize",
-            wrapper=async_mcp_client_initialize(tracer, event_logger, instruments, is_content_enabled()),
+            wrapper=async_mcp_client_initialize(tracer, event_logger, instruments),
         )
         wrap_function_wrapper(
             module="mcp.client.session",
             name="ClientSession.read_resource",
-            wrapper=async_mcp_client_read_resource(tracer, event_logger, instruments, is_content_enabled()),
+            wrapper=async_mcp_client_read_resource(tracer, event_logger, instruments),
         )
         wrap_function_wrapper(
             module="mcp.client.session",
             name="ClientSession.call_tool",
-            wrapper=async_mcp_client_call_tool(tracer, event_logger, instruments, is_content_enabled()),
+            wrapper=async_mcp_client_call_tool(tracer, event_logger, instruments),
         )
         wrap_function_wrapper(
             module="mcp.client.session",
             name="ClientSession.list_tools",
-            wrapper=async_mcp_client_list_tools(tracer, event_logger, instruments, is_content_enabled()),
+            wrapper=async_mcp_client_list_tools(tracer, event_logger, instruments),
         )
         wrap_function_wrapper(
             module="mcp.client.session",
             name="ClientSession.send_ping",
-            wrapper=async_mcp_client_send_ping(tracer, event_logger, instruments, is_content_enabled()),
+            wrapper=async_mcp_client_send_ping(tracer, event_logger, instruments),
         )
 
     def _uninstrument(self, **kwargs):

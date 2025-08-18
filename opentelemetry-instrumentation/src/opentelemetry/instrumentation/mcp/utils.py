@@ -8,6 +8,11 @@ def is_content_enabled() -> bool:
     return os.getenv("OTEL_INSTRUMENTATION_MCP_CAPTURE_CONTENT", "false").lower() == "true"
 
 
+def is_input_capture_enabled() -> bool:
+    """Check if input parameter capture is enabled via environment variable."""
+    return os.getenv("OTEL_INSTRUMENTATION_MCP_CAPTURE_INPUT", "false").lower() == "true"
+
+
 def get_excluded_urls() -> Optional[str]:
     """Get excluded URLs from environment variable."""
     return os.getenv("OTEL_INSTRUMENTATION_MCP_EXCLUDED_URLS")
