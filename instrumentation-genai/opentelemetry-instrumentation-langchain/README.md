@@ -96,10 +96,10 @@ If everything is working correctly, you should see logs similar to th
 
 ## Forwarding OTLP Data to the Backend
 ```shell
-export OTEL_SERVICE_NAME= <service_name>
+export OTEL_SERVICE_NAME=<service_name>
 export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT= <trace_endpoint>
-export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT= <metrics_endpoint>
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=<trace_endpoint>
+export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=<metrics_endpoint>
 
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 
