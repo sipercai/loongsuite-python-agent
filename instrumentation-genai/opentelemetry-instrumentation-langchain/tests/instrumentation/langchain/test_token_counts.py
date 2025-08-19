@@ -1,11 +1,11 @@
 import random
 import pytest
 from opentelemetry.instrumentation.langchain.internal._tracer import _token_counts
-# 新增导入 langchain_core 的 Generation 和 AIMessage
+# Added import of Generation and AIMessage from langchain_core
 from langchain_core.outputs import Generation, ChatGeneration
 from langchain_core.messages import AIMessage
 
-# 定义常量以替代aliyun版本
+# Define constants to replace the aliyun version
 LLM_USAGE_PROMPT_TOKENS = "gen_ai.usage.prompt_tokens"
 LLM_USAGE_COMPLETION_TOKENS = "gen_ai.usage.completion_tokens"
 LLM_USAGE_TOTAL_TOKENS = "gen_ai.usage.total_tokens"

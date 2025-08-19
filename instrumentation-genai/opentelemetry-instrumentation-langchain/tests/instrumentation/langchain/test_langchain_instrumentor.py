@@ -282,7 +282,7 @@ def test_llm_metrics(
     for metric in metric_list:
         if metric.name == "genai_llm_usage_tokens":
             assert len(metric.data.data_points) == 2
-        if metric.name == "'genai_calls_count'":
+        if metric.name == "genai_calls_count":
             assert len(metric.data.data_points) == 3
         if metric.name == "genai_calls_duration_seconds":
             assert len(metric.data.data_points) == 3
