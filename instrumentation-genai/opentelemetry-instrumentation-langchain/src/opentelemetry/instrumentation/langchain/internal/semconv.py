@@ -71,7 +71,6 @@ LLM_RESPONSE_MODEL_NAME = "gen_ai.response.model"
 LLM_RESPONSE_FINISH_REASON = "gen_ai.response.finish_reasons"
 
 LLM_PROMPTS = "gen_ai.prompt"
-CONTENT = "content"
 
 LLM_OUTPUT_MESSAGES = "gen_ai.completion"
 

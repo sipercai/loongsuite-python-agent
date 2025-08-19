@@ -1,6 +1,6 @@
 """
-测试LangChain tracer的单例行为，确保链路连续性
-验证_BaseCallbackManagerInit修改后不会因为创建新实例而丢失父子关系
+Test the singleton behavior of the LangChain tracer to ensure trace continuity.
+Verify that modifications to _BaseCallbackManagerInit do not break parent-child relationships when new instances are created.
 """
 import uuid
 from typing import Generator
