@@ -9,7 +9,6 @@ from langchain_core.messages import (
     ChatMessage
 )
 
-# 定义常量以替代aliyun.semconv.trace中的引用
 class MessageAttributes:
     MESSAGE_ROLE = "role"
     MESSAGE_CONTENT = "content"

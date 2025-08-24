@@ -3,7 +3,6 @@ import json
 from unittest.mock import Mock
 from opentelemetry.instrumentation.langchain.internal._tracer import _metadata
 
-# 定义常量以替代aliyun.semconv.trace中的引用
 LLM_SESSION_ID = "gen_ai.session.id"
 LLM_USER_ID = "gen_ai.user.id"
 METADATA = "metadata"

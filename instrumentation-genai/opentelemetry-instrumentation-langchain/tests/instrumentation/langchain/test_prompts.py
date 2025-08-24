@@ -1,7 +1,6 @@
 import pytest
 from opentelemetry.instrumentation.langchain.internal._tracer import _prompts
 
-# 定义常量以替代aliyun.semconv.trace中的引用
 class SpanAttributes:
     GEN_AI_PROMPT = "gen_ai.prompt"
     CONTENT = "content"

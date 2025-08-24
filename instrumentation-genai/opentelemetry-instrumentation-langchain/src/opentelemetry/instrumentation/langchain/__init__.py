@@ -43,7 +43,6 @@ class _BaseCallbackManagerInit:
     __slots__ = ("_tracer_instance",)
 
     def __init__(self, tracer: trace_api.Tracer, meter: Meter, cls: Type["LoongsuiteTracer"]):
-        # 直接创建实例，就像OpenInference一样
         self._tracer_instance = cls(tracer=tracer, meter=meter)
 
     def __call__(

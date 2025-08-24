@@ -5,7 +5,6 @@ from opentelemetry.instrumentation.langchain.internal._tracer import _token_coun
 from langchain_core.outputs import Generation, ChatGeneration
 from langchain_core.messages import AIMessage
 
-# Define constants to replace the aliyun version
 LLM_USAGE_PROMPT_TOKENS = "gen_ai.usage.prompt_tokens"
 LLM_USAGE_COMPLETION_TOKENS = "gen_ai.usage.completion_tokens"
 LLM_USAGE_TOTAL_TOKENS = "gen_ai.usage.total_tokens"
