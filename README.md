@@ -7,11 +7,20 @@ Loongsuite Python Agent is a key component of LoongSuite, Alibaba's unified obse
 LoongSuite includes the following key components:
 * [LoongCollector](https://github.com/alibaba/loongcollector): universal node agent, which prodivdes log collection, prometheus metric collection, and network and security collection capabilities based on eBPF.
 * [LoongSuite Python Agent](https://github.com/alibaba/loongsuite-python-agent): a process agent providing instrumentaion for python applications.
-* [LoongSuite Go Agent](https://github.com/alibaba/opentelemetry-go-auto-instrumentation): a process agent for golang with compile time instrumentation.
+* [LoongSuite Go Agent](https://github.com/alibaba/loongsuite-go-agent): a process agent for golang with compile time instrumentation.
+* [LoongSuite Java Agent](https://github.com/alibaba/loongsuite-java-agent): a process agent for Java applications.
 * Other upcoming language agent.
 
 Loongsuite Python Agent is also a customized distribution of upstream [OTel Python Agent](https://github.com/open-telemetry/opentelemetry-python-contrib), with enhanced support for popular AI agent framework. 
 The implementation follows the latest GenAI [semantic conventions](https://github.com/open-telemetry/semantic-conventions).
+
+## Supported AI Frameworks and components
+* [AgentScope](https://github.com/agentscope-ai/agentscope)
+* [Dify](https://github.com/langgenius/dify)
+* [LangChain](https://github.com/langchain-ai/langchain)
+* [MCP Client](https://github.com/modelcontextprotocol/python-sdk)
+* [Agno](https://github.com/agno-agi/agno)
+* [OpenAI](https://github.com/openai/openai-python)
 
 ## Quick start
 
@@ -79,7 +88,7 @@ for _ in range(3):
 Run the `demo.py` script using OpenTelemetry
 
 ```shell
-opentelemetry-instrument \
+loongsuite-instrument \
 
 --traces_exporter console \
 
@@ -191,7 +200,7 @@ nohup ./loongcollector > stdout.log 2> stderr.log &
 ### Run the Agentscope Example
 
 ```plaintext
-opentelemetry-instrument \
+loongsuite-instrument \
 
 --exporter_otlp_protocol grpc \
 
@@ -218,9 +227,13 @@ We are looking forward to your feedback and suggestions. You can join
 our [DingTalk user group](https://qr.dingtalk.com/action/joingroup?code=v1,k1,VaFSqbGiRY0iAL3GGd18DRWDyb1HpgOuyfDzsX3Drng=&_dt_no_comment=1&origin=11?) and [DingTalk developer group](https://qr.dingtalk.com/action/joingroup?code=v1,k1,mexukXI88tZ1uiuLYkKhdaETUx/K59ncyFFFG5Voe9s=&_dt_no_comment=1&origin=11?)
 to engage with us.
 
-| User Group              | Developer Group           |
-|-------------------------|---------------------------|
-| <img src="docs/_assets/img/dingtalk-chat-group.jpg" height="150"> | <img src="docs/_assets/img/dev-group.jpg" height="150"> |
+| LoongCollector SIG | LoongSuite Python SIG |
+|----|----|
+| <img src="docs/_assets/img/loongcollector-sig-dingtalk.jpg" height="150"> | <img src="docs/_assets/img/loongsuite-python-sig-dingtalk.jpg" height="150"> |
+
+| LoongCollector Go SIG | LoongSuite Java SIG |
+|----|----|
+| <img src="docs/_assets/img/loongsuite-go-sig-dingtalk.png" height="150"> | <img src="docs/_assets/img/loongsuite-java-sig-dingtalk.jpg" height="150"> |
 
 ## Resoures
 * AgentScope: https://github.com/modelscope/agentscope
