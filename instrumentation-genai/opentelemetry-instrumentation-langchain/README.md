@@ -118,6 +118,10 @@ opentelemetry-instrument <your_run_command>
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## Acknowledgments
+
+This instrumentation was inspired by and builds upon the excellent work done by the [OpenInference](https://github.com/Arize-ai/openinference) project. We acknowledge their contributions to the OpenTelemetry instrumentation ecosystem for AI/ML frameworks.
+
 ## License
 
 This project is licensed under the Apache License 2.0.
