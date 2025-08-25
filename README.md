@@ -15,12 +15,12 @@ Loongsuite Python Agent is also a customized distribution of upstream [OTel Pyth
 The implementation follows the latest GenAI [semantic conventions](https://github.com/open-telemetry/semantic-conventions).
 
 ## Supported AI Frameworks and components
-* [AgentScope](https://github.com/agentscope-ai/agentscope)
-* [Dify](https://github.com/langgenius/dify)
-* [LangChain](https://github.com/langchain-ai/langchain)
+* [AgentScope](https://github.com/agentscope-ai/agentscope): [Guide](instrumentation-genai/opentelemetry-instrumentation-agentscope/README.md)
+* [Dify](https://github.com/langgenius/dify): [Guide](instrumentation-genai/opentelemetry-instrumentation-dify/README.md)
+* [LangChain](https://github.com/langchain-ai/langchain): [Guide](instrumentation-genai/opentelemetry-instrumentation-langchain/README.md)
 * [MCP Client](https://github.com/modelcontextprotocol/python-sdk)
-* [Agno](https://github.com/agno-agi/agno)
-* [OpenAI](https://github.com/openai/openai-python)
+* [Agno](https://github.com/agno-agi/agno): [Guide](instrumentation-genai/opentelemetry-instrumentation-agno/README.md)
+* [OpenAI](https://github.com/openai/openai-python): [Guide](instrumentation-genai/opentelemetry-instrumentation-openai-v2/README.rst)
 
 ## Quick start
 
@@ -224,8 +224,7 @@ Access the Jaeger UI to view the collected trace data. You should no
 ## Community
 
 We are looking forward to your feedback and suggestions. You can join
-our [DingTalk user group](https://qr.dingtalk.com/action/joingroup?code=v1,k1,VaFSqbGiRY0iAL3GGd18DRWDyb1HpgOuyfDzsX3Drng=&_dt_no_comment=1&origin=11?) and [DingTalk developer group](https://qr.dingtalk.com/action/joingroup?code=v1,k1,mexukXI88tZ1uiuLYkKhdaETUx/K59ncyFFFG5Voe9s=&_dt_no_comment=1&origin=11?)
-to engage with us.
+our [DingTalk group](https://qr.dingtalk.com/action/joingroup?code=v1,k1,mexukXI88tZ1uiuLYkKhdaETUx/K59ncyFFFG5Voe9s=&_dt_no_comment=1&origin=11?) or scan the QR code below to engage with us.
 
 | LoongCollector SIG | LoongSuite Python SIG |
 |----|----|
