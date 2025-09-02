@@ -120,7 +120,7 @@ Demo completed!
 ```
 
 
-After [setting up jaeger](https://www.jaegertracing.io/docs/1.6/getting-started/) and export data to jaeger by folling commands:
+After [setting up jaeger](https://www.jaegertracing.io/docs/1.6/getting-started/) and export data to jaeger by following commands:
 
 ```bash
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
