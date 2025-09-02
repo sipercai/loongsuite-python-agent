@@ -20,7 +20,7 @@ cd loongsuite-python-agent
 pip install ./instrumentation-genai/opentelemetry-instrumentation-mcp
 ```
 
-## Usage
+## Collect Data
 
 Here's a simple demonstration of MCP instrumentation. The demo uses:
 
@@ -29,8 +29,23 @@ Here's a simple demonstration of MCP instrumentation. The demo uses:
 
 ### Running the Demo
 
+#### Option 1: Using OpenTelemetry
+
 ```bash
-opentelemetry-instrument \
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+
+loongsuite-instrument \
+--traces_exporter console \
+--service_name demo-mcp-client \
+python examples/simple_client.py
+```
+
+#### Option 2: Using Loongsuite
+
+```bash
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+
+loongsuite-instrument \
 --traces_exporter console \
 --service_name demo-mcp-client \
 python examples/simple_client.py
@@ -104,10 +119,23 @@ Demo completed!
 }
 ```
 
-Traces on the jager UI:  
+
+After [setting up jaeger](https://www.jaegertracing.io/docs/1.6/getting-started/) and export data to jager by folling commands:
+
+```bash
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+
+loongsuite-instrument \
+--exporter_otlp_protocol grpc \
+--traces_exporter otlp \
+--exporter_otlp_insecure true \
+--exporter_otlp_endpoint YOUR-END-POINT \
+python examples/simple_client.py
+```
+
+You can see traces on the jaeger UI as follows:  
 
 ![demo](_assets/image/demo.png)
-
 
 ## References
 
