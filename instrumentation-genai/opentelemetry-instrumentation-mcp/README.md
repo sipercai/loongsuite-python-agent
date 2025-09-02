@@ -34,7 +34,7 @@ Here's a simple demonstration of MCP instrumentation. The demo uses:
 ```bash
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 
-loongsuite-instrument \
+opentelemetry-instrument \
 --traces_exporter console \
 --service_name demo-mcp-client \
 python examples/simple_client.py
