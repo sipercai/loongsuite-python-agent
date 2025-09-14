@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 """Wrapper classes for AgentScope v1.x instrumentation with init hijacking."""
 
-import asyncio
+from asyncio.windows_events import NULL
 from functools import wraps
 from typing import Any, Callable, Tuple, Mapping, Dict, OrderedDict
 from abc import ABC
 from logging import getLogger
-from inspect import signature
 from typing import (
     Generator,
     AsyncGenerator,
@@ -19,15 +18,28 @@ from opentelemetry._events import EventLogger
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
-from opentelemetry.semconv._incubating.attributes import (
-    server_attributes as ServerAttributes,
+
+from ..shared import (
+    LLMRequestAttributes,
+    LLMResponseAttributes,
+    EmbeddingRequestAttributes,
+    EmbeddingResponseAttributes,
+    AgentRequestAttributes,
+    AgentResponseAttributes,
+    GenAiOutputType,
+    CommonAttributes,
+    LLMAttributes,
+    EmbeddingAttributes,
+    AgentAttributes,
+    get_telemetry_options,
 )
 
 from .utils import (
     _serialize_to_str,
-    _trace_async_generator_wrapper
+    _trace_async_generator_wrapper,
+    _ot_input_messages,
+    _ot_output_messages,
 )
-from opentelemetry.instrumentation.agentscope.utils import is_content_enabled
 
 from agentscope.agent import AgentBase
 from agentscope.model import ChatModelBase, ChatResponse
@@ -35,18 +47,6 @@ from agentscope.embedding import EmbeddingModelBase, EmbeddingResponse
 
 
 logger = getLogger(__name__)
-
-
-def bind_arguments(method: Callable[..., Any], instance: Any, *args: Any, **kwargs: Any) -> Dict[str, Any]:
-    """绑定方法参数到字典中。"""
-    method_signature = signature(method)
-    bound_arguments = method_signature.bind(instance, *args, **kwargs)
-    bound_arguments.apply_defaults()
-    arguments = bound_arguments.arguments
-    arguments = OrderedDict(
-        {key: value for key, value in arguments.items() if key != "self" and value is not None and value != {}}
-    )
-    return arguments
 
 
 class _WithTracer(ABC):
@@ -113,20 +113,30 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
                     type(call_self),
                 )
                 return await original_call(call_self, *call_args, **call_kwargs)
+            
+            # 创建LLM请求属性
+            request_attrs = LLMRequestAttributes(
+                request_model=getattr(call_self, "model_name", "unknown"),
+                request_max_tokens=call_kwargs.get("max_tokens"),
+                request_temperature=call_kwargs.get("temperature"),
+                request_top_p=call_kwargs.get("top_p"),
+                request_top_k=call_kwargs.get("top_k"),
+                request_stop_sequences=call_kwargs.get("stop_sequences"),
+            )
+            
+            # 获取基础span属性
+            input_attributes = request_attrs.get_span_attributes()
+            
+            # 添加输入消息（符合GenAI规范）
+            telemetry_options = get_telemetry_options()
+            input_messages = _ot_input_messages(call_kwargs, telemetry_options)
 
-            # Prepare the attributes for the span
-            attributes = {
-                GenAIAttributes.GEN_AI_REQUEST_MODEL: getattr(call_self, "model_name", "unknown"),
-                "gen_ai.input.messages":[{
-                        "args": call_args,
-                        "kwargs": call_kwargs,
-                    }]
-            }
-
+            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = input_messages
+        
             # Begin the llm call span
             with self._tracer.start_as_current_span(
                 f"{call_self.__class__.__name__}.__call__",
-                attributes=attributes,
+                attributes=input_attributes,
                 end_on_exit=False,
             ) as span:
                 try:
@@ -137,10 +147,22 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
                     if isinstance(res, AsyncGenerator):
                         return _trace_async_generator_wrapper(res, span)
 
-                    # non-generator result
-                    span.set_attributes(
-                        {"gen_ai.output.messages": _serialize_to_str(res)},
+                    # TODO: handle output messages
+                    # 创建 LLM 响应属性
+                    response_attrs = LLMResponseAttributes(
+                        output_type=GenAiOutputType.TEXT,
+                        response_finish_reasons=["stop"],
                     )
+                    
+                    # 设置响应属性
+                    span.set_attributes(response_attrs.get_span_attributes())
+    
+                    output_messages = _ot_output_messages(res, telemetry_options)
+                    if output_messages:
+                        span.set_attributes({
+                            CommonAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(output_messages)
+                        })
+                    
                     span.set_status(StatusCode.OK)
                     span.end()
                     return res
@@ -225,7 +247,7 @@ class AgentScopeV1EmbeddingModelWrapper(_WithTracer):
                     "kwargs": call_kwargs,
                 }]
             }
-
+            # TODO: handle embedding messages
             # Begin the embedding call span
             with self._tracer.start_as_current_span(
                 f"{call_self.__class__.__name__}.{original_call.__name__}",
