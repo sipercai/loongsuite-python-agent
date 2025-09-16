@@ -13,14 +13,8 @@ from opentelemetry.semconv._incubating.attributes import (
 )
 
 from .constants import (
-    GenAiOperationName,
-    GenAiOutputType,
-    GenAiSpanKind,
     CommonAttributes,
-    LLMAttributes,
-    EmbeddingAttributes,
-    AgentAttributes,
-    ToolAttributes,
+    GenAiSpanKind,
 )
 
 
@@ -43,6 +37,7 @@ class LLMRequestAttributes:
     request_temperature: Optional[float] = None
     request_stop_sequences: Optional[List[str]] = None
     system_instructions: Optional[Any] = None
+    request_tool_definitions: Optional[List[Dict[str, Any]]] = None
     
     def get_span_attributes(self) -> Dict[str, Any]:
         """获取用于 span 的属性"""
@@ -76,7 +71,9 @@ class LLMRequestAttributes:
         if self.request_stop_sequences is not None:
             attributes[GenAIAttributes.GEN_AI_REQUEST_STOP_SEQUENCES] = self.request_stop_sequences
         if self.system_instructions is not None:
-            attributes[CommonAttributes.GEN_AI_SYSTEM_INSTRUCTIONS] = self.system_instructions
+            attributes[GenAIAttributes.GEN_AI_SYSTEM_INSTRUCTIONS] = self.system_instructions
+        if self.request_tool_definitions is not None:
+            attributes[CommonAttributes.GEN_AI_REQUEST_TOOL_DEFINITIONS] = self.request_tool_definitions
             
         return attributes
     
@@ -93,7 +90,7 @@ class LLMResponseAttributes:
     """
     response_id: Optional[str] = None
     response_model: Optional[str] = None
-    output_type: Optional[Union[GenAiOutputType, str]] = None
+    output_type: Optional[str] = None
     response_finish_reasons: Optional[List[str]] = None
     usage_input_tokens: Optional[int] = None
     usage_output_tokens: Optional[int] = None
@@ -107,10 +104,7 @@ class LLMResponseAttributes:
         if self.response_model is not None:
             attributes[GenAIAttributes.GEN_AI_RESPONSE_MODEL] = self.response_model
         if self.output_type is not None:
-            attributes[GenAIAttributes.GEN_AI_OUTPUT_TYPE] = (
-                self.output_type.value if isinstance(self.output_type, GenAiOutputType)
-                else self.output_type
-            )
+            attributes[GenAIAttributes.GEN_AI_OUTPUT_TYPE] = self.output_type
         if self.response_finish_reasons is not None:
             attributes[GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS] = self.response_finish_reasons
         if self.usage_input_tokens is not None:
@@ -132,10 +126,9 @@ class EmbeddingRequestAttributes:
     用于存储和管理 Embedding 请求相关的 GenAI 语义约定属性。
     """
     provider_name: Optional[str] = None
-    operation_name: Optional[Union[GenAiOperationName, str]] = None
+    operation_name: Optional[str] = None
     request_model: Optional[str] = None
     request_encoding_formats: Optional[List[str]] = None
-    request_dimension_count: Optional[int] = None
     
     def get_span_attributes(self) -> Dict[str, Any]:
         """获取用于 span 的属性"""
@@ -145,40 +138,13 @@ class EmbeddingRequestAttributes:
         attributes[CommonAttributes.GEN_AI_SPAN_KIND] = GenAiSpanKind.EMBEDDING.value
         
         if self.provider_name is not None:
-            attributes[CommonAttributes.GEN_AI_PROVIDER_NAME] = self.provider_name
+            attributes[GenAIAttributes.GEN_AI_PROVIDER_NAME] = self.provider_name
         if self.operation_name is not None:
-            attributes[CommonAttributes.GEN_AI_OPERATION_NAME] = (
-                self.operation_name.value if isinstance(self.operation_name, GenAiOperationName)
-                else self.operation_name
-            )
+            attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] = self.operation_name
         if self.request_model is not None:
-            attributes[EmbeddingAttributes.GEN_AI_REQUEST_MODEL] = self.request_model
+            attributes[GenAIAttributes.GEN_AI_REQUEST_MODEL] = self.request_model
         if self.request_encoding_formats is not None:
-            attributes[EmbeddingAttributes.GEN_AI_REQUEST_ENCODING_FORMATS] = self.request_encoding_formats
-        if self.request_dimension_count is not None:
-            attributes[EmbeddingAttributes.GEN_AI_EMBEDDINGS_DIMENSION_COUNT] = self.request_dimension_count
-            
-        return attributes
-    
-    def get_event_attributes(self) -> Dict[str, Any]:
-        """获取用于事件的属性"""
-        return self.get_span_attributes()
-
-
-@dataclass
-class EmbeddingResponseAttributes:
-    """Embedding 响应属性类
-    
-    用于存储和管理 Embedding 响应相关的 GenAI 语义约定属性。
-    """
-    usage_input_tokens: Optional[int] = None
-    
-    def get_span_attributes(self) -> Dict[str, Any]:
-        """获取用于 span 的属性"""
-        attributes = {}
-        
-        if self.usage_input_tokens is not None:
-            attributes[EmbeddingAttributes.GEN_AI_USAGE_INPUT_TOKENS] = self.usage_input_tokens
+            attributes[GenAIAttributes.GEN_AI_REQUEST_ENCODING_FORMATS] = self.request_encoding_formats
             
         return attributes
     
@@ -197,7 +163,7 @@ class AgentRequestAttributes:
     agent_name: Optional[str] = None
     agent_description: Optional[str] = None
     conversation_id: Optional[str] = None
-    operation_name: Optional[Union[GenAiOperationName, str]] = None
+    operation_name: Optional[str] = None
     
     def get_span_attributes(self) -> Dict[str, Any]:
         """获取用于 span 的属性"""
@@ -207,45 +173,15 @@ class AgentRequestAttributes:
         attributes[CommonAttributes.GEN_AI_SPAN_KIND] = GenAiSpanKind.AGENT.value
         
         if self.agent_id is not None:
-            attributes[AgentAttributes.GEN_AI_AGENT_ID] = self.agent_id
-            attributes[AgentAttributes.AGENTSCOPE_AGENT_ID] = self.agent_id
+            attributes[GenAIAttributes.GEN_AI_AGENT_ID] = self.agent_id
         if self.agent_name is not None:
-            attributes[AgentAttributes.GEN_AI_AGENT_NAME] = self.agent_name
-            attributes[AgentAttributes.AGENTSCOPE_AGENT_NAME] = self.agent_name
+            attributes[GenAIAttributes.GEN_AI_AGENT_NAME] = self.agent_name
         if self.agent_description is not None:
-            attributes[AgentAttributes.GEN_AI_AGENT_DESCRIPTION] = self.agent_description
+            attributes[GenAIAttributes.GEN_AI_AGENT_DESCRIPTION] = self.agent_description
         if self.conversation_id is not None:
-            attributes[AgentAttributes.GEN_AI_CONVERSATION_ID] = self.conversation_id
+            attributes[GenAIAttributes.GEN_AI_CONVERSATION_ID] = self.conversation_id
         if self.operation_name is not None:
-            operation_value = (
-                self.operation_name.value if isinstance(self.operation_name, GenAiOperationName)
-                else self.operation_name
-            )
-            attributes[CommonAttributes.GEN_AI_OPERATION_NAME] = operation_value
-            attributes[AgentAttributes.AGENTSCOPE_OPERATION_NAME] = operation_value
-            
-        return attributes
-    
-    def get_event_attributes(self) -> Dict[str, Any]:
-        """获取用于事件的属性"""
-        return self.get_span_attributes()
-
-
-@dataclass
-class AgentResponseAttributes:
-    """Agent 响应属性类
-    
-    用于存储和管理 Agent 响应相关的 GenAI 语义约定属性。
-    """
-    # 当前 Agent 响应主要通过消息内容体现，可能的扩展属性
-    response_type: Optional[str] = None
-    
-    def get_span_attributes(self) -> Dict[str, Any]:
-        """获取用于 span 的属性"""
-        attributes = {}
-        
-        if self.response_type is not None:
-            attributes["agentscope.response.type"] = self.response_type
+            attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] = self.operation_name
             
         return attributes
     
@@ -263,7 +199,9 @@ class ToolRequestAttributes:
     tool_call_id: Optional[str] = None
     tool_name: Optional[str] = None
     tool_description: Optional[str] = None
+    tool_call_arguments: Optional[str] = None
     tool_type: Optional[str] = None
+    operation_name: Optional[str] = None
     
     def get_span_attributes(self) -> Dict[str, Any]:
         """获取用于 span 的属性"""
@@ -271,38 +209,22 @@ class ToolRequestAttributes:
         
         # 设置 span 类型
         attributes[CommonAttributes.GEN_AI_SPAN_KIND] = GenAiSpanKind.TOOL.value
-        attributes[CommonAttributes.GEN_AI_OPERATION_NAME] = GenAiOperationName.TOOL_CALL.value
         
         if self.tool_call_id is not None:
-            attributes[ToolAttributes.GEN_AI_TOOL_CALL_ID] = self.tool_call_id
+            attributes[GenAIAttributes.GEN_AI_TOOL_CALL_ID] = self.tool_call_id
         if self.tool_name is not None:
-            attributes[ToolAttributes.GEN_AI_TOOL_NAME] = self.tool_name
+            attributes[GenAIAttributes.GEN_AI_TOOL_NAME] = self.tool_name
         if self.tool_description is not None:
-            attributes[ToolAttributes.GEN_AI_TOOL_DESCRIPTION] = self.tool_description
+            attributes[GenAIAttributes.GEN_AI_TOOL_DESCRIPTION] = self.tool_description
+        if self.tool_call_arguments is not None:
+            # attributes[GenAIAttributes.GEN_AI_TOOL_CALL_ARGUMENTS] = self.tool_call_arguments
+            # GenAIAttributes.GEN_AI_TOOL_CALL_ARGUMENTS 未合入sdk
+            attributes[CommonAttributes.GEN_AI_TOOL_CALL_ARGUMENTS] = self.tool_call_arguments
         if self.tool_type is not None:
-            attributes[ToolAttributes.GEN_AI_TOOL_TYPE] = self.tool_type
-            
-        return attributes
-    
-    def get_event_attributes(self) -> Dict[str, Any]:
-        """获取用于事件的属性"""
-        return self.get_span_attributes()
+            attributes[GenAIAttributes.GEN_AI_TOOL_TYPE] = self.tool_type
+        if self.operation_name is not None:
+            attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] = self.operation_name
 
-
-@dataclass
-class ToolResponseAttributes:
-    """Tool 响应属性类
-    
-    用于存储和管理 Tool 响应相关的 GenAI 语义约定属性。
-    """
-    tool_call_id: Optional[str] = None
-    
-    def get_span_attributes(self) -> Dict[str, Any]:
-        """获取用于 span 的属性"""
-        attributes = {}
-        
-        if self.tool_call_id is not None:
-            attributes[ToolAttributes.GEN_AI_TOOL_CALL_ID] = self.tool_call_id
             
         return attributes
     

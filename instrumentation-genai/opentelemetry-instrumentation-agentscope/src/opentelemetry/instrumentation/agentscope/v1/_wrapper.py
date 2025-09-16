@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 """Wrapper classes for AgentScope v1.x instrumentation with init hijacking."""
 
-from asyncio.windows_events import NULL
 from functools import wraps
-from typing import Any, Callable, Tuple, Mapping, Dict, OrderedDict
+from typing import Any, Callable, Tuple, Mapping
 from abc import ABC
 from logging import getLogger
 from typing import (
     Generator,
     AsyncGenerator,
 )
+import inspect
 
 from agentscope.message import Msg
+from agentscope.agent import AgentBase
+from agentscope.model import ChatModelBase, ChatResponse
+from agentscope.embedding import EmbeddingModelBase, EmbeddingResponse
+
 from opentelemetry import trace
-from opentelemetry.trace import Span, SpanKind, Tracer, INVALID_SPAN, StatusCode
+from opentelemetry.trace import StatusCode
 from opentelemetry._events import EventLogger
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
@@ -23,14 +27,7 @@ from ..shared import (
     LLMRequestAttributes,
     LLMResponseAttributes,
     EmbeddingRequestAttributes,
-    EmbeddingResponseAttributes,
     AgentRequestAttributes,
-    AgentResponseAttributes,
-    GenAiOutputType,
-    CommonAttributes,
-    LLMAttributes,
-    EmbeddingAttributes,
-    AgentAttributes,
     get_telemetry_options,
 )
 
@@ -39,11 +36,8 @@ from .utils import (
     _trace_async_generator_wrapper,
     _ot_input_messages,
     _ot_output_messages,
+    _get_tool_definitions,
 )
-
-from agentscope.agent import AgentBase
-from agentscope.model import ChatModelBase, ChatResponse
-from agentscope.embedding import EmbeddingModelBase, EmbeddingResponse
 
 
 logger = getLogger(__name__)
@@ -104,24 +98,17 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
             **call_kwargs: Any,
         ) -> ChatResponse | AsyncGenerator[ChatResponse, None]:
             """The wrapper function for tracing the LLM call."""
-
-            if not isinstance(call_self, ChatModelBase):
-                logger.warning(
-                    "Skipping tracing for %s as the first argument"
-                    "is not an instance of ChatModelBase, but %s",
-                    original_call.__name__,
-                    type(call_self),
-                )
-                return await original_call(call_self, *call_args, **call_kwargs)
             
             # 创建LLM请求属性
             request_attrs = LLMRequestAttributes(
-                request_model=getattr(call_self, "model_name", "unknown"),
-                request_max_tokens=call_kwargs.get("max_tokens"),
-                request_temperature=call_kwargs.get("temperature"),
-                request_top_p=call_kwargs.get("top_p"),
-                request_top_k=call_kwargs.get("top_k"),
-                request_stop_sequences=call_kwargs.get("stop_sequences"),
+                operation_name = GenAIAttributes.GenAiOperationNameValues.CHAT.value, 
+                request_model = getattr(call_self, "model_name", "unknown_model"),
+                request_max_tokens = call_kwargs.get("max_tokens"),
+                request_temperature = call_kwargs.get("temperature"),
+                request_top_p = call_kwargs.get("top_p"),
+                request_top_k = call_kwargs.get("top_k"),
+                request_stop_sequences = call_kwargs.get("stop_sequences"),
+                request_tool_definitions = _get_tool_definitions(tools=call_kwargs.get("tools"), tool_choice=call_kwargs.get("tool_choice"), structured_model=call_kwargs.get("structured_model")),
             )
             
             # 获取基础span属性
@@ -131,11 +118,11 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
             telemetry_options = get_telemetry_options()
             input_messages = _ot_input_messages(call_kwargs, telemetry_options)
 
-            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = input_messages
+            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str(input_messages)
         
             # Begin the llm call span
             with self._tracer.start_as_current_span(
-                f"{call_self.__class__.__name__}.__call__",
+                f"{request_attrs.operation_name or "unknown_operation"} {request_attrs.request_model or "unknown_model"}",
                 attributes=input_attributes,
                 end_on_exit=False,
             ) as span:
@@ -150,7 +137,7 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
                     # TODO: handle output messages
                     # 创建 LLM 响应属性
                     response_attrs = LLMResponseAttributes(
-                        output_type=GenAiOutputType.TEXT,
+                        output_type=GenAIAttributes.GenAiOutputTypeValues.TEXT.value,
                         response_finish_reasons=["stop"],
                     )
                     
@@ -160,7 +147,7 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
                     output_messages = _ot_output_messages(res, telemetry_options)
                     if output_messages:
                         span.set_attributes({
-                            CommonAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(output_messages)
+                            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(output_messages)
                         })
                     
                     span.set_status(StatusCode.OK)
@@ -229,29 +216,26 @@ class AgentScopeV1EmbeddingModelWrapper(_WithTracer):
             **call_kwargs: Any,
         ) -> EmbeddingResponse:
             """包装后的__call__方法，添加追踪逻辑。"""
-            
-            if not isinstance(call_self, EmbeddingModelBase):
-                logger.warning(
-                    "Skipping tracing for %s as the first argument "
-                    "does not have model_name attribute, but %s",
-                    original_call.__name__,
-                    type(call_self),
-                )
-                return await original_call(call_self, *call_args, **call_kwargs)
 
             # Prepare the attributes for the span
-            attributes = {
-                GenAIAttributes.GEN_AI_REQUEST_MODEL: getattr(call_self, "model_name", "unknown"),
-                "gen_ai.input.messages": [{
-                    "args": call_args,
-                    "kwargs": call_kwargs,
-                }]
-            }
-            # TODO: handle embedding messages
+            # 创建embedding请求属性
+            request_attrs = EmbeddingRequestAttributes(
+                operation_name = GenAIAttributes.GenAiOperationNameValues.EMBEDDINGS.value, 
+                request_model = getattr(call_self, "model_name", "unknown_model"),
+                request_encoding_formats = call_kwargs.get("encoding_formats"),
+            )
+            
+            # 获取基础span属性
+            input_attributes = request_attrs.get_span_attributes()
+            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str({
+                "args": call_args,
+                "kwargs": call_kwargs,
+            })
+
             # Begin the embedding call span
             with self._tracer.start_as_current_span(
-                f"{call_self.__class__.__name__}.{original_call.__name__}",
-                attributes=attributes,
+                f"{request_attrs.operation_name or "unknown_operation"} {request_attrs.request_model or "unknown_model"}",
+                attributes=input_attributes,
                 end_on_exit=False,
             ) as span:
                 try:
@@ -259,9 +243,11 @@ class AgentScopeV1EmbeddingModelWrapper(_WithTracer):
                     res = await original_call(call_self, *call_args, **call_kwargs)
 
                     # non-generator result
-                    span.set_attributes(
-                        {"gen_ai.output.messages": _serialize_to_str(res)},
-                    )
+                    span.set_attribute(key=GenAIAttributes.GEN_AI_OUTPUT_MESSAGES, value=_serialize_to_str(res))
+                    if hasattr(res, "embeddings") and res.embeddings:
+                        # TODO : semantic
+                        span.set_attribute(key="gen_ai.embeddings.dimension.count", value=len(res.embeddings[0]))
+
                     span.set_status(StatusCode.OK)
                     span.end()
                     return res
@@ -324,31 +310,26 @@ class AgentScopeV1AgentWrapper(_WithTracer):
             **reply_kwargs: Any,
         ) -> Msg:
             """包装后的reply方法，添加追踪逻辑。"""
-            
-            if not isinstance(reply_self, AgentBase):
-                logger.warning(
-                    "Skipping tracing for %s as the first argument "
-                    "does not have name attribute, but %s",
-                    original_reply.__name__,
-                    type(reply_self),
-                )
-                return await original_reply(reply_self, *reply_args, **reply_kwargs)
 
             # Prepare the attributes for the span
-            attributes = {
-                "agentscope.agent.id": getattr(reply_self, "id", "unknown"),
-                "agentscope.agent.name": getattr(reply_self, "name", "unknown"),
-                "agentscope.operation.name": "agent.reply",
-                "gen_ai.input.messages": [{
-                    "args": reply_args,
-                    "kwargs": reply_kwargs,
-                }]
-            }
+            # 创建agent reply请求属性
+            request_attrs = AgentRequestAttributes(
+                operation_name = GenAIAttributes.GenAiOperationNameValues.INVOKE_AGENT.value, 
+                agent_id = getattr(reply_self, "id", "unknown"),
+                agent_name = getattr(reply_self, "name", "unknown_agent"),
+                agent_description = inspect.getdoc(reply_self.__class__) or "No description available",
+            )
+             # 获取基础span属性
+            input_attributes = request_attrs.get_span_attributes()
+            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str({
+                "args": reply_args,
+                "kwargs": reply_kwargs,
+            })
 
             # Begin the agent reply span
             with self._tracer.start_as_current_span(
-                f"{reply_self.__class__.__name__}.{original_reply.__name__}",
-                attributes=attributes,
+                f"{request_attrs.operation_name or "unknown_operation"} {request_attrs.agent_name or "unknown_agent"}",
+                attributes=input_attributes,
                 end_on_exit=False,
             ) as span:
                 try:
@@ -357,7 +338,7 @@ class AgentScopeV1AgentWrapper(_WithTracer):
 
                     # non-generator result
                     span.set_attributes(
-                        {"gen_ai.output.messages": _serialize_to_str(res)},
+                        {GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(res)},
                     )
                     span.set_status(StatusCode.OK)
                     span.end()

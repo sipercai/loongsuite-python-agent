@@ -5,16 +5,27 @@ import enum
 import inspect
 import json
 from dataclasses import is_dataclass
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Optional
+from agentscope.tool import ToolResponse, Toolkit
 import aioitertools
 from pydantic import BaseModel
 from opentelemetry.trace import Span, StatusCode
+from opentelemetry.semconv._incubating.attributes import (
+    gen_ai_attributes as GenAIAttributes,
+)
 from agentscope.message import Msg
 from typing import TypeVar
-from ..shared import GenAITelemetryOptions
+
+from ..shared import (
+    GenAITelemetryOptions, 
+    CommonAttributes, 
+    GenAiSpanKind, 
+)
 
 T = TypeVar("T")
 
+import logging
+logger = logging.getLogger(__name__)
 
 
 def _to_serializable(
@@ -117,11 +128,18 @@ async def _trace_async_generator_wrapper(
     finally:
         if not has_error:
             # Set the last chunk as output
-            span.set_attributes(
-                {
-                     "gen_ai.output.messages": _serialize_to_str(last_chunk),
-                },
-            )
+            if getattr(span, "attributes", {}).get(CommonAttributes.GEN_AI_SPAN_KIND) is GenAiSpanKind.TOOL.value:
+                span.set_attributes(
+                    {
+                        CommonAttributes.GEN_AI_TOOL_CALL_RESULT: _get_tool_result(last_chunk),
+                    },
+                )
+            else:
+                span.set_attributes(
+                    {
+                        GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(last_chunk),
+                    },
+                )
             span.set_status(StatusCode.OK)
         span.end()
 
@@ -340,9 +358,30 @@ def _ot_output_messages(response_data: Any, options: GenAITelemetryOptions) -> l
             
     except Exception as e:
         # 异常处理，记录警告并返回空数组
-        import logging
-        logger = logging.getLogger(__name__)
         logger.warning(f"Error processing output messages: {e}")
         return []
         
     return output_messages
+
+def _get_tool_definitions(tools: Optional[list[dict]], tool_choice: Optional[str], structured_model: Optional[bool] = False) -> Optional[list[dict]]:
+    if structured_model is True or tools is None or tool_choice is None or tool_choice == "none":
+        return None
+    else:
+        return tools
+
+def _get_tool_description(instance: Toolkit, tool_name: Optional[str]) -> Optional[str]:
+    if tool_name is None:
+        return None
+    try:
+        if registered_tool_function := getattr(instance, 'tools', {}).get(tool_name) is None:
+            return None
+        else:
+            if isinstance(func_dict := getattr(registered_tool_function, "json_schema", {}).get("function"), dict):
+                return func_dict.get("description")
+            return None
+    except:
+        logger.warning(f"Error getting tool description for tool {tool_name}")
+        return None
+
+def _get_tool_result(tool_result: ToolResponse):
+    return _serialize_to_str(tool_result.content)
