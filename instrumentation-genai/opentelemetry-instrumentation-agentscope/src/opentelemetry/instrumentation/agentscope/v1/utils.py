@@ -5,6 +5,7 @@ import enum
 import inspect
 import json
 from dataclasses import is_dataclass
+from math import e
 from typing import Any, AsyncGenerator, Optional
 from agentscope.tool import ToolResponse, Toolkit
 import aioitertools
@@ -14,12 +15,22 @@ from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
 from agentscope.message import Msg
+from agentscope.model import (
+    ChatModelBase, 
+    OpenAIChatModel,
+    GeminiChatModel,
+    OllamaChatModel,
+    AnthropicChatModel,
+    DashScopeChatModel,
+)
+
 from typing import TypeVar
 
 from ..shared import (
     GenAITelemetryOptions, 
     CommonAttributes, 
     GenAiSpanKind, 
+    AgentScopeGenAiProviderName,
 )
 
 T = TypeVar("T")
@@ -143,154 +154,165 @@ async def _trace_async_generator_wrapper(
             span.set_status(StatusCode.OK)
         span.end()
 
-def _ot_input_messages(call_kwargs, options: GenAITelemetryOptions) -> list[dict[str, str]]:
-    """Get input messages with privacy controls applied
+def _parse_provider_name(chat_model: ChatModelBase) -> str:
+    if isinstance(chat_model, OpenAIChatModel):
+        return GenAIAttributes.GenAiProviderNameValues.OPENAI.value
+    elif isinstance(chat_model, GeminiChatModel):
+        return GenAIAttributes.GenAiProviderNameValues.GCP_GEMINI.value
+    elif isinstance(chat_model, AnthropicChatModel):
+        return GenAIAttributes.GenAiProviderNameValues.ANTHROPIC.value
+    elif isinstance(chat_model, DashScopeChatModel):
+        if hasattr(chat_model, "base_http_api_url") and chat_model.base_http_api_url:
+            base_url = chat_model.base_http_api_url
+            if "openai.com" in base_url:
+                return GenAIAttributes.GenAiProviderNameValues.OPENAI.value
+            elif "api.deepseek.com" in base_url:
+                return GenAIAttributes.GenAiProviderNameValues.DEEPSEEK.value
+            elif "dashscope.aliyuncs.com" in base_url:
+                return AgentScopeGenAiProviderName.DASHSCOPE.value
+        return AgentScopeGenAiProviderName.DASHSCOPE.value
+    elif isinstance(chat_model, OllamaChatModel):
+        return AgentScopeGenAiProviderName.OLLAMA.value
+    else:
+        return "unknown"
 
-    Args:
-        call_kwargs (`dict`):
-            The input arguments
-        options (`GenAITelemetryOptions`):
-            The telemetry options for privacy controls
-
-    Returns:
-        `List[dict[str, str]]`:
-            The input messages for opentelemetry tracing
-    """
-    input_messages = []
-
-    try:
-        if call_kwargs is not None and "messages" in call_kwargs:
-            # 转换消息格式为带有parts结构的格式
-            for msg in call_kwargs["messages"]:
-                converted_msg = {
-                    "role": msg.get("role", "user")
+def _get_embedding_message(text: list[str]) -> list[dict[str, Any]]:
+    input_message = []
+    for text_item in text:
+        input_message.append({
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": text_item
                 }
-                
-                parts = []
-                
-                # 处理OpenAI格式的content
-                if "content" in msg and msg["content"]:
-                    content = msg["content"]
-                    if isinstance(content, str):
-                        # 纯字符串内容处理
-                        processed_content = _process_content(content, options)
-                        parts.append({
-                            "type": "text",
-                            "content": processed_content
-                        })
-                    elif isinstance(content, list):
-                        # 数组内容（OpenAI多模态格式）
-                        for item in content:
-                            if isinstance(item, dict):
-                                if item.get("type") == "text":
-                                    text_content = item.get("text", "")
-                                    processed_text = _process_content(text_content, options)
-                                    parts.append({
-                                        "type": "text",
-                                        "content": processed_text
-                                    })
-                                elif item.get("type") == "image_url":
-                                    # 图片URL处理
-                                    image_url = item.get("image_url", {}).get("url", "")
-                                    processed_url = _process_content(image_url, options)
-                                    parts.append({
-                                        "type": "image",
-                                        "content": processed_url
-                                    })
-                                else:
-                                    # 其他类型保持不变
-                                    parts.append(item)
-                            else:
-                                # 非字典类型，可能是文本
-                                text_content = str(item)
-                                processed_text = _process_content(text_content, options)
-                                parts.append({
-                                    "type": "text",
-                                    "content": processed_text
-                                })
-                
-                # 处理Gemini格式的parts（如果存在）
-                if "parts" in msg and msg["parts"]:
-                    for part in msg["parts"]:
-                        if isinstance(part, dict):
-                            if "text" in part:
-                                text_content = part["text"]
-                                processed_text = _process_content(text_content, options)
-                                parts.append({
-                                    "type": "text",
-                                    "content": processed_text
-                                })
-                            elif "function_call" in part:
-                                func_call = part["function_call"]
-                                parts.append({
-                                    "type": "tool_call",
-                                    "id": func_call.get("id", ""),
-                                    "name": func_call.get("name", ""),
-                                    "arguments": func_call.get("args", {})
-                                })
-                            elif "function_response" in part:
-                                func_resp = part["function_response"]
-                                result_content = str(func_resp.get("response", {}).get("output", ""))
-                                processed_result = _process_content(result_content, options)
-                                parts.append({
-                                    "type": "tool_call_response",
-                                    "id": func_resp.get("id", ""),
-                                    "result": processed_result
-                                })
-                            else:
-                                # 其他类型保持原样
-                                parts.append(part)
-                
-                # 处理OpenAI格式的工具调用
-                if "tool_calls" in msg and msg["tool_calls"]:
-                    for tool_call in msg["tool_calls"]:
-                        if tool_call.get("type") == "function":
-                            function_info = tool_call.get("function", {})
-                            arguments = function_info.get("arguments", "{}")
-                            # 如果arguments是字符串，尝试解析为JSON
-                            if isinstance(arguments, str):
-                                try:
-                                    import json
-                                    arguments = json.loads(arguments)
-                                except:
-                                    arguments = {}
-                            parts.append({
-                                "type": "tool_call",
-                                "id": tool_call.get("id", ""),
-                                "name": function_info.get("name", ""),
-                                "arguments": arguments
-                            })
-                
-                # 处理tool角色的结果
-                if msg.get("role") == "tool":
-                    tool_content = str(msg.get("content", ""))
-                    processed_content = _process_content(tool_content, options)
-                    parts.append({
-                        "type": "tool_call_response",
-                        "id": msg.get("tool_call_id", ""),
-                        "result": processed_content
-                    })
-                
-                # 如果没有parts但有其他内容，创建默认文本part
-                if not parts and msg.get("content"):
-                    text_content = str(msg["content"])
-                    processed_content = _process_content(text_content, options)
-                    parts.append({
-                        "type": "text",
-                        "content": processed_content
-                    })
-                
-                converted_msg["parts"] = parts
-                input_messages.append(converted_msg)
-    
+            ]
+        })
+    return input_message
+
+def _get_agent_message(msg: Msg | list[Msg]) -> list[dict[str, Any]]:
+    try:
+        if isinstance(msg, Msg):
+            return [_format_msg_to_parts(msg)]
+        elif isinstance(msg, list):
+            return [_format_msg_to_parts(msg_item) for msg_item in msg]
     except Exception as e:
-        # 发生异常时返回空数组，避免影响主流程
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Error processing input messages: {e}")
-        return []
+        logger.warning(f"Error formatting messages: {e}")
+        return msg
+
+def _format_msg_to_parts(msg: Msg) -> dict[str, Any]:
+    """将 Msg 转换为标准规范格式（parts结构）
+    
+    Args:
+        msg (Msg): AgentScope 消息对象
+        
+    Returns:
+        dict[str, Any]: 标准规范格式的消息
+    """
+    try:
+        parts = []
+        
+        # 遍历所有内容块
+        for block in msg.get_content_blocks():
+            typ = block.get("type")
             
-    return input_messages
+            if typ == "text":
+                # 文本块转换
+                parts.append({
+                    "type": "text",
+                    "content": block.get("text", "")
+                })
+                
+            elif typ == "tool_use":
+                # 工具调用块转换
+                parts.append({
+                    "type": "tool_call",
+                    "id": block.get("id", ""),
+                    "name": block.get("name", ""),
+                    "arguments": block.get("input", {})
+                })
+                
+            elif typ == "tool_result":
+                # 工具结果块转换
+                output = block.get("output", "")
+                if isinstance(output, (list, dict)):
+                    result = _serialize_to_str(output)
+                else:
+                    result = str(output)
+                    
+                parts.append({
+                    "type": "tool_call_response",
+                    "id": block.get("id", ""),
+                    "result": result
+                })
+                
+            elif typ == "image":
+                # 图片块转换
+                source = block.get("source", {})
+                source_type = source.get("type")
+                
+                if source_type == "url":
+                    url = source.get("url", "")
+                elif source_type == "base64":
+                    data = source.get("data", "")
+                    media_type = source.get("media_type", "image/jpeg")
+                    url = f"data:{media_type};base64,{data}"
+                else:
+                    logger.warning(
+                        "Unsupported image source type %s, skipped.",
+                        source_type,
+                    )
+                    continue
+                    
+                parts.append({
+                    "type": "image",
+                    "url": url
+                })
+                
+            elif typ == "audio":
+                # 音频块转换
+                source = block.get("source", {})
+                parts.append({
+                    "type": "audio",
+                    "source": source
+                })
+                
+            elif typ == "video":
+                # 视频块转换
+                source = block.get("source", {})
+                parts.append({
+                    "type": "video",
+                    "source": source
+                })
+                
+            else:
+                logger.warning(
+                    "Unsupported block type %s in the message, skipped.",
+                    typ,
+                )
+        
+        # 构建最终消息格式
+        formatted_msg = {
+            "role": msg.role,
+            "parts": parts
+        }
+        
+        # 如果有name字段且不为空，添加到消息中
+        if msg.name:
+            formatted_msg["name"] = msg.name
+            
+        return formatted_msg
+        
+    except Exception as e:
+        logger.warning(f"Error formatting message: {e}")
+        # 返回基本格式
+        return {
+            "role": msg.role,
+            "parts": [{
+                "type": "text",
+                "content": str(msg.content) if msg.content else ""
+            }]
+        }
 
 
 def _process_content(content: str, options: GenAITelemetryOptions) -> str:

@@ -30,13 +30,16 @@ from ..shared import (
     AgentRequestAttributes,
     get_telemetry_options,
 )
+from _request_attributes_extractor import get_message_converter
 
 from .utils import (
     _serialize_to_str,
     _trace_async_generator_wrapper,
-    _ot_input_messages,
     _ot_output_messages,
     _get_tool_definitions,
+    _parse_provider_name,
+    _get_embedding_message,
+    _get_agent_message
 )
 
 
@@ -99,9 +102,11 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
         ) -> ChatResponse | AsyncGenerator[ChatResponse, None]:
             """The wrapper function for tracing the LLM call."""
             
+            GenAIAttributes
             # 创建LLM请求属性
             request_attrs = LLMRequestAttributes(
                 operation_name = GenAIAttributes.GenAiOperationNameValues.CHAT.value, 
+                provider_name = _parse_provider_name(call_self),
                 request_model = getattr(call_self, "model_name", "unknown_model"),
                 request_max_tokens = call_kwargs.get("max_tokens"),
                 request_temperature = call_kwargs.get("temperature"),
@@ -116,7 +121,11 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
             
             # 添加输入消息（符合GenAI规范）
             telemetry_options = get_telemetry_options()
-            input_messages = _ot_input_messages(call_kwargs, telemetry_options)
+            if call_kwargs.get("messages"):
+                input_messages = get_message_converter(request_attrs.provider_name)(call_kwargs["messages"])
+            else:
+                logger.warning(" ChatModelWrapper No messages provided. Skipping input message conversion.")
+                input_messages = []
 
             input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str(input_messages)
         
@@ -227,10 +236,16 @@ class AgentScopeV1EmbeddingModelWrapper(_WithTracer):
             
             # 获取基础span属性
             input_attributes = request_attrs.get_span_attributes()
-            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str({
-                "args": call_args,
-                "kwargs": call_kwargs,
-            })
+            if text_for_embedding := call_kwargs.get("text"):
+                input_messages = _get_embedding_message(text_for_embedding)
+            else:
+                logger.warning(" EmbeddingModelWrapper No text provided. Skipping input message conversion.")
+                input_messages = {
+                    "args": call_args,
+                    "kwargs": call_kwargs,
+                }
+
+            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str(input_messages)
 
             # Begin the embedding call span
             with self._tracer.start_as_current_span(
@@ -318,13 +333,18 @@ class AgentScopeV1AgentWrapper(_WithTracer):
                 agent_id = getattr(reply_self, "id", "unknown"),
                 agent_name = getattr(reply_self, "name", "unknown_agent"),
                 agent_description = inspect.getdoc(reply_self.__class__) or "No description available",
+                system_instructions = reply_self.sys_prompt if hasattr(reply_self, "sys_prompt") else None,
             )
              # 获取基础span属性
             input_attributes = request_attrs.get_span_attributes()
-            input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str({
-                "args": reply_args,
-                "kwargs": reply_kwargs,
-            })
+            if reply_kwargs.get("msg"):
+                input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str(_get_agent_message(reply_kwargs.get("msg")))
+            else:
+                logger.warning(" AgentWrapper No msg provided. Skipping input message conversion.")
+                input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str({
+                    "args": reply_args,
+                    "kwargs": reply_kwargs,
+                })
 
             # Begin the agent reply span
             with self._tracer.start_as_current_span(

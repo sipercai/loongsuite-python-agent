@@ -164,6 +164,7 @@ class AgentRequestAttributes:
     agent_description: Optional[str] = None
     conversation_id: Optional[str] = None
     operation_name: Optional[str] = None
+    system_instructions: Optional[str] = None
     
     def get_span_attributes(self) -> Dict[str, Any]:
         """获取用于 span 的属性"""
@@ -182,6 +183,8 @@ class AgentRequestAttributes:
             attributes[GenAIAttributes.GEN_AI_CONVERSATION_ID] = self.conversation_id
         if self.operation_name is not None:
             attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] = self.operation_name
+        if self.system_instructions is not None:
+            attributes[GenAIAttributes.GEN_AI_SYSTEM_INSTRUCTIONS] = self.system_instructions
             
         return attributes
     
