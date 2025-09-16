@@ -29,3 +29,7 @@ class GenAiSpanKind(str, Enum):
     AGENT = "agent"
     TOOL = "tool"
     FORMATTER = "formatter"
+
+class AgentScopeGenAiProviderName(str, Enum):
+    OLLAMA = "ollama"
+    DASHSCOPE = "dashscope"
