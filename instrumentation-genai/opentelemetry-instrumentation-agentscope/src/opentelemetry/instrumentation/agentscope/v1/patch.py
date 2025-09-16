@@ -3,25 +3,25 @@
 
 import asyncio
 from logging import getLogger
-from timeit import default_timer
-from typing import Any, Optional, AsyncGenerator, Generator
 
-from opentelemetry._events import Event, EventLogger
+from opentelemetry._events import EventLogger
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
-from opentelemetry.trace import Span, SpanKind, Tracer, StatusCode
-from opentelemetry.trace.status import Status
-from opentelemetry.semconv.attributes import (
-    error_attributes as ErrorAttributes,
+from opentelemetry.trace import Tracer, StatusCode
+
+from agentscope.tool import ToolResponse
+
+from ..shared import (
+    CommonAttributes,
+    ToolRequestAttributes,
+    GenAiSpanKind
 )
-from agentscope.message import ToolUseBlock
-from agentscope.tool import Toolkit, ToolResponse
-from agentscope.formatter import FormatterBase
 
 from .utils import (
     _serialize_to_str,
-    _trace_async_generator_wrapper
+    _trace_async_generator_wrapper,
+    _get_tool_description,
 )
 
 logger = getLogger(__name__)
@@ -35,21 +35,21 @@ def toolkit_call_tool_function(
     async def traced_method(wrapped, instance, args, kwargs) -> ToolResponse:
         tool_call = args[0] if args else kwargs.get("tool_call")
 
-        # 使用 AgentScope 兼容的属性结构
-        span_attributes = {
-            "span.kind": "TOOL",
-            "project.run_id": getattr(instance, "run_id", "unknown"),
-            "input": _serialize_to_str({
-                "tool_call": tool_call,
-            }),
-            "metadata": _serialize_to_str(
-                {**tool_call}
-            ),
-        }
+        # Prepare the attributes for the span
+        # 创建tool请求属性
+        request_attrs = ToolRequestAttributes(operation_name = GenAIAttributes.GenAiOperationNameValues.EXECUTE_TOOL.value,)
+        if isinstance(tool_call, dict):  # type: ignore
+            request_attrs.tool_call_id = tool_call.get("id")
+            request_attrs.tool_name = tool_call.get("name")
+            request_attrs.tool_call_arguments = _serialize_to_str(tool_call.get("input"))
+            request_attrs.tool_description = _get_tool_description(instance = instance, tool_name = request_attrs.tool_name)
         
+        # 获取基础span属性
+        input_attributes = request_attrs.get_span_attributes()
+
         with tracer.start_as_current_span(
-            name=f"{wrapped.__name__}",
-            attributes=span_attributes,
+            name=f"execute_tool {request_attrs.tool_name or 'unknown_tool'}",
+            attributes=input_attributes,
             end_on_exit=False,
         ) as span:
             try:
@@ -76,23 +76,13 @@ def formatter_format(
     """Wrap the FormatterBase.format method to trace it."""
 
     async def traced_method(wrapped, instance, args, kwargs) -> list[dict]:
-        if not isinstance(instance, FormatterBase):
-            logger.warning(
-                "Skipping tracing for %s as the first argument"
-                "is not an instance of FormatterBase, but %s",
-                wrapped.__name__,
-                type(instance),
-            )
-            return await wrapped(*args, **kwargs)
-        # 使用 AgentScope 兼容的属性结构
+
         span_attributes = {
-            "span.kind": "FORMATTER",
-            "project.run_id": getattr(instance, "run_id", "unknown"),
-            "input": _serialize_to_str({
+            CommonAttributes.GEN_AI_SPAN_KIND: GenAiSpanKind.FORMATTER.value,
+            GenAIAttributes.GEN_AI_INPUT_MESSAGES: _serialize_to_str({
                 "args": args,
                 "kwargs": kwargs,
             }),
-            "metadata": _serialize_to_str({}),
         }
 
         with tracer.start_as_current_span(
@@ -106,7 +96,7 @@ def formatter_format(
 
                 # Set the output attribute
                 span.set_attributes(
-                    {"output": _serialize_to_str(res)},
+                    {GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(res)},
                 )
                 span.set_status(StatusCode.OK)
                 span.end()

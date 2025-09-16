@@ -24,19 +24,10 @@ __all__ = [
     "LLMRequestAttributes",
     "LLMResponseAttributes", 
     "EmbeddingRequestAttributes",
-    "EmbeddingResponseAttributes",
     "AgentRequestAttributes",
-    "AgentResponseAttributes",
     "ToolRequestAttributes", 
-    "ToolResponseAttributes",
     # Enums
-    "GenAiOperationName",
-    "GenAiOutputType",
     "GenAiSpanKind",
     # Attribute constants
     "CommonAttributes",
-    "LLMAttributes", 
-    "EmbeddingAttributes",
-    "AgentAttributes",
-    "ToolAttributes",
 ]
