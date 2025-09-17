@@ -5,10 +5,7 @@ This module provides utilities to extract and normalize message formats
 from different AI model providers into a unified format for frontend display.
 """
 
-import base64
 import json
-import re
-from tkinter.constants import E
 from typing import Any, Dict, List, Optional, Union, Callable
 from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import (
     GenAiProviderNameValues,

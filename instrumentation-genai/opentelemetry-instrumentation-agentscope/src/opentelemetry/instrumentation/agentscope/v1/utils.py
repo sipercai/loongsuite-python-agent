@@ -25,12 +25,13 @@ from agentscope.model import (
 )
 
 from typing import TypeVar
-
+from ._response_attributes_extractor import _get_chatmodel_output_messages
 from ..shared import (
     GenAITelemetryOptions, 
     CommonAttributes, 
     GenAiSpanKind, 
     AgentScopeGenAiProviderName,
+    LLMResponseAttributes,
 )
 
 T = TypeVar("T")
@@ -146,11 +147,22 @@ async def _trace_async_generator_wrapper(
                     },
                 )
             else:
-                span.set_attributes(
-                    {
-                        GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(last_chunk),
-                    },
+                response_attrs = LLMResponseAttributes(
+                    output_type = GenAIAttributes.GenAiOutputTypeValues.TEXT.value,
+                    response_finish_reasons = '["stop"]',
+                    response_id = getattr(last_chunk, "id", "unknown_id"),
                 )
+                if hasattr(last_chunk, "usage") and last_chunk.usage:
+                    response_attrs.usage_input_tokens = last_chunk.usage.input_tokens,
+                    response_attrs.usage_output_tokens = last_chunk.usage.output_tokens,
+                # 设置响应属性
+                span.set_attributes(response_attrs.get_span_attributes())
+
+                output_messages = _get_chatmodel_output_messages(last_chunk)
+                if output_messages:
+                    span.set_attributes({
+                        GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(output_messages)
+                    })
             span.set_status(StatusCode.OK)
         span.end()
 
@@ -341,49 +353,6 @@ def _process_content(content: str, options: GenAITelemetryOptions) -> str:
     except Exception as e:
         # 异常处理，返回空字符串
         return ""
-
-
-def _ot_output_messages(response_data: Any, options: GenAITelemetryOptions) -> list[dict[str, Any]]:
-    """处理LLM响应数据，转换为符合OpenTelemetry GenAI规范的格式
-    
-    Args:
-        response_data (`Any`): LLM响应数据
-        options (`GenAITelemetryOptions`): 遥测配置
-        
-    Returns:
-        `list[dict[str, Any]]`: 格式化后的输出消息
-    """
-    output_messages = []
-    
-    try:
-        # 处理响应数据，转换为消息格式
-        if response_data is not None:
-            # 将响应数据转换为字符串
-            response_content = _serialize_to_str(response_data)
-            
-            # 应用隐私控制
-            processed_content = _process_content(response_content, options)
-            
-            # 构建输出消息，使用parts结构
-            output_message = {
-                "role": "assistant",
-                "parts": [
-                    {
-                        "type": "text",
-                        "content": processed_content
-                    }
-                ],
-                "finish_reason": "stop"
-            }
-            
-            output_messages.append(output_message)
-            
-    except Exception as e:
-        # 异常处理，记录警告并返回空数组
-        logger.warning(f"Error processing output messages: {e}")
-        return []
-        
-    return output_messages
 
 def _get_tool_definitions(tools: Optional[list[dict]], tool_choice: Optional[str], structured_model: Optional[bool] = False) -> Optional[list[dict]]:
     if structured_model is True or tools is None or tool_choice is None or tool_choice == "none":

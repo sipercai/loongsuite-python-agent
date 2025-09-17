@@ -30,16 +30,17 @@ from ..shared import (
     AgentRequestAttributes,
     get_telemetry_options,
 )
-from _request_attributes_extractor import get_message_converter
+from ._request_attributes_extractor import get_message_converter
+from ._response_attributes_extractor import _get_chatmodel_output_messages
 
 from .utils import (
     _serialize_to_str,
     _trace_async_generator_wrapper,
-    _ot_output_messages,
     _get_tool_definitions,
     _parse_provider_name,
     _get_embedding_message,
-    _get_agent_message
+    _get_agent_message,
+    _format_msg_to_parts
 )
 
 
@@ -102,7 +103,6 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
         ) -> ChatResponse | AsyncGenerator[ChatResponse, None]:
             """The wrapper function for tracing the LLM call."""
             
-            GenAIAttributes
             # 创建LLM请求属性
             request_attrs = LLMRequestAttributes(
                 operation_name = GenAIAttributes.GenAiOperationNameValues.CHAT.value, 
@@ -118,11 +118,17 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
             
             # 获取基础span属性
             input_attributes = request_attrs.get_span_attributes()
-            
+            input_attributes[GenAIAttributes.GEN_AI_RESPONSE_MODEL] = request_attrs.request_model
+
             # 添加输入消息（符合GenAI规范）
             telemetry_options = get_telemetry_options()
-            if call_kwargs.get("messages"):
-                input_messages = get_message_converter(request_attrs.provider_name)(call_kwargs["messages"])
+            messages = None
+            if call_args and len(call_args) > 0:
+                messages = call_args[0]
+            elif "messages" in call_kwargs:
+                messages = call_kwargs["messages"]
+            if messages:
+                input_messages = get_message_converter(request_attrs.provider_name)(messages)
             else:
                 logger.warning(" ChatModelWrapper No messages provided. Skipping input message conversion.")
                 input_messages = []
@@ -143,17 +149,19 @@ class AgentScopeV1ChatModelWrapper(_WithTracer):
                     if isinstance(res, AsyncGenerator):
                         return _trace_async_generator_wrapper(res, span)
 
-                    # TODO: handle output messages
                     # 创建 LLM 响应属性
                     response_attrs = LLMResponseAttributes(
-                        output_type=GenAIAttributes.GenAiOutputTypeValues.TEXT.value,
-                        response_finish_reasons=["stop"],
+                        output_type = GenAIAttributes.GenAiOutputTypeValues.TEXT.value,
+                        response_id = getattr(res, "id", "unknown_id"),
+                        response_finish_reasons = '["stop"]',
                     )
-                    
+                    if hasattr(res, "usage") and res.usage:
+                        response_attrs.usage_input_tokens = res.usage.input_tokens,
+                        response_attrs.usage_output_tokens = res.usage.output_tokens,
                     # 设置响应属性
                     span.set_attributes(response_attrs.get_span_attributes())
-    
-                    output_messages = _ot_output_messages(res, telemetry_options)
+
+                    output_messages = _get_chatmodel_output_messages(res)
                     if output_messages:
                         span.set_attributes({
                             GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(output_messages)
@@ -236,7 +244,13 @@ class AgentScopeV1EmbeddingModelWrapper(_WithTracer):
             
             # 获取基础span属性
             input_attributes = request_attrs.get_span_attributes()
-            if text_for_embedding := call_kwargs.get("text"):
+
+            text_for_embedding = None
+            if call_args and len(call_args) > 0:
+                text_for_embedding = call_args[0]
+            elif "text" in call_kwargs:
+                text_for_embedding = call_kwargs["text"]
+            if text_for_embedding:
                 input_messages = _get_embedding_message(text_for_embedding)
             else:
                 logger.warning(" EmbeddingModelWrapper No text provided. Skipping input message conversion.")
@@ -258,10 +272,16 @@ class AgentScopeV1EmbeddingModelWrapper(_WithTracer):
                     res = await original_call(call_self, *call_args, **call_kwargs)
 
                     # non-generator result
-                    span.set_attribute(key=GenAIAttributes.GEN_AI_OUTPUT_MESSAGES, value=_serialize_to_str(res))
+                    span.set_attributes({
+                        GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(res),
+                        GenAIAttributes.GEN_AI_RESPONSE_MODEL: request_attrs.request_model,
+                        GenAIAttributes.GEN_AI_DATA_SOURCE_ID: getattr(res, "source", "unknown_source"),
+                        GenAIAttributes.GEN_AI_RESPONSE_ID: getattr(res, "id", "unknown_id"),
+                    })
                     if hasattr(res, "embeddings") and res.embeddings:
-                        # TODO : semantic
                         span.set_attribute(key="gen_ai.embeddings.dimension.count", value=len(res.embeddings[0]))
+                    if hasattr(res, "usage") and res.usage:
+                        span.set_attribute(key=GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS, value=getattr(res.usage, "tokens", 0))
 
                     span.set_status(StatusCode.OK)
                     span.end()
@@ -335,10 +355,18 @@ class AgentScopeV1AgentWrapper(_WithTracer):
                 agent_description = inspect.getdoc(reply_self.__class__) or "No description available",
                 system_instructions = reply_self.sys_prompt if hasattr(reply_self, "sys_prompt") else None,
             )
+            if hasattr(reply_self, "model") and reply_self.model:
+                request_attrs.request_model = getattr(reply_self.model, "model_name", "unknown_model")
              # 获取基础span属性
             input_attributes = request_attrs.get_span_attributes()
-            if reply_kwargs.get("msg"):
-                input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str(_get_agent_message(reply_kwargs.get("msg")))
+
+            msg = None
+            if reply_args and len(reply_args) > 0:
+                msg = reply_args[0]
+            elif "msg" in reply_kwargs:
+                msg = reply_kwargs["msg"]
+            if msg:
+                input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str(_get_agent_message(msg))
             else:
                 logger.warning(" AgentWrapper No msg provided. Skipping input message conversion.")
                 input_attributes[GenAIAttributes.GEN_AI_INPUT_MESSAGES] = _serialize_to_str({
@@ -358,7 +386,10 @@ class AgentScopeV1AgentWrapper(_WithTracer):
 
                     # non-generator result
                     span.set_attributes(
-                        {GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(res)},
+                        {
+                            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(_format_msg_to_parts(res)),
+                            GenAIAttributes.GEN_AI_RESPONSE_MODEL: request_attrs.request_model,
+                        },
                     )
                     span.set_status(StatusCode.OK)
                     span.end()
