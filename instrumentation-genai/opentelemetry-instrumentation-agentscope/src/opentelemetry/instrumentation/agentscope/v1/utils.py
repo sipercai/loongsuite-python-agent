@@ -298,7 +298,6 @@ def _format_msg_to_parts(msg: Msg) -> dict[str, Any]:
             }]
         }
 
-
 def _process_content(content: str, options: GenAITelemetryOptions) -> str:
     """处理消息内容，根据配置决定返回内容或长度信息
     
@@ -330,12 +329,10 @@ def _get_tool_description(instance: Toolkit, tool_name: Optional[str]) -> Option
     if tool_name is None:
         return None
     try:
-        if registered_tool_function := getattr(instance, 'tools', {}).get(tool_name) is None:
-            return None
-        else:
+        if registered_tool_function := getattr(instance, 'tools', {}).get(tool_name):
             if isinstance(func_dict := getattr(registered_tool_function, "json_schema", {}).get("function"), dict):
-                return func_dict.get("description")
-            return None
+                return func_dict.get("description")            
+        return None
     except:
         logger.warning(f"Error getting tool description for tool {tool_name}")
         return None
