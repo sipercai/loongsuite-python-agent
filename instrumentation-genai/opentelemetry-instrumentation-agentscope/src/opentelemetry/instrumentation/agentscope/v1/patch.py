@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Patching functions for AgentScope v1.x instrumentation."""
 
-import asyncio
 from logging import getLogger
 
 from opentelemetry._events import EventLogger
@@ -19,6 +18,7 @@ from ..shared import (
 )
 
 from .utils import (
+    generate_tool_span_name,
     _serialize_to_str,
     _trace_async_generator_wrapper,
     _get_tool_description,
@@ -43,13 +43,10 @@ def toolkit_call_tool_function(
             request_attrs.tool_name = tool_call.get("name")
             request_attrs.tool_call_arguments = _serialize_to_str(tool_call.get("input"))
             request_attrs.tool_description = _get_tool_description(instance = instance, tool_name = request_attrs.tool_name)
-        
-        # 获取基础span属性
-        input_attributes = request_attrs.get_span_attributes()
 
         with tracer.start_as_current_span(
-            name=f"execute_tool {request_attrs.tool_name or 'unknown_tool'}",
-            attributes=input_attributes,
+            name=generate_tool_span_name(request_attrs),
+            attributes=request_attrs.get_span_attributes(),
             end_on_exit=False,
         ) as span:
             try:
