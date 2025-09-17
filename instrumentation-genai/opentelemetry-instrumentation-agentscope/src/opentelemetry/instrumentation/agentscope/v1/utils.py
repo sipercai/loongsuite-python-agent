@@ -5,8 +5,7 @@ import enum
 import inspect
 import json
 from dataclasses import is_dataclass
-from math import e
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional, Union
 from agentscope.tool import ToolResponse, Toolkit
 import aioitertools
 from pydantic import BaseModel
@@ -15,29 +14,48 @@ from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
 from agentscope.message import Msg
-from agentscope.model import (
-    ChatModelBase, 
-    OpenAIChatModel,
-    GeminiChatModel,
-    OllamaChatModel,
-    AnthropicChatModel,
-    DashScopeChatModel,
-)
 
 from typing import TypeVar
 from ._response_attributes_extractor import _get_chatmodel_output_messages
 from ..shared import (
+    LLMRequestAttributes,
+    LLMResponseAttributes, 
+    EmbeddingRequestAttributes,
+    AgentRequestAttributes,
+    ToolRequestAttributes, 
     GenAITelemetryOptions, 
     CommonAttributes, 
     GenAiSpanKind, 
-    AgentScopeGenAiProviderName,
-    LLMResponseAttributes,
 )
 
 T = TypeVar("T")
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+def generate_agent_span_name(request_info: AgentRequestAttributes) -> str:
+    """
+    生成 Agent span 名称，格式: {gen_ai.operation.name} {gen_ai.agent.name}
+    """
+    operation_name = request_info.operation_name or "unknown_operation"        
+    agent_name = request_info.agent_name or "unknown_agent"
+    return f"{operation_name} {agent_name}"
+
+def generate_llm_span_name(request_info: Union[LLMRequestAttributes, EmbeddingRequestAttributes]) -> str:
+    """
+    生成 LLM span 名称，格式: {gen_ai.operation.name} {gen_ai.request.model}
+    """
+    operation_name = request_info.operation_name or "unknown_operation"   
+    model_name = request_info.request_model or "unknown_model"
+    return f"{operation_name} {model_name}"
+
+def generate_tool_span_name(request_info: ToolRequestAttributes) -> str:
+    """
+    生成 Tool span 名称，格式: execute_tool {gen_ai.tool.name}
+    """
+    tool_name = request_info.tool_name or "unknown_tool"
+    return f"execute_tool {tool_name}"
 
 
 def _to_serializable(
@@ -153,8 +171,8 @@ async def _trace_async_generator_wrapper(
                     response_id = getattr(last_chunk, "id", "unknown_id"),
                 )
                 if hasattr(last_chunk, "usage") and last_chunk.usage:
-                    response_attrs.usage_input_tokens = last_chunk.usage.input_tokens,
-                    response_attrs.usage_output_tokens = last_chunk.usage.output_tokens,
+                    response_attrs.usage_input_tokens = last_chunk.usage.input_tokens
+                    response_attrs.usage_output_tokens = last_chunk.usage.output_tokens
                 # 设置响应属性
                 span.set_attributes(response_attrs.get_span_attributes())
 
@@ -165,52 +183,6 @@ async def _trace_async_generator_wrapper(
                     })
             span.set_status(StatusCode.OK)
         span.end()
-
-def _parse_provider_name(chat_model: ChatModelBase) -> str:
-    if isinstance(chat_model, OpenAIChatModel):
-        return GenAIAttributes.GenAiProviderNameValues.OPENAI.value
-    elif isinstance(chat_model, GeminiChatModel):
-        return GenAIAttributes.GenAiProviderNameValues.GCP_GEMINI.value
-    elif isinstance(chat_model, AnthropicChatModel):
-        return GenAIAttributes.GenAiProviderNameValues.ANTHROPIC.value
-    elif isinstance(chat_model, DashScopeChatModel):
-        if hasattr(chat_model, "base_http_api_url") and chat_model.base_http_api_url:
-            base_url = chat_model.base_http_api_url
-            if "openai.com" in base_url:
-                return GenAIAttributes.GenAiProviderNameValues.OPENAI.value
-            elif "api.deepseek.com" in base_url:
-                return GenAIAttributes.GenAiProviderNameValues.DEEPSEEK.value
-            elif "dashscope.aliyuncs.com" in base_url:
-                return AgentScopeGenAiProviderName.DASHSCOPE.value
-        return AgentScopeGenAiProviderName.DASHSCOPE.value
-    elif isinstance(chat_model, OllamaChatModel):
-        return AgentScopeGenAiProviderName.OLLAMA.value
-    else:
-        return "unknown"
-
-def _get_embedding_message(text: list[str]) -> list[dict[str, Any]]:
-    input_message = []
-    for text_item in text:
-        input_message.append({
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": text_item
-                }
-            ]
-        })
-    return input_message
-
-def _get_agent_message(msg: Msg | list[Msg]) -> list[dict[str, Any]]:
-    try:
-        if isinstance(msg, Msg):
-            return [_format_msg_to_parts(msg)]
-        elif isinstance(msg, list):
-            return [_format_msg_to_parts(msg_item) for msg_item in msg]
-    except Exception as e:
-        logger.warning(f"Error formatting messages: {e}")
-        return msg
 
 def _format_msg_to_parts(msg: Msg) -> dict[str, Any]:
     """将 Msg 转换为标准规范格式（parts结构）
@@ -353,12 +325,6 @@ def _process_content(content: str, options: GenAITelemetryOptions) -> str:
     except Exception as e:
         # 异常处理，返回空字符串
         return ""
-
-def _get_tool_definitions(tools: Optional[list[dict]], tool_choice: Optional[str], structured_model: Optional[bool] = False) -> Optional[list[dict]]:
-    if structured_model is True or tools is None or tool_choice is None or tool_choice == "none":
-        return None
-    else:
-        return tools
 
 def _get_tool_description(instance: Toolkit, tool_name: Optional[str]) -> Optional[str]:
     if tool_name is None:
