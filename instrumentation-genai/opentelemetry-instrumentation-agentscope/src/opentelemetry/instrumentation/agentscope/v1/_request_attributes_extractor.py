@@ -90,7 +90,7 @@ class RequestAttributesExtractor:
         if messages:
             input_messages = get_message_converter(request_attrs.provider_name)(messages)
         else:
-            logger.warning(" ChatModelWrapper No messages provided. Skipping input message conversion.")
+            logger.debug(" ChatModelWrapper No messages provided. Skipping input message conversion.")
             input_messages = {
                 "args": call_args,
                 "kwargs": call_kwargs,
@@ -132,7 +132,7 @@ class RequestAttributesExtractor:
         if text_for_embedding:
             input_messages = self._get_embedding_message(text_for_embedding)
         else:
-            logger.warning(" EmbeddingModelWrapper No text provided. Skipping input message conversion.")
+            logger.debug(" EmbeddingModelWrapper No text provided. Skipping input message conversion.")
             input_messages = {
                 "args": call_args,
                 "kwargs": call_kwargs,
@@ -178,7 +178,7 @@ class RequestAttributesExtractor:
         if msg:
             input_messages = self._get_agent_message(msg)
         else:
-            logger.warning(" AgentWrapper No msg provided. Skipping input message conversion.")
+            logger.debug(" AgentWrapper No msg provided. Skipping input message conversion.")
             input_messages = {
                 "args": reply_args,
                 "kwargs": reply_kwargs,
@@ -238,5 +238,5 @@ class RequestAttributesExtractor:
             else:
                 return []
         except Exception as e:
-            logger.warning(f"Error formatting messages: {e}")
+            logger.debug(f"Error formatting messages: {e}")
             return []

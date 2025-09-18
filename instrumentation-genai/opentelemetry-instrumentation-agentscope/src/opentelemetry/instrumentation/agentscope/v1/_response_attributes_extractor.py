@@ -16,12 +16,12 @@ def _get_chatmodel_output_messages(
         list[dict[str, Any]]: 格式化的输出消息列表
     """
     try:
-        # 导入ChatResponse类型（避免循环导入）
+
         from agentscope.model import ChatResponse
         
         if not isinstance(chat_response, ChatResponse):
             # logger.warning(f"Expected ChatResponse, got {type(chat_response)}")
-            return []
+            return chat_response
         
         # 构建parts列表
         parts = []
@@ -74,7 +74,7 @@ def _get_chatmodel_output_messages(
                 parts.append(tool_call_data)
                 
             else:
-                logger.warning(f"Unsupported block type: {block_type}")
+                logger.debug(f"Unsupported block type: {block_type}")
         
         # 如果没有任何parts，添加一个空的文本块
         if not parts:
@@ -93,7 +93,7 @@ def _get_chatmodel_output_messages(
         return [output_message]
         
     except Exception as e:
-        logger.error(f"Error processing ChatResponse to output messages: {e}")
+        logger.warning(f"Error processing ChatResponse to output messages: {e}")
         # 返回一个基本的错误消息
         return [{
             "role": "assistant",

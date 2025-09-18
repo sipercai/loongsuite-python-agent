@@ -242,7 +242,7 @@ def _format_msg_to_parts(msg: Msg) -> dict[str, Any]:
                     media_type = source.get("media_type", "image/jpeg")
                     url = f"data:{media_type};base64,{data}"
                 else:
-                    logger.warning(
+                    logger.debug(
                         "Unsupported image source type %s, skipped.",
                         source_type,
                     )
@@ -270,7 +270,7 @@ def _format_msg_to_parts(msg: Msg) -> dict[str, Any]:
                 })
                 
             else:
-                logger.warning(
+                logger.debug(
                     "Unsupported block type %s in the message, skipped.",
                     typ,
                 )
@@ -288,7 +288,7 @@ def _format_msg_to_parts(msg: Msg) -> dict[str, Any]:
         return formatted_msg
         
     except Exception as e:
-        logger.warning(f"Error formatting message: {e}")
+        logger.debug(f"Error formatting message: {e}")
         # 返回基本格式
         return {
             "role": msg.role,
@@ -334,7 +334,7 @@ def _get_tool_description(instance: Toolkit, tool_name: Optional[str]) -> Option
                 return func_dict.get("description")            
         return None
     except:
-        logger.warning(f"Error getting tool description for tool {tool_name}")
+        logger.debug(f"Error getting tool description for tool {tool_name}")
         return None
 
 def _get_tool_result(tool_result: ToolResponse):
