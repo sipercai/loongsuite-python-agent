@@ -10,6 +10,7 @@ from opentelemetry.semconv._incubating.attributes import (
 from opentelemetry.trace import Tracer, StatusCode
 
 from agentscope.tool import ToolResponse
+from agentscope import _config
 
 from ..shared import (
     CommonAttributes,
@@ -80,6 +81,7 @@ def formatter_format(
                 "args": args,
                 "kwargs": kwargs,
             }),
+            GenAIAttributes.GEN_AI_CONVERSATION_ID: _config.run_id,
         }
 
         with tracer.start_as_current_span(
