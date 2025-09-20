@@ -42,6 +42,10 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
     def __init__(self):
         self._meter = None
 
+    def _setup_tracing_patch(self, wrapped, instance, args, kwargs):
+        """替换 setup_tracing 函数为 pass，不执行任何逻辑"""
+        pass
+
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
@@ -134,6 +138,16 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
             )
         except Exception:
             pass
+            
+        # setup_tracing - 替换为 pass
+        try:
+            wrap_function_wrapper(
+                module="agentscope.tracing._setup",
+                name="setup_tracing",
+                wrapper=self._setup_tracing_patch,
+            )
+        except Exception:
+            pass
 
     def _uninstrument(self, **kwargs: Any) -> None:
         """移除插装。"""
@@ -176,5 +190,12 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
         try:
             import agentscope.formatter
             unwrap(agentscope.formatter.FormatterBase, "format")
+        except Exception:
+            pass
+            
+        # 恢复 setup_tracing
+        try:
+            import agentscope.tracing._setup
+            unwrap(agentscope.tracing._setup, "setup_tracing")
         except Exception:
             pass
