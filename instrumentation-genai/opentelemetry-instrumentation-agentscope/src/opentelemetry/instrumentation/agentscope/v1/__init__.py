@@ -142,7 +142,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
         # setup_tracing - 替换为 pass
         try:
             wrap_function_wrapper(
-                module="agentscope.tracing._setup",
+                module="agentscope.tracing",
                 name="setup_tracing",
                 wrapper=self._setup_tracing_patch,
             )
