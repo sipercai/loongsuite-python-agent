@@ -305,7 +305,7 @@ class AgentScopeV1AgentWrapper(_WithTracer):
                     # non-generator result
                     span.set_attributes(
                         {
-                            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str(_format_msg_to_parts(res)),
+                            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES: _serialize_to_str([_format_msg_to_parts(res)]),
                         },
                     )
                     span.set_status(StatusCode.OK)
