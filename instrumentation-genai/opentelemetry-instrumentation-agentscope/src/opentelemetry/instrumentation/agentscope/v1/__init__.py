@@ -195,7 +195,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
             
         # 恢复 setup_tracing
         try:
-            import agentscope.tracing._setup
-            unwrap(agentscope.tracing._setup, "setup_tracing")
+            import agentscope.tracing
+            unwrap(agentscope.tracing, "setup_tracing")
         except Exception:
             pass
