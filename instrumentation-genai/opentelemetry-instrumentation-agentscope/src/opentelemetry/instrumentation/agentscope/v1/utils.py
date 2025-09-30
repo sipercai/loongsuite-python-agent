@@ -333,7 +333,7 @@ def _get_tool_description(instance: Toolkit, tool_name: Optional[str]) -> Option
             if isinstance(func_dict := getattr(registered_tool_function, "json_schema", {}).get("function"), dict):
                 return func_dict.get("description")            
         return None
-    except:
+    except Exception:
         logger.debug(f"Error getting tool description for tool {tool_name}")
         return None
 
