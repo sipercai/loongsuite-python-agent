@@ -172,11 +172,17 @@ opentelemetry-instrument <your_run_command>
 ```
 
 ### Results
+#### Export to aliyun xtrace
 
-![image.png](_assets/img_v1/agent_description.png)
-![image.png](_assets/img_v1/llm_info.png)
-![image.png](_assets/img_v1/tool_exec.png)
+![image.png](_assets/img_v1/Aliyun//agent_description.png)
+![image.png](_assets/img_v1/Aliyun//llm_info.png)
+![image.png](_assets/img_v1/Aliyun//tool_exec.png)
 
+#### Export to agentscope studio
+
+This version supports OTel data ingestion — please use it for integration [agentscope studio](https://github.com/agentscope-ai/agentscope-studio/pull/7)
+![image.png](_assets/img_v1/AgentScopeStudio/dashboard.png)
+![image.png](_assets/img_v1/AgentScopeStudio/detail.png)
 
 ## AgentScope V0
 
