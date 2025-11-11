@@ -5,64 +5,51 @@ build-backend = "hatchling.build"
 [project]
 name = "opentelemetry-instrumentation-langchain"
 dynamic = ["version"]
-description = "OpenTelemetry LangChain Instrumentation"
-readme = "README.md"
+description = "OpenTelemetry Official Langchain instrumentation"
+readme = "README.rst"
 license = "Apache-2.0"
-requires-python = ">=3.8, <3.13"
+requires-python = ">=3.9"
 authors = [
-    { name = "LoongSuite Python Agent Authors", email = "" },
+  { name = "OpenTelemetry Authors", email = "cncf-opentelemetry-contributors@lists.cncf.io" },
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "wrapt",
-    "opentelemetry-api",
-    "opentelemetry-instrumentation",
-    "opentelemetry-semantic-conventions",
+  "opentelemetry-api >= 1.31.0",
+  "opentelemetry-instrumentation ~= 0.57b0",
+  "opentelemetry-semantic-conventions ~= 0.57b0"
 ]
 
 [project.optional-dependencies]
 instruments = [
-    "langchain_core >= 0.1.0",
+  "langchain >= 0.3.21",
 ]
-test = [
-    "pytest",
-    "opentelemetry-sdk",
-    "langchain_core == 0.1.8",
-    "langchain == 0.1.0",
-    "langchain_openai == 0.0.2",
-    "langchain-community == 0.0.10",
-    "respx",
-    "numpy",
-    "openai",
-    "httpx",
-]
-type-check = [
-    "langchain_core == 0.1.0",
-]
+
+[project.entry-points.opentelemetry_instrumentor]
+langchain = "opentelemetry.instrumentation.langchain:LangChainInstrumentor"
+
+[project.urls]
+Homepage = "https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation-genai/opentelemetry-instrumentation-langchain"
+Repository = "https://github.com/open-telemetry/opentelemetry-python-contrib"
 
 [tool.hatch.version]
 path = "src/opentelemetry/instrumentation/langchain/version.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src",
-    "tests",
+  "/src",
+  "/tests",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/opentelemetry"]
-
-[project.entry-points.opentelemetry_instrumentor]
-langchain = "opentelemetry.instrumentation.langchain:LangChainInstrumentor"
