@@ -1,7 +1,7 @@
 from typing import Any, Callable, Mapping, Tuple
 from opentelemetry import context as context_api
 from opentelemetry import trace as trace_api
-from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
+from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 from opentelemetry.instrumentation.dify.semconv import GEN_AI_SESSION_ID, GEN_AI_USER_ID
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()

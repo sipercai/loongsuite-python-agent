@@ -4,7 +4,7 @@ from typing import Any, Tuple, Mapping
 from opentelemetry import context as context_api, trace as trace_api
 from opentelemetry.instrumentation.dify.capture_content import set_span_value
 
-from opentelemetry.instrumentation.dify.contants import DIFY_APP_ID_KEY, _get_dify_app_name_key
+from opentelemetry.instrumentation.dify.constants import DIFY_APP_ID_KEY, _get_dify_app_name_key
 from opentelemetry.instrumentation.dify.entities import _EventData
 from opentelemetry.instrumentation.dify.semconv import GEN_AI_SPAN_KIND, SpanKindValues, GEN_AI_USER_ID, \
     GEN_AI_SESSION_ID, OUTPUT_VALUE, INPUT_VALUE

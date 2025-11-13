@@ -9,7 +9,7 @@ from opentelemetry.instrumentation.dify.semconv import GEN_AI_USER_ID, GEN_AI_SE
 from opentelemetry.instrumentation.dify.utils import get_llm_common_attributes
 from opentelemetry.instrumentation.dify.version import __version__
 from opentelemetry.context import get_value
-from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
+from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()

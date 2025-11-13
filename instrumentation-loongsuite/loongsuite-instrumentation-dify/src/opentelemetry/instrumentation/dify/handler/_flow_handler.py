@@ -2,7 +2,7 @@ import threading
 from logging import getLogger
 
 from opentelemetry.metrics import get_meter
-from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key
+from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key
 from opentelemetry import trace as trace_api
 from typing import (
     Any,

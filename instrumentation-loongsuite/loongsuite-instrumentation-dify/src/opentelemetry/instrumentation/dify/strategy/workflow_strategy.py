@@ -23,7 +23,7 @@ from typing import (
 )
 from opentelemetry.instrumentation.dify.entities import NodeType
 from copy import deepcopy
-from opentelemetry.instrumentation.dify.contants import _get_dify_app_name_key, DIFY_APP_ID_KEY
+from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key, DIFY_APP_ID_KEY
 from opentelemetry.instrumentation.dify.entities import _EventData
 from opentelemetry.instrumentation.dify.utils import get_timestamp_from_datetime_attr, get_llm_common_attributes
 
