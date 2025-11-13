@@ -1,8 +1,9 @@
 import json
+import logging
 import math
+import os
 import time
 import traceback
-import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from enum import Enum
@@ -23,7 +24,6 @@ from typing import (
 )
 from uuid import UUID
 
-import wrapt
 from langchain_core.messages import BaseMessage
 from langchain_core.tracers.base import BaseTracer
 from langchain_core.tracers.schemas import Run
@@ -31,14 +31,12 @@ from langchain_core.tracers.schemas import Run
 from opentelemetry import context as context_api
 from opentelemetry import trace as trace_api
 from opentelemetry.context import _SUPPRESS_INSTRUMENTATION_KEY
-from opentelemetry.semconv.trace import SpanAttributes as OTELSpanAttributes
-from opentelemetry.trace import SpanKind
-from opentelemetry.util.types import AttributeValue
 from opentelemetry.metrics import Meter
-import os
+from opentelemetry.semconv.trace import SpanAttributes as OTELSpanAttributes
+from opentelemetry.util.types import AttributeValue
 
-from .semconv import *
 from ._utils import _filter_base64_images, process_content
+from .semconv import *
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +64,9 @@ class _Run(NamedTuple):
 class LoongsuiteTracer(BaseTracer):
     __slots__ = ("_tracer", "_runs", "_lock", "_meter")
 
-    def __init__(self, tracer: trace_api.Tracer, meter: Meter, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self, tracer: trace_api.Tracer, meter: Meter, *args: Any, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self._tracer = tracer
         self._runs: Dict[UUID, _Run] = {}
@@ -83,7 +83,7 @@ class LoongsuiteTracer(BaseTracer):
             parent_context = (
                 parent.context
                 if (parent_run_id := run.parent_run_id)
-                   and (parent := self._runs.get(parent_run_id))
+                and (parent := self._runs.get(parent_run_id))
                 else None
             )
         # We can't use real time because the handler may be
@@ -124,13 +124,17 @@ class LoongsuiteTracer(BaseTracer):
                 logger.exception("Failed to update span with run data.")
             # We can't use real time because the handler may be
             # called in a background thread.
-            end_time_utc_nano = _as_utc_nano(run.end_time) if run.end_time else None
+            end_time_utc_nano = (
+                _as_utc_nano(run.end_time) if run.end_time else None
+            )
             span.end(end_time=end_time_utc_nano)
 
     def _persist_run(self, run: Run) -> None:
         pass
 
-    def on_llm_error(self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any) -> Run:
+    def on_llm_error(
+        self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any
+    ) -> Run:
         logger.debug(f"on_llm_error: {error}")
         with self._lock:
             event_data = self._runs.get(run_id)
@@ -138,7 +142,9 @@ class LoongsuiteTracer(BaseTracer):
             _record_exception(event_data.span, error)
         return super().on_llm_error(error, *args, run_id=run_id, **kwargs)
 
-    def on_chain_error(self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any) -> Run:
+    def on_chain_error(
+        self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any
+    ) -> Run:
         logger.debug(f"on_chain_error: {error}")
         with self._lock:
             event_data = self._runs.get(run_id)
@@ -147,16 +153,20 @@ class LoongsuiteTracer(BaseTracer):
         return super().on_chain_error(error, *args, run_id=run_id, **kwargs)
 
     def on_retriever_error(
-            self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any
+        self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any
     ) -> Run:
         logger.debug(f"on_retriever_error: {error}")
         with self._lock:
             event_data = self._runs.get(run_id)
         if event_data:
             _record_exception(event_data.span, error)
-        return super().on_retriever_error(error, *args, run_id=run_id, **kwargs)
+        return super().on_retriever_error(
+            error, *args, run_id=run_id, **kwargs
+        )
 
-    def on_tool_error(self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any) -> Run:
+    def on_tool_error(
+        self, error: BaseException, *args: Any, run_id: UUID, **kwargs: Any
+    ) -> Run:
         logger.debug(f"on_tool_error: {error}")
         with self._lock:
             event_data = self._runs.get(run_id)
@@ -180,7 +190,9 @@ def _record_exception(span: trace_api.Span, error: BaseException) -> None:
     }
     try:
         # See e.g. https://github.com/open-telemetry/opentelemetry-python/blob/e9c7c7529993cd13b4af661e2e3ddac3189a34d0/opentelemetry-sdk/src/opentelemetry/sdk/trace/__init__.py#L967  # noqa: E501
-        attributes[OTELSpanAttributes.EXCEPTION_STACKTRACE] = traceback.format_exc()
+        attributes[OTELSpanAttributes.EXCEPTION_STACKTRACE] = (
+            traceback.format_exc()
+        )
     except Exception:
         logger.exception("Failed to record exception stacktrace.")
     span.add_event(name="exception", attributes=attributes)
@@ -191,7 +203,9 @@ def _update_span(span: trace_api.Span, run: Run) -> None:
     if run.error is None:
         span.set_status(trace_api.StatusCode.OK)
     else:
-        span.set_status(trace_api.Status(trace_api.StatusCode.ERROR, run.error))
+        span.set_status(
+            trace_api.Status(trace_api.StatusCode.ERROR, run.error)
+        )
     span_kind = (
         SpanKindValues.AGENT
         if "agent" in run.name.lower()
@@ -235,7 +249,7 @@ def _serialize_json(obj: Any) -> str:
 
 
 def stop_on_exception(
-        wrapped: Callable[..., Iterator[Tuple[str, Any]]],
+    wrapped: Callable[..., Iterator[Tuple[str, Any]]],
 ) -> Callable[..., Iterator[Tuple[str, Any]]]:
     def wrapper(*args: Any, **kwargs: Any) -> Iterator[Tuple[str, Any]]:
         start_time = time.perf_counter()
@@ -252,14 +266,18 @@ def stop_on_exception(
 
 
 @stop_on_exception
-def _flatten(key_values: Iterable[Tuple[str, Any]]) -> Iterator[Tuple[str, AttributeValue]]:
+def _flatten(
+    key_values: Iterable[Tuple[str, Any]],
+) -> Iterator[Tuple[str, AttributeValue]]:
     for key, value in key_values:
         if value is None:
             continue
         if isinstance(value, Mapping):
             for sub_key, sub_value in _flatten(value.items()):
                 yield f"{key}.{sub_key}", sub_value
-        elif isinstance(value, List) and any(isinstance(item, Mapping) for item in value):
+        elif isinstance(value, List) and any(
+            isinstance(item, Mapping) for item in value
+        ):
             for index, sub_mapping in enumerate(value):
                 for sub_key, sub_value in _flatten(sub_mapping.items()):
                     yield f"{key}.{index}.{sub_key}", sub_value
@@ -287,7 +305,9 @@ def _convert_io(obj: Optional[Mapping[str, Any]]) -> Iterator[str]:
         yield process_content(value)
     else:
         obj = dict(_replace_nan(obj))
-        content = process_content(json.dumps(obj, default=_serialize_json, ensure_ascii=False))
+        content = process_content(
+            json.dumps(obj, default=_serialize_json, ensure_ascii=False)
+        )
         yield process_content(content)
         yield MimeTypeValues.JSON.value
 
@@ -301,12 +321,16 @@ def _replace_nan(obj: Mapping[str, Any]) -> Iterator[Tuple[str, Any]]:
 
 
 @stop_on_exception
-def _prompts(inputs: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, List[str]]]:
+def _prompts(
+    inputs: Optional[Mapping[str, Any]],
+) -> Iterator[Tuple[str, List[str]]]:
     """Yields prompts if present."""
     if not inputs:
         return
     if not hasattr(inputs, "get"):
-        logger.warning(f"Invalid input type for parameter 'inputs': expected mapping, found {type(inputs).__name__}")
+        logger.warning(
+            f"Invalid input type for parameter 'inputs': expected mapping, found {type(inputs).__name__}"
+        )
         return
     if prompts := inputs.get("prompts"):
         idx = 0
@@ -315,7 +339,10 @@ def _prompts(inputs: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, List[st
                 if "role" in prompt:
                     yield f"gen_ai.prompt.{idx}.role", f"{prompt['role']}"
                 if "text" in prompt:
-                    yield f"gen_ai.prompt.{idx}.content", process_content(f"{prompt['text']}")
+                    yield (
+                        f"gen_ai.prompt.{idx}.content",
+                        process_content(f"{prompt['text']}"),
+                    )
             elif isinstance(prompt, str):
                 yield f"gen_ai.prompt.{idx}.content", process_content(prompt)
             idx += 1
@@ -323,7 +350,7 @@ def _prompts(inputs: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, List[st
 
 @stop_on_exception
 def _input_messages(
-        inputs: Optional[Mapping[str, Any]],
+    inputs: Optional[Mapping[str, Any]],
 ) -> Iterator[Tuple[str, List[Dict[str, Any]]]]:
     """Yields chat messages if present."""
     if not inputs:
@@ -341,25 +368,42 @@ def _input_messages(
         if isinstance(first_messages, list):
             for message_data in first_messages:
                 if isinstance(message_data, BaseMessage):
-                    parsed_messages.append(dict(_parse_message_data(message_data.to_json())))
+                    parsed_messages.append(
+                        dict(_parse_message_data(message_data.to_json()))
+                    )
                 elif hasattr(message_data, "get"):
-                    parsed_messages.append(dict(_parse_message_data(message_data)))
-                elif isinstance(message_data, Sequence) and len(message_data) == 2:
+                    parsed_messages.append(
+                        dict(_parse_message_data(message_data))
+                    )
+                elif (
+                    isinstance(message_data, Sequence)
+                    and len(message_data) == 2
+                ):
                     # Handle tuple format (role, content)
                     role, content = message_data
-                    parsed_messages.append({MESSAGE_ROLE: role, MESSAGE_CONTENT: content})
+                    parsed_messages.append(
+                        {MESSAGE_ROLE: role, MESSAGE_CONTENT: content}
+                    )
                 else:
-                    logger.warning(f"Failed to parse message of type {type(message_data)}")
+                    logger.warning(
+                        f"Failed to parse message of type {type(message_data)}"
+                    )
         elif isinstance(first_messages, BaseMessage):
-            parsed_messages.append(dict(_parse_message_data(first_messages.to_json())))
+            parsed_messages.append(
+                dict(_parse_message_data(first_messages.to_json()))
+            )
         elif hasattr(first_messages, "get"):
             parsed_messages.append(dict(_parse_message_data(first_messages)))
         elif isinstance(first_messages, Sequence) and len(first_messages) == 2:
             # Handle tuple format (role, content)
             role, content = first_messages
-            parsed_messages.append({MESSAGE_ROLE: role, MESSAGE_CONTENT: content})
+            parsed_messages.append(
+                {MESSAGE_ROLE: role, MESSAGE_CONTENT: content}
+            )
         else:
-            logger.warning(f"Failed to parse messages of type {type(first_messages)}")
+            logger.warning(
+                f"Failed to parse messages of type {type(first_messages)}"
+            )
         if parsed_messages:
             yield LLM_INPUT_MESSAGES, parsed_messages
     elif multiple_prompts := inputs.get("prompts"):
@@ -368,7 +412,9 @@ def _input_messages(
         ), f"expected Iterable, found {type(multiple_prompts)}"
         parsed_prompts = []
         for prompt_data in multiple_prompts:
-            assert isinstance(prompt_data, str), f"expected str, found {type(prompt_data)}"
+            assert isinstance(
+                prompt_data, str
+            ), f"expected str, found {type(prompt_data)}"
             parsed_prompts.append(dict(_parse_prompt_data(prompt_data)))
         if parsed_prompts:
             yield LLM_INPUT_MESSAGES, parsed_prompts
@@ -376,7 +422,7 @@ def _input_messages(
 
 @stop_on_exception
 def _output_messages(
-        outputs: Optional[Mapping[str, Any]],
+    outputs: Optional[Mapping[str, Any]],
 ) -> Iterator[Tuple[str, List[Dict[str, Any]]]]:
     """Yields chat messages if present."""
     if not outputs:
@@ -396,22 +442,32 @@ def _output_messages(
     ), f"expected Iterable, found {type(first_generations)}"
     parsed_messages = []
     for generation in first_generations:
-        assert hasattr(generation, "get"), f"expected Mapping, found {type(generation)}"
+        assert hasattr(
+            generation, "get"
+        ), f"expected Mapping, found {type(generation)}"
         if message_data := generation.get("message"):
             if isinstance(message_data, BaseMessage):
-                parsed_messages.append(dict(_parse_message_data(message_data.to_json())))
+                parsed_messages.append(
+                    dict(_parse_message_data(message_data.to_json()))
+                )
             elif hasattr(message_data, "get"):
                 parsed_messages.append(dict(_parse_message_data(message_data)))
             else:
-                logger.warning(f"Failed to parse message of type {type(message_data)}")
+                logger.warning(
+                    f"Failed to parse message of type {type(message_data)}"
+                )
         elif text := generation.get("text"):
             parsed_messages.append(text)
         if generation_info := generation.get("generation_info"):
-            assert hasattr(generation_info, "get"), f"expected Mapping, found {type(generation_info)}"
+            assert hasattr(
+                generation_info, "get"
+            ), f"expected Mapping, found {type(generation_info)}"
             if finish_reason := generation_info.get("finish_reason"):
                 yield LLM_RESPONSE_FINISH_REASON, finish_reason
             if token_usage := generation_info.get("token_usage"):
-                assert hasattr(token_usage, "get"), f"expected Mapping, found {type(token_usage)}"
+                assert hasattr(
+                    token_usage, "get"
+                ), f"expected Mapping, found {type(token_usage)}"
                 for attribute_name, key in [
                     (LLM_USAGE_PROMPT_TOKENS, "input_tokens"),
                     (LLM_USAGE_COMPLETION_TOKENS, "output_tokens"),
@@ -423,23 +479,31 @@ def _output_messages(
         yield LLM_OUTPUT_MESSAGES, parsed_messages
     if not (llm_output := outputs.get("llm_output")):
         return
-    assert hasattr(llm_output, "get"), f"expected Mapping, found {type(llm_output)}"
+    assert hasattr(
+        llm_output, "get"
+    ), f"expected Mapping, found {type(llm_output)}"
     if model_name := llm_output.get("model_name"):
         yield LLM_RESPONSE_MODEL_NAME, model_name
 
 
 @stop_on_exception
-def _parse_prompt_data(prompt_data: Optional[str]) -> Iterator[Tuple[str, Any]]:
+def _parse_prompt_data(
+    prompt_data: Optional[str],
+) -> Iterator[Tuple[str, Any]]:
     if not prompt_data:
         return
-    assert isinstance(prompt_data, str), f"expected str, found {type(prompt_data)}"
+    assert isinstance(
+        prompt_data, str
+    ), f"expected str, found {type(prompt_data)}"
     yield CONTENT, process_content(prompt_data)
 
 
 @stop_on_exception
-def _parse_message_data(message_data: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, Any]]:
+def _parse_message_data(
+    message_data: Optional[Mapping[str, Any]],
+) -> Iterator[Tuple[str, Any]]:
     """Parses message data to grab message role, content, etc.
-    
+
     Example HumanMessage structure:
     {
         'additional_kwargs': {'session_id': 's456', 'user_id': 'u123'},
@@ -454,11 +518,15 @@ def _parse_message_data(message_data: Optional[Mapping[str, Any]]) -> Iterator[T
     if not message_data:
         return
     if not hasattr(message_data, "get"):
-        logger.warning(f"Invalid message_data type: expected Mapping, found {type(message_data)}")
+        logger.warning(
+            f"Invalid message_data type: expected Mapping, found {type(message_data)}"
+        )
         return
     id_ = message_data.get("id")
     if not isinstance(id_, list) or not id_:
-        logger.warning(f"Invalid message id format: expected non-empty list, found {type(id_)}")
+        logger.warning(
+            f"Invalid message id format: expected non-empty list, found {type(id_)}"
+        )
         return
     message_class_name = id_[-1]
     if message_class_name.startswith("HumanMessage"):
@@ -478,7 +546,9 @@ def _parse_message_data(message_data: Optional[Mapping[str, Any]]) -> Iterator[T
         raise ValueError(f"Cannot parse message of type: {message_class_name}")
     yield MESSAGE_ROLE, role
     if kwargs := message_data.get("kwargs"):
-        assert hasattr(kwargs, "get"), f"expected Mapping, found {type(kwargs)}"
+        assert hasattr(
+            kwargs, "get"
+        ), f"expected Mapping, found {type(kwargs)}"
         if content := kwargs.get("content"):
             if isinstance(content, str):
                 yield MESSAGE_CONTENT, process_content(content)
@@ -488,9 +558,14 @@ def _parse_message_data(message_data: Optional[Mapping[str, Any]]) -> Iterator[T
                     if isinstance(obj, str):
                         yield f"{MESSAGE_CONTENT}.{i}", process_content(obj)
                     elif hasattr(obj, "get"):
-                        yield f"{MESSAGE_CONTENT}.{i}", process_content(str(obj))
+                        yield (
+                            f"{MESSAGE_CONTENT}.{i}",
+                            process_content(str(obj)),
+                        )
                     else:
-                        logger.warning(f"Unexpected content object type: {type(obj)}")
+                        logger.warning(
+                            f"Unexpected content object type: {type(obj)}"
+                        )
             else:
                 logger.warning(f"Unexpected content type: {type(content)}")
 
@@ -508,10 +583,14 @@ def _parse_message_data(message_data: Optional[Mapping[str, Any]]) -> Iterator[T
                     function_call, "get"
                 ), f"expected Mapping, found {type(function_call)}"
                 if name := function_call.get("name"):
-                    assert isinstance(name, str), f"expected str, found {type(name)}"
+                    assert isinstance(
+                        name, str
+                    ), f"expected str, found {type(name)}"
                     yield MESSAGE_FUNCTION_CALL_NAME, name
                 if arguments := function_call.get("arguments"):
-                    assert isinstance(arguments, str), f"expected str, found {type(arguments)}"
+                    assert isinstance(
+                        arguments, str
+                    ), f"expected str, found {type(arguments)}"
                     yield MESSAGE_FUNCTION_CALL_ARGUMENTS_JSON, arguments
             if tool_calls := additional_kwargs.get("tool_calls"):
                 assert isinstance(
@@ -526,17 +605,25 @@ def _parse_message_data(message_data: Optional[Mapping[str, Any]]) -> Iterator[T
 
 
 @stop_on_exception
-def _get_tool_call(tool_call: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, Any]]:
+def _get_tool_call(
+    tool_call: Optional[Mapping[str, Any]],
+) -> Iterator[Tuple[str, Any]]:
     if not tool_call:
         return
-    assert hasattr(tool_call, "get"), f"expected Mapping, found {type(tool_call)}"
+    assert hasattr(
+        tool_call, "get"
+    ), f"expected Mapping, found {type(tool_call)}"
     if function := tool_call.get("function"):
-        assert hasattr(function, "get"), f"expected Mapping, found {type(function)}"
+        assert hasattr(
+            function, "get"
+        ), f"expected Mapping, found {type(function)}"
         if name := function.get("name"):
             assert isinstance(name, str), f"expected str, found {type(name)}"
             yield TOOL_CALL_FUNCTION_NAME, name
         if arguments := function.get("arguments"):
-            assert isinstance(arguments, str), f"expected str, found {type(arguments)}"
+            assert isinstance(
+                arguments, str
+            ), f"expected str, found {type(arguments)}"
             yield TOOL_CALL_FUNCTION_ARGUMENTS_JSON, arguments
 
 
@@ -549,7 +636,9 @@ def _prompt_template(run: Run) -> Iterator[Tuple[str, Any]]:
     serialized: Optional[Mapping[str, Any]] = run.serialized
     if not serialized:
         return
-    assert hasattr(serialized, "get"), f"expected Mapping, found {type(serialized)}"
+    assert hasattr(
+        serialized, "get"
+    ), f"expected Mapping, found {type(serialized)}"
     if not (kwargs := serialized.get("kwargs")):
         return
     assert isinstance(kwargs, dict), f"expected dict, found {type(kwargs)}"
@@ -564,7 +653,9 @@ def _prompt_template(run: Run) -> Iterator[Tuple[str, Any]]:
         if id_[-1].endswith("PromptTemplate"):
             if not (kwargs := obj.get("kwargs")):
                 continue
-            assert hasattr(kwargs, "get"), f"expected Mapping, found {type(kwargs)}"
+            assert hasattr(
+                kwargs, "get"
+            ), f"expected Mapping, found {type(kwargs)}"
             if not (template := kwargs.get("template", "")):
                 continue
             yield LLM_PROMPT_TEMPLATE, template
@@ -577,12 +668,17 @@ def _prompt_template(run: Run) -> Iterator[Tuple[str, Any]]:
                     if (value := run.inputs.get(variable)) is not None:
                         template_variables[variable] = value
                 if template_variables:
-                    yield LLM_PROMPT_TEMPLATE_VARIABLES, json.dumps(template_variables, cls=_SafeJSONEncoder)
+                    yield (
+                        LLM_PROMPT_TEMPLATE_VARIABLES,
+                        json.dumps(template_variables, cls=_SafeJSONEncoder),
+                    )
             break
 
 
 @stop_on_exception
-def _model_name(extra: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, str]]:
+def _model_name(
+    extra: Optional[Mapping[str, Any]],
+) -> Iterator[Tuple[str, str]]:
     """Yields model name if present."""
     if not extra:
         return
@@ -605,8 +701,14 @@ def get_attr_or_key(obj, name, default=None):
 
 def extract_token_counts_from_token_usage(token_usage):
     mapping = [
-        (LLM_USAGE_PROMPT_TOKENS, ["prompt_tokens", "PromptTokens", "input_tokens"]),
-        (LLM_USAGE_COMPLETION_TOKENS, ["completion_tokens", "CompletionTokens", "output_tokens"]),
+        (
+            LLM_USAGE_PROMPT_TOKENS,
+            ["prompt_tokens", "PromptTokens", "input_tokens"],
+        ),
+        (
+            LLM_USAGE_COMPLETION_TOKENS,
+            ["completion_tokens", "CompletionTokens", "output_tokens"],
+        ),
         (LLM_USAGE_TOTAL_TOKENS, ["total_tokens", "TotalTokens"]),
     ]
     for attr, keys in mapping:
@@ -617,13 +719,17 @@ def extract_token_counts_from_token_usage(token_usage):
 
 
 @stop_on_exception
-def _token_counts(outputs: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, int]]:
+def _token_counts(
+    outputs: Optional[Mapping[str, Any]],
+) -> Iterator[Tuple[str, int]]:
     """Yields token count information if present, from llm_output, generation_info, or response_metadata, only once."""
     if not outputs or not hasattr(outputs, "get"):
         return
     # 1. llm_output
     if (llm_output := outputs.get("llm_output", None)) is not None:
-        if (token_usage := get_attr_or_key(llm_output, "token_usage")) is not None:
+        if (
+            token_usage := get_attr_or_key(llm_output, "token_usage")
+        ) is not None:
             yield from extract_token_counts_from_token_usage(token_usage)
             logger.debug("token get from llm_output")
             return
@@ -634,16 +740,30 @@ def _token_counts(outputs: Optional[Mapping[str, Any]]) -> Iterator[Tuple[str, i
             if not isinstance(group, list):
                 continue
             for generation in group:
-                generation_info = get_attr_or_key(generation, "generation_info")
-                if (token_usage := get_attr_or_key(generation_info, "token_usage")):
-                    yield from extract_token_counts_from_token_usage(token_usage)
+                generation_info = get_attr_or_key(
+                    generation, "generation_info"
+                )
+                if token_usage := get_attr_or_key(
+                    generation_info, "token_usage"
+                ):
+                    yield from extract_token_counts_from_token_usage(
+                        token_usage
+                    )
                     logger.debug("token get from generations generation_info")
                     return
                 message = get_attr_or_key(generation, "message")
-                if (response_metadata := get_attr_or_key(message, "response_metadata")):
-                    if (token_usage := get_attr_or_key(response_metadata, "token_usage")):
-                        yield from extract_token_counts_from_token_usage(token_usage)
-                        logger.debug("token get from generations message response_metadata")
+                if response_metadata := get_attr_or_key(
+                    message, "response_metadata"
+                ):
+                    if token_usage := get_attr_or_key(
+                        response_metadata, "token_usage"
+                    ):
+                        yield from extract_token_counts_from_token_usage(
+                            token_usage
+                        )
+                        logger.debug(
+                            "token get from generations message response_metadata"
+                        )
                         return
     return
 
@@ -655,7 +775,9 @@ def _tools(run: Run) -> Iterator[Tuple[str, str]]:
         return
     if not (serialized := run.serialized):
         return
-    assert hasattr(serialized, "get"), f"expected Mapping, found {type(serialized)}"
+    assert hasattr(
+        serialized, "get"
+    ), f"expected Mapping, found {type(serialized)}"
     if name := serialized.get("name"):
         yield TOOL_NAME, name
     if description := serialized.get("description"):
@@ -663,15 +785,22 @@ def _tools(run: Run) -> Iterator[Tuple[str, str]]:
 
 
 @stop_on_exception
-def _retrieval_documents(run: Run) -> Iterator[Tuple[str, List[Mapping[str, Any]]]]:
+def _retrieval_documents(
+    run: Run,
+) -> Iterator[Tuple[str, List[Mapping[str, Any]]]]:
     if run.run_type.lower() != "retriever":
         return
     if not (outputs := run.outputs):
         return
     assert hasattr(outputs, "get"), f"expected Mapping, found {type(outputs)}"
     documents = outputs.get("documents")
-    assert isinstance(documents, Iterable), f"expected Iterable, found {type(documents)}"
-    yield RETRIEVAL_DOCUMENTS, [dict(_as_document(document)) for document in documents]
+    assert isinstance(
+        documents, Iterable
+    ), f"expected Iterable, found {type(documents)}"
+    yield (
+        RETRIEVAL_DOCUMENTS,
+        [dict(_as_document(document)) for document in documents],
+    )
 
 
 @stop_on_exception
@@ -682,7 +811,9 @@ def _metadata(run: Run) -> Iterator[Tuple[str, str]]:
     if not run.extra or not (metadata := run.extra.get("metadata")):
         return
     if not isinstance(metadata, Mapping):
-        logger.warning(f"Invalid metadata type: expected Mapping, found {type(metadata)}")
+        logger.warning(
+            f"Invalid metadata type: expected Mapping, found {type(metadata)}"
+        )
         return
 
     # 获取 session_id
@@ -692,7 +823,7 @@ def _metadata(run: Run) -> Iterator[Tuple[str, str]]:
         or metadata.get("thread_id")
     ):
         yield LLM_SESSION_ID, session_id
-    
+
     # 获取 user_id
     if user_id := metadata.get("user_id"):
         yield LLM_USER_ID, user_id
@@ -703,10 +834,14 @@ def _metadata(run: Run) -> Iterator[Tuple[str, str]]:
 @stop_on_exception
 def _as_document(document: Any) -> Iterator[Tuple[str, Any]]:
     if page_content := getattr(document, "page_content", None):
-        assert isinstance(page_content, str), f"expected str, found {type(page_content)}"
+        assert isinstance(
+            page_content, str
+        ), f"expected str, found {type(page_content)}"
         yield DOCUMENT_CONTENT, process_content(page_content)
     if metadata := getattr(document, "metadata", None):
-        assert isinstance(metadata, Mapping), f"expected Mapping, found {type(metadata)}"
+        assert isinstance(
+            metadata, Mapping
+        ), f"expected Mapping, found {type(metadata)}"
         yield DOCUMENT_METADATA, json.dumps(metadata, cls=_SafeJSONEncoder)
 
 

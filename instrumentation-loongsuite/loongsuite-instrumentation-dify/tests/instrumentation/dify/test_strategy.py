@@ -2,14 +2,26 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import GEN_AI_SYSTEM, GEN_AI_USAGE_PROMPT_TOKENS, \
-    GEN_AI_USAGE_COMPLETION_TOKENS
-
-from opentelemetry.instrumentation.dify.entities import _EventData, NodeType
-from opentelemetry.instrumentation.dify.semconv import GEN_AI_USER_ID, GEN_AI_SESSION_ID, GEN_AI_SPAN_KIND, \
-    SpanKindValues, GEN_AI_REQUEST_MODEL_NAME, GEN_AI_USAGE_TOTAL_TOKENS
-from opentelemetry.instrumentation.dify.strategy.workflow_strategy import WorkflowRunStartStrategy, \
-    WorkflowRunFailedStrategy, WorkflowNodeStartStrategy, WorkflowNodeFinishStrategy
+from opentelemetry.instrumentation.dify.entities import NodeType, _EventData
+from opentelemetry.instrumentation.dify.semconv import (
+    GEN_AI_REQUEST_MODEL_NAME,
+    GEN_AI_SESSION_ID,
+    GEN_AI_SPAN_KIND,
+    GEN_AI_USAGE_TOTAL_TOKENS,
+    GEN_AI_USER_ID,
+    SpanKindValues,
+)
+from opentelemetry.instrumentation.dify.strategy.workflow_strategy import (
+    WorkflowNodeFinishStrategy,
+    WorkflowNodeStartStrategy,
+    WorkflowRunFailedStrategy,
+    WorkflowRunStartStrategy,
+)
+from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import (
+    GEN_AI_SYSTEM,
+    GEN_AI_USAGE_COMPLETION_TOKENS,
+    GEN_AI_USAGE_PROMPT_TOKENS,
+)
 
 
 class TestWorkflowRunStartStrategy(unittest.TestCase):
@@ -24,13 +36,24 @@ class TestWorkflowRunStartStrategy(unittest.TestCase):
         # Initialize the strategy with the mock handler
         self.strategy = WorkflowRunStartStrategy(self.mock_handler)
 
-    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
-    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
-    def test_handle_workflow_run_start_v1(self, mock_get_timestamp, mock_get_workflow_run_id):
+    @patch(
+        "opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id",
+        return_value="test_event_id",
+    )
+    @patch(
+        "opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr",
+        return_value=1234567890,
+    )
+    def test_handle_workflow_run_start_v1(
+        self, mock_get_timestamp, mock_get_workflow_run_id
+    ):
         # Mock run object
         run = MagicMock()
         run.app_id = "test_app_id"
-        run.inputs_dict = {"sys.user_id": "test_user", "sys.conversation_id": "test_session"}
+        run.inputs_dict = {
+            "sys.user_id": "test_user",
+            "sys.conversation_id": "test_session",
+        }
         run.created_at = MagicMock()
         run.created_at.timestamp.return_value = 1234567890.123456
 
@@ -45,9 +68,11 @@ class TestWorkflowRunStartStrategy(unittest.TestCase):
         event_data = self.mock_handler._event_data["test_event_id"]
         self.assertIsInstance(event_data, _EventData)
         self.assertEqual(event_data.attributes[GEN_AI_USER_ID], "test_user")
-        self.assertEqual(event_data.attributes[GEN_AI_SESSION_ID], "test_session")
-        self.assertEqual(event_data.attributes['app.name'], "test_app_name")
-        self.assertEqual(event_data.attributes['app.id'], "test_app_id")
+        self.assertEqual(
+            event_data.attributes[GEN_AI_SESSION_ID], "test_session"
+        )
+        self.assertEqual(event_data.attributes["app.name"], "test_app_name")
+        self.assertEqual(event_data.attributes["app.id"], "test_app_id")
         self.mock_handler._tracer.start_span.assert_called_once_with(
             "workflow_run_test_event_id",
             attributes={
@@ -58,12 +83,24 @@ class TestWorkflowRunStartStrategy(unittest.TestCase):
         )
         self.mock_handler._logger.warning.assert_not_called()
 
-    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
-    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
-    def test_handle_workflow_run_start_v2(self, mock_get_timestamp, mock_get_workflow_run_id):
+    @patch(
+        "opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id",
+        return_value="test_event_id",
+    )
+    @patch(
+        "opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr",
+        return_value=1234567890,
+    )
+    def test_handle_workflow_run_start_v2(
+        self, mock_get_timestamp, mock_get_workflow_run_id
+    ):
         # Mock run object
         run = MagicMock()
-        run.inputs = {"sys.app_id": "test_app_id", "sys.user_id": "test_user", "sys.conversation_id": "test_session"}
+        run.inputs = {
+            "sys.app_id": "test_app_id",
+            "sys.user_id": "test_user",
+            "sys.conversation_id": "test_session",
+        }
         run.created_at = MagicMock()
         run.created_at.timestamp.return_value = 1234567890.123456
 
@@ -78,9 +115,11 @@ class TestWorkflowRunStartStrategy(unittest.TestCase):
         event_data = self.mock_handler._event_data["test_event_id"]
         self.assertIsInstance(event_data, _EventData)
         self.assertEqual(event_data.attributes[GEN_AI_USER_ID], "test_user")
-        self.assertEqual(event_data.attributes[GEN_AI_SESSION_ID], "test_session")
-        self.assertEqual(event_data.attributes['app.name'], "test_app_name")
-        self.assertEqual(event_data.attributes['app.id'], "test_app_id")
+        self.assertEqual(
+            event_data.attributes[GEN_AI_SESSION_ID], "test_session"
+        )
+        self.assertEqual(event_data.attributes["app.name"], "test_app_name")
+        self.assertEqual(event_data.attributes["app.id"], "test_app_id")
         self.mock_handler._tracer.start_span.assert_called_once_with(
             "workflow_run_test_event_id",
             attributes={
@@ -90,6 +129,7 @@ class TestWorkflowRunStartStrategy(unittest.TestCase):
             start_time=1234567890,
         )
         self.mock_handler._logger.warning.assert_not_called()
+
 
 class TestWorkflowRunFailedStrategy(unittest.TestCase):
     def setUp(self):
@@ -101,11 +141,17 @@ class TestWorkflowRunFailedStrategy(unittest.TestCase):
 
         self.strategy = WorkflowRunFailedStrategy(self.mock_handler)
 
-    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
+    @patch(
+        "opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id",
+        return_value="test_event_id",
+    )
     def test_handle_workflow_run_failed_v1(self, mock_get_workflow_run_id):
         run = MagicMock()
         run.app_id = "test_app_id"
-        run.inputs_dict = {"sys.user_id": "test_user", "sys.conversation_id": "test_session"}
+        run.inputs_dict = {
+            "sys.user_id": "test_user",
+            "sys.conversation_id": "test_session",
+        }
         error = "Test error message"
 
         self.strategy._handle_workflow_run_failed_v1(run, error)
@@ -114,10 +160,17 @@ class TestWorkflowRunFailedStrategy(unittest.TestCase):
         self.mock_handler._logger.warning.assert_not_called()
         self.mock_handler._tracer.start_span.assert_not_called()
 
-    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id", return_value="test_event_id")
+    @patch(
+        "opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_workflow_run_id",
+        return_value="test_event_id",
+    )
     def test_handle_workflow_run_failed_v2(self, mock_get_workflow_run_id):
         run = MagicMock()
-        run.inputs = {"sys.app_id": "test_app_id", "sys.user_id": "test_user", "sys.conversation_id": "test_session"}
+        run.inputs = {
+            "sys.app_id": "test_app_id",
+            "sys.user_id": "test_user",
+            "sys.conversation_id": "test_session",
+        }
         error = "Test error message"
 
         self.strategy._handle_workflow_run_failed_v2(run, error)
@@ -125,6 +178,7 @@ class TestWorkflowRunFailedStrategy(unittest.TestCase):
         self.assertNotIn("test_event_id", self.mock_handler._event_data)
         self.mock_handler._logger.warning.assert_not_called()
         self.mock_handler._tracer.start_span.assert_not_called()
+
 
 class TestWorkflowNodeStartStrategy(unittest.TestCase):
     def setUp(self):
@@ -138,7 +192,10 @@ class TestWorkflowNodeStartStrategy(unittest.TestCase):
         # Initialize the strategy with the mock handler
         self.strategy = WorkflowNodeStartStrategy(self.mock_handler)
 
-    @patch("opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr", return_value=1234567890)
+    @patch(
+        "opentelemetry.instrumentation.dify.strategy.workflow_strategy.get_timestamp_from_datetime_attr",
+        return_value=1234567890,
+    )
     def test_workflow_node_start_to_stream_response(self, mock_get_timestamp):
         # Mock event object
         event = MagicMock()
@@ -158,7 +215,9 @@ class TestWorkflowNodeStartStrategy(unittest.TestCase):
             context=None,
             payloads=[],
             exceptions=[],
-            attributes={"parent_key": "parent_value"},  # Simulate parent attributes
+            attributes={
+                "parent_key": "parent_value"
+            },  # Simulate parent attributes
             node_type=None,
             start_time=1234567890,
             otel_token=None,
@@ -166,12 +225,15 @@ class TestWorkflowNodeStartStrategy(unittest.TestCase):
         self.mock_handler._event_data["test_parent_id"] = parent_event_data
 
         # Call the method
-        self.strategy._workflow_node_start_to_stream_response(event, workflow_node_execution)
+        self.strategy._workflow_node_start_to_stream_response(
+            event, workflow_node_execution
+        )
 
         # Assertions
         self.assertIn("test_node_id", self.mock_handler._event_data)
         event_data = self.mock_handler._event_data["test_node_id"]
         self.assertIsInstance(event_data, _EventData)
+
 
 class TestWorkflowNodeFinishStrategy(unittest.TestCase):
     def setUp(self):
@@ -192,8 +254,14 @@ class TestWorkflowNodeFinishStrategy(unittest.TestCase):
             (NodeType.PARAMETER_EXTRACTOR.value, SpanKindValues.LLM.value),
             (NodeType.TOOL.value, SpanKindValues.TOOL.value),
             (NodeType.HTTP_REQUEST.value, SpanKindValues.TOOL.value),
-            (NodeType.KNOWLEDGE_RETRIEVAL.value, SpanKindValues.RETRIEVER.value),
-            ("UNKNOWN_TYPE", SpanKindValues.TASK.value),  # Unknown type fallback
+            (
+                NodeType.KNOWLEDGE_RETRIEVAL.value,
+                SpanKindValues.RETRIEVER.value,
+            ),
+            (
+                "UNKNOWN_TYPE",
+                SpanKindValues.TASK.value,
+            ),  # Unknown type fallback
         ]
 
         for node_type, expected_span_kind in node_types:
@@ -242,7 +310,10 @@ class TestWorkflowNodeFinishStrategy(unittest.TestCase):
 
         expected_input_messages = [
             {"role": "user", "parts": [{"type": "text", "content": "Hello"}]},
-            {"role": "assistant", "parts": [{"type": "text", "content": "Hi there!"}]},
+            {
+                "role": "assistant",
+                "parts": [{"type": "text", "content": "Hi there!"}],
+            },
         ]
         self.assertEqual(json.loads(input_messages), expected_input_messages)
 
@@ -273,7 +344,9 @@ class TestWorkflowNodeFinishStrategy(unittest.TestCase):
 
         llm_attributes = self.strategy._extract_llm_attributes(event)
 
-        self.assertEqual(llm_attributes[GEN_AI_REQUEST_MODEL_NAME], "TestModel")
+        self.assertEqual(
+            llm_attributes[GEN_AI_REQUEST_MODEL_NAME], "TestModel"
+        )
         self.assertEqual(llm_attributes[GEN_AI_SYSTEM], "TestProvider")
         self.assertEqual(llm_attributes[GEN_AI_USAGE_PROMPT_TOKENS], 10)
         self.assertEqual(llm_attributes[GEN_AI_USAGE_COMPLETION_TOKENS], 5)

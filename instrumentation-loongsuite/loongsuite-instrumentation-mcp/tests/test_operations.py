@@ -1,22 +1,17 @@
-from opentelemetry.instrumentation.mcp import MCPInstrumentor
-from opentelemetry.instrumentation.mcp.semconv import MCPMetricsAttributes
-from mcp.types import LATEST_PROTOCOL_VERSION, TextContent, TextResourceContents
-from opentelemetry.trace import StatusCode
-from pydantic import ValidationError
 import pytest
 from fastmcp import Client
-from mcp.shared.exceptions import McpError
 from fastmcp.exceptions import ToolError
-from .fixtures import (
-    meter_provider,
-    memory_reader,
-    tracer_provider,
-    mcp_server_factory,
-    memory_exporter,
-    _setup_tracer_and_meter_provider,
-    _teardown_tracer_and_meter_provider,
-    find_span,
+from mcp.shared.exceptions import McpError
+from mcp.types import (
+    LATEST_PROTOCOL_VERSION,
+    TextContent,
+    TextResourceContents,
 )
+from pydantic import ValidationError
+
+from opentelemetry.instrumentation.mcp import MCPInstrumentor
+from opentelemetry.instrumentation.mcp.semconv import MCPMetricsAttributes
+from opentelemetry.trace import StatusCode
 
 
 @pytest.fixture
@@ -26,7 +21,11 @@ def mcp_server(mcp_server_factory):
 
 # do instrument before each test
 @pytest.fixture(autouse=True)
-def instrumentor(tracer_provider, _setup_tracer_and_meter_provider, _teardown_tracer_and_meter_provider):
+def instrumentor(
+    tracer_provider,
+    _setup_tracer_and_meter_provider,
+    _teardown_tracer_and_meter_provider,
+):
     _setup_tracer_and_meter_provider()
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
@@ -36,7 +35,9 @@ def instrumentor(tracer_provider, _setup_tracer_and_meter_provider, _teardown_tr
 
 
 @pytest.mark.asyncio
-async def test_call_tool(mcp_server, memory_exporter, memory_reader, find_span):
+async def test_call_tool(
+    mcp_server, memory_exporter, memory_reader, find_span
+):
     async with Client(mcp_server) as client:
         result = await client.call_tool("greet", {"name": "World"})
         if hasattr(result, "content"):
@@ -59,19 +60,32 @@ async def test_call_tool(mcp_server, memory_exporter, memory_reader, find_span):
         assert call_tool_span.attributes["mcp.tool.name"] == "greet"
         assert call_tool_span.attributes["mcp.method.name"] == "tools/call"
         assert call_tool_span.attributes["rpc.jsonrpc.request_id"] == "1"
-        assert call_tool_span.attributes["mcp.client.version"] == LATEST_PROTOCOL_VERSION
-        assert int(call_tool_span.attributes["mcp.output.size"]) == len(content.text)
+        assert (
+            call_tool_span.attributes["mcp.client.version"]
+            == LATEST_PROTOCOL_VERSION
+        )
+        assert int(call_tool_span.attributes["mcp.output.size"]) == len(
+            content.text
+        )
 
         # metrics
         metrics_data = memory_reader.get_metrics_data()
-        resource_metrics = metrics_data.resource_metrics if metrics_data else []
+        resource_metrics = (
+            metrics_data.resource_metrics if metrics_data else []
+        )
 
         mcp_client_operation_duration = None
         for metrics in resource_metrics:
             for scope_metrics in metrics.scope_metrics:
-                if scope_metrics.scope.name == "opentelemetry.instrumentation.mcp":
+                if (
+                    scope_metrics.scope.name
+                    == "opentelemetry.instrumentation.mcp"
+                ):
                     for metric in scope_metrics.metrics:
-                        if metric.name == MCPMetricsAttributes.CLIENT_OPERATION_DURATION_METRIC:
+                        if (
+                            metric.name
+                            == MCPMetricsAttributes.CLIENT_OPERATION_DURATION_METRIC
+                        ):
                             mcp_client_operation_duration = metric
                             break
         assert mcp_client_operation_duration is not None
@@ -111,7 +125,9 @@ async def test_list_prompts(mcp_server, memory_exporter, find_span):
         assert initialize_span.name == "initialize"
         assert initialize_span.attributes["rpc.jsonrpc.request_id"] == "0"
         assert list_prompts_span.name == "prompts/list"
-        assert list_prompts_span.attributes["mcp.method.name"] == "prompts/list"
+        assert (
+            list_prompts_span.attributes["mcp.method.name"] == "prompts/list"
+        )
         assert list_prompts_span.attributes["rpc.jsonrpc.request_id"] == "1"
 
 
@@ -129,7 +145,10 @@ async def test_list_resources(mcp_server, memory_exporter, find_span):
         assert initialize_span.name == "initialize"
         assert initialize_span.attributes["rpc.jsonrpc.request_id"] == "0"
         assert list_resources_span.name == "resources/list"
-        assert list_resources_span.attributes["mcp.method.name"] == "resources/list"
+        assert (
+            list_resources_span.attributes["mcp.method.name"]
+            == "resources/list"
+        )
         assert list_resources_span.attributes["rpc.jsonrpc.request_id"] == "1"
 
 
@@ -147,16 +166,27 @@ async def test_list_resource_templates(mcp_server, memory_exporter, find_span):
         assert initialize_span.name == "initialize"
         assert initialize_span.attributes["rpc.jsonrpc.request_id"] == "0"
         assert list_resource_templates_span.name == "resources/templates/list"
-        assert list_resource_templates_span.attributes["mcp.method.name"] == "resources/templates/list"
-        assert list_resource_templates_span.attributes["rpc.jsonrpc.request_id"] == "1"
+        assert (
+            list_resource_templates_span.attributes["mcp.method.name"]
+            == "resources/templates/list"
+        )
+        assert (
+            list_resource_templates_span.attributes["rpc.jsonrpc.request_id"]
+            == "1"
+        )
 
 
 @pytest.mark.asyncio
 async def test_get_prompt(mcp_server, memory_exporter, find_span):
     async with Client(mcp_server) as client:
-        result = await client.get_prompt("summarize_request", {"text": "Hello, World!"})
+        result = await client.get_prompt(
+            "summarize_request", {"text": "Hello, World!"}
+        )
         assert isinstance(result.messages[0].content, TextContent)
-        assert result.messages[0].content.text == "Please summarize the following text:\n\nHello, World!"
+        assert (
+            result.messages[0].content.text
+            == "Please summarize the following text:\n\nHello, World!"
+        )
         spans = memory_exporter.get_finished_spans()
         assert len(spans) >= 2
         initialize_span = find_span("initialize")
@@ -168,8 +198,13 @@ async def test_get_prompt(mcp_server, memory_exporter, find_span):
         assert get_prompt_span.name == "prompts/get summarize_request"
         assert get_prompt_span.attributes["mcp.method.name"] == "prompts/get"
         assert get_prompt_span.attributes["rpc.jsonrpc.request_id"] == "1"
-        assert get_prompt_span.attributes["mcp.prompt.name"] == "summarize_request"
-        assert int(get_prompt_span.attributes["mcp.output.size"]) == len(result.messages[0].content.text)
+        assert (
+            get_prompt_span.attributes["mcp.prompt.name"]
+            == "summarize_request"
+        )
+        assert int(get_prompt_span.attributes["mcp.output.size"]) == len(
+            result.messages[0].content.text
+        )
 
 
 @pytest.mark.asyncio
@@ -187,10 +222,18 @@ async def test_read_resource(mcp_server, memory_exporter, find_span):
         assert initialize_span.name == "initialize"
         assert initialize_span.attributes["rpc.jsonrpc.request_id"] == "0"
         assert read_resource_span.name == "resources/read config://version"
-        assert read_resource_span.attributes["mcp.method.name"] == "resources/read"
+        assert (
+            read_resource_span.attributes["mcp.method.name"]
+            == "resources/read"
+        )
         assert read_resource_span.attributes["rpc.jsonrpc.request_id"] == "1"
-        assert read_resource_span.attributes["mcp.resource.uri"] == "config://version"
-        assert int(read_resource_span.attributes["mcp.output.size"]) == len(result[0].text)
+        assert (
+            read_resource_span.attributes["mcp.resource.uri"]
+            == "config://version"
+        )
+        assert int(read_resource_span.attributes["mcp.output.size"]) == len(
+            result[0].text
+        )
 
         result = await client.call_tool("get_image")
 
@@ -204,15 +247,26 @@ async def test_read_not_exist_resource(mcp_server, memory_exporter, find_span):
         spans = memory_exporter.get_finished_spans()
         assert len(spans) >= 2
         initialize_span = find_span("initialize")
-        read_resource_span = find_span("resources/read config://resources-not-exist")
+        read_resource_span = find_span(
+            "resources/read config://resources-not-exist"
+        )
         assert initialize_span
         assert read_resource_span
         assert initialize_span.name == "initialize"
         assert initialize_span.attributes["rpc.jsonrpc.request_id"] == "0"
-        assert read_resource_span.name == "resources/read config://resources-not-exist"
-        assert read_resource_span.attributes["mcp.method.name"] == "resources/read"
+        assert (
+            read_resource_span.name
+            == "resources/read config://resources-not-exist"
+        )
+        assert (
+            read_resource_span.attributes["mcp.method.name"]
+            == "resources/read"
+        )
         assert read_resource_span.attributes["rpc.jsonrpc.request_id"] == "1"
-        assert read_resource_span.attributes["mcp.resource.uri"] == "config://resources-not-exist"
+        assert (
+            read_resource_span.attributes["mcp.resource.uri"]
+            == "config://resources-not-exist"
+        )
         assert read_resource_span.status.status_code == StatusCode.ERROR
 
 

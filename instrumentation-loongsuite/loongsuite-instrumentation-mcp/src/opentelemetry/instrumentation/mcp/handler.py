@@ -9,20 +9,24 @@ from typing import (
     Union,
 )
 
-from opentelemetry.instrumentation.mcp.metrics import ClientMetrics
-from opentelemetry.instrumentation.mcp.semconv import MCPAttributes, _method_names_with_target, _metric_attribute_names
 from opentelemetry import trace as trace_api
-from opentelemetry.trace import Status, StatusCode, SpanKind
-from opentelemetry.instrumentation.mcp.utils import (
-    _is_capture_content_enabled,
-    _safe_dump_attributes,
-    _get_resource_result_size,
-    _get_call_tool_result_size,
-    _get_prompt_result_size,
-    _get_complete_result_size,
-    _get_logger,
+from opentelemetry.instrumentation.mcp.metrics import ClientMetrics
+from opentelemetry.instrumentation.mcp.semconv import (
+    MCPAttributes,
+    _method_names_with_target,
+    _metric_attribute_names,
 )
 from opentelemetry.instrumentation.mcp.session_handler import _SessionContext
+from opentelemetry.instrumentation.mcp.utils import (
+    _get_call_tool_result_size,
+    _get_complete_result_size,
+    _get_logger,
+    _get_prompt_result_size,
+    _get_resource_result_size,
+    _is_capture_content_enabled,
+    _safe_dump_attributes,
+)
+from opentelemetry.trace import SpanKind, Status, StatusCode
 
 logger = _get_logger(__name__)
 
@@ -42,7 +46,12 @@ except ImportError:
 
 
 class RequestHandler(ABC):
-    def __init__(self, method_name: str, tracer: trace_api.Tracer, metrics: ClientMetrics):
+    def __init__(
+        self,
+        method_name: str,
+        tracer: trace_api.Tracer,
+        metrics: ClientMetrics,
+    ):
         self._tracer = tracer
         self._method_name = method_name
         self._metrics = metrics
@@ -65,7 +74,7 @@ class RequestHandler(ABC):
             try:
                 if span.is_recording():
                     span.set_attributes(input_attributes)
-            except Exception as e:
+            except Exception:
                 logger.debug("Failed to set span attributes", exc_info=True)
 
             # do request
@@ -77,31 +86,47 @@ class RequestHandler(ABC):
                         span.set_status(Status(StatusCode.ERROR, str(e)))
                     self._record_metrics(start_time, input_attributes, None)
                 except Exception:
-                    logger.debug("Failed to set span attributes while handling wrapped exception", exc_info=True)
+                    logger.debug(
+                        "Failed to set span attributes while handling wrapped exception",
+                        exc_info=True,
+                    )
                 raise
 
             # after request
             try:
                 if (
                     self._method_name == "initialize"
-                    and (session_context := self._get_session_context(instance))
+                    and (
+                        session_context := self._get_session_context(instance)
+                    )
                     and (session_id := session_context._parse_session_id())
                 ):
-                    span.set_attribute(MCPAttributes.MCP_SESSION_ID, session_id)
+                    span.set_attribute(
+                        MCPAttributes.MCP_SESSION_ID, session_id
+                    )
 
-                output_attributes, error_message = self._get_output_attributes(result)
+                output_attributes, error_message = self._get_output_attributes(
+                    result
+                )
                 if error_message is not None:
                     span.set_status(Status(StatusCode.ERROR, error_message))
                 else:
                     span.set_status(Status(StatusCode.OK))
                 if span.is_recording():
                     span.set_attributes(output_attributes)
-                self._record_metrics(start_time, input_attributes, output_attributes)
+                self._record_metrics(
+                    start_time, input_attributes, output_attributes
+                )
             except Exception:
-                logger.debug("Failed to set span attributes and record metrics", exc_info=True)
+                logger.debug(
+                    "Failed to set span attributes and record metrics",
+                    exc_info=True,
+                )
             return result
 
-    def _get_target_name(self, args: Tuple[Any, ...], kwargs: Mapping[str, Any]) -> str:
+    def _get_target_name(
+        self, args: Tuple[Any, ...], kwargs: Mapping[str, Any]
+    ) -> str:
         if len(args) > 0:
             return str(args[0])
         _, arg_name = _method_names_with_target[self._method_name]
@@ -109,14 +134,19 @@ class RequestHandler(ABC):
             return str(kwargs[arg_name])
         return ""
 
-    def _get_span_name(self, instance: Any, args: Tuple[Any, ...], kwargs: Mapping[str, Any]) -> str:
+    def _get_span_name(
+        self, instance: Any, args: Tuple[Any, ...], kwargs: Mapping[str, Any]
+    ) -> str:
         try:
             if self._method_name in _method_names_with_target:
                 target_name = self._get_target_name(args, kwargs)
                 return f"{self._method_name} {target_name}"
             return self._method_name
         except Exception:
-            logger.debug(f"Failed to get span name for method {self._method_name}", exc_info=True)
+            logger.debug(
+                f"Failed to get span name for method {self._method_name}",
+                exc_info=True,
+            )
             return self._method_name
 
     def _get_input_attributes(
@@ -132,7 +162,9 @@ class RequestHandler(ABC):
                 MCPAttributes.RPC_REQUEST_ID: str(instance._request_id),
             }
             if _has_mcp_types:
-                input_attributes[MCPAttributes.MCP_CLIENT_VERSION] = LATEST_PROTOCOL_VERSION
+                input_attributes[MCPAttributes.MCP_CLIENT_VERSION] = (
+                    LATEST_PROTOCOL_VERSION
+                )
             if self._method_name in _method_names_with_target:
                 key, _ = _method_names_with_target[self._method_name]
                 input_attributes[key] = self._get_target_name(args, kwargs)
@@ -145,36 +177,56 @@ class RequestHandler(ABC):
                     },
                 )
                 if input_value:
-                    input_attributes[MCPAttributes.MCP_PARAMETERS] = input_value
+                    input_attributes[MCPAttributes.MCP_PARAMETERS] = (
+                        input_value
+                    )
 
             if session_context := self._get_session_context(instance):
-                input_attributes.update(session_context._get_session_attributes())
+                input_attributes.update(
+                    session_context._get_session_attributes()
+                )
 
             return input_attributes
         except Exception:
             logger.debug("Failed to get input attributes", exc_info=True)
             return {}
 
-    def _get_session_context(self, instance: Any) -> Union[_SessionContext, None]:
-        if hasattr(instance, "_read_stream") and hasattr(instance._read_stream, "_session_context"):
+    def _get_session_context(
+        self, instance: Any
+    ) -> Union[_SessionContext, None]:
+        if hasattr(instance, "_read_stream") and hasattr(
+            instance._read_stream, "_session_context"
+        ):
             return instance._read_stream._session_context
         return None
 
-    def _get_output_attributes(self, response: Any) -> Tuple[Dict[str, str], Union[str, None]]:
+    def _get_output_attributes(
+        self, response: Any
+    ) -> Tuple[Dict[str, str], Union[str, None]]:
         try:
-            output_attributes : Dict[str, str] = {}
+            output_attributes: Dict[str, str] = {}
             if _is_capture_content_enabled():
                 output_value = _safe_dump_attributes(response)
                 if output_value:
-                    output_attributes[MCPAttributes.OUTPUT_VALUE] = output_value
+                    output_attributes[MCPAttributes.OUTPUT_VALUE] = (
+                        output_value
+                    )
 
             response_size = RequestHandler._calculate_response_size(response)
             if response_size is not None:
-                output_attributes[MCPAttributes.MCP_OUTPUT_SIZE] = str(response_size)
+                output_attributes[MCPAttributes.MCP_OUTPUT_SIZE] = str(
+                    response_size
+                )
 
-            if _has_mcp_types and isinstance(response, CallToolResult) and response.isError:
+            if (
+                _has_mcp_types
+                and isinstance(response, CallToolResult)
+                and response.isError
+            ):
                 output_attributes[MCPAttributes.ERROR_TYPE] = "tool_error"
-                return output_attributes, _safe_dump_attributes(response.content)
+                return output_attributes, _safe_dump_attributes(
+                    response.content
+                )
 
             return output_attributes, None
         except Exception:
@@ -196,8 +248,13 @@ class RequestHandler(ABC):
 
         return None
 
-    def _record_metrics(self, start_time: float, input_attributes: Union[Dict[str, str], None], output_attributes: Union[Dict[str, str], None]):
-        metric_attributes : Dict[str, str] = {}
+    def _record_metrics(
+        self,
+        start_time: float,
+        input_attributes: Union[Dict[str, str], None],
+        output_attributes: Union[Dict[str, str], None],
+    ):
+        metric_attributes: Dict[str, str] = {}
         for key in _metric_attribute_names:
             if input_attributes is not None and key in input_attributes:
                 if value := input_attributes[key]:
@@ -205,5 +262,7 @@ class RequestHandler(ABC):
             elif output_attributes is not None and key in output_attributes:
                 if value := output_attributes[key]:
                     metric_attributes[key] = value
-        self._metrics.operation_duration.record(time.time() - start_time, metric_attributes)
+        self._metrics.operation_duration.record(
+            time.time() - start_time, metric_attributes
+        )
         self._metrics.operation_count.add(1, metric_attributes)

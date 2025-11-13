@@ -1,14 +1,29 @@
-from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
 from wrapt import wrap_function_wrapper
 
-from opentelemetry.instrumentation.dify.handler._flow_handler import FlowHandler
-from opentelemetry.instrumentation.dify.handler._plugin_llm_handler import PluginLLMHandler, PluginEmbeddingHandler, PluginRerankHandler
-from opentelemetry.instrumentation.dify.handler._graph_engine_thread_pool_handler import GraphEngineThreadPoolHandler, DatasetRetrievalThreadingHandler
-from opentelemetry.instrumentation.dify.handler._rag_handler import ToolInvokeHandler, RetrieveHandler
-from opentelemetry.instrumentation.dify.handler._rag_handler import VectorSearchHandler
-from opentelemetry.instrumentation.dify.handler._rag_handler import FullTextSearchHandler
-from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2, \
-    is_wrapper_version_2_for_plugin, is_wrapper_version_1_for_plugin
+from opentelemetry.instrumentation.dify.config import (
+    is_wrapper_version_1,
+    is_wrapper_version_1_for_plugin,
+    is_wrapper_version_2,
+    is_wrapper_version_2_for_plugin,
+)
+from opentelemetry.instrumentation.dify.handler._flow_handler import (
+    FlowHandler,
+)
+from opentelemetry.instrumentation.dify.handler._graph_engine_thread_pool_handler import (
+    DatasetRetrievalThreadingHandler,
+    GraphEngineThreadPoolHandler,
+)
+from opentelemetry.instrumentation.dify.handler._plugin_llm_handler import (
+    PluginEmbeddingHandler,
+    PluginLLMHandler,
+    PluginRerankHandler,
+)
+from opentelemetry.instrumentation.dify.handler._rag_handler import (
+    FullTextSearchHandler,
+    RetrieveHandler,
+    ToolInvokeHandler,
+    VectorSearchHandler,
+)
 
 _WORKFLOW_NODE_MODULE = "core.workflow.nodes.base.node"
 _RAG_RETRIEVAL_MODULE = "core.rag.retrieval.dataset_retrieval"
@@ -89,6 +104,7 @@ def set_flow_wrapper(tracer) -> None:
         wrapper=tool_invoke_handler,
     )
 
+
 def set_workflow_cycle_wrapper_version_2(handler):
     WORKFLOW_CYCLE_MODULE = "core.workflow.workflow_cycle_manager"
     wrap_function_wrapper(
@@ -107,7 +123,9 @@ def set_workflow_cycle_wrapper_version_2(handler):
         wrapper=handler,
     )
 
-    WORKFLOW_RESPONSE_MODULE = "core.app.apps.common.workflow_response_converter"
+    WORKFLOW_RESPONSE_MODULE = (
+        "core.app.apps.common.workflow_response_converter"
+    )
     wrap_function_wrapper(
         module=WORKFLOW_RESPONSE_MODULE,
         name="WorkflowResponseConverter.workflow_node_start_to_stream_response",
@@ -118,6 +136,7 @@ def set_workflow_cycle_wrapper_version_2(handler):
         name="WorkflowResponseConverter.workflow_node_finish_to_stream_response",
         wrapper=handler,
     )
+
 
 def set_workflow_cycle_wrapper_version_1(handler):
     # core.app.task_pipeline.workflow_cycle_manage.WorkflowCycleManage._handle_workflow_run_start
@@ -157,6 +176,7 @@ def set_plugin_wrapper(tracer):
     else:
         return
 
+
 def set_plugin_wrapper_version_1(tracer):
     _PLUGIN_MODEL_MODULE = "core.plugin.manager.model"
     plugin_llm_handler = PluginLLMHandler(tracer=tracer)
@@ -178,6 +198,7 @@ def set_plugin_wrapper_version_1(tracer):
         wrapper=plugin_rerank_handler,
     )
 
+
 def set_plugin_wrapper_version_2(tracer):
     _PLUGIN_MODEL_MODULE = "core.plugin.impl.model"
     plugin_llm_handler = PluginLLMHandler(tracer=tracer)
@@ -198,6 +219,7 @@ def set_plugin_wrapper_version_2(tracer):
         name="PluginModelClient.invoke_rerank",
         wrapper=plugin_rerank_handler,
     )
+
 
 def set_rag_wrapper(tracer):
     dataset_threading_handler = DatasetRetrievalThreadingHandler()

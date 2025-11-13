@@ -1,9 +1,12 @@
-from typing import Optional
 from logging import getLogger
+from typing import Optional
+
 from opentelemetry import trace as trace_api
 from opentelemetry.util.types import Attributes
 
 logger = getLogger(__name__)
+
+
 class _WithSpan:
     __slots__ = (
         "_span",

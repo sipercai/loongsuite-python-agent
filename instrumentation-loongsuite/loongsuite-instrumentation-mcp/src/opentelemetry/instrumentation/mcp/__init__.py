@@ -1,26 +1,30 @@
 from typing import Any, Collection
 
-from opentelemetry.instrumentation.mcp.package import _instruments
+from wrapt import wrap_function_wrapper  # type: ignore
+
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from wrapt import wrap_function_wrapper   # type: ignore
-from opentelemetry.instrumentation.utils import unwrap
-from opentelemetry.metrics import get_meter
+from opentelemetry.instrumentation.mcp.handler import RequestHandler
+from opentelemetry.instrumentation.mcp.metrics import (
+    ClientMetrics,
+    ServerMetrics,
+)
+from opentelemetry.instrumentation.mcp.package import _instruments
 from opentelemetry.instrumentation.mcp.session_handler import (
+    ServerHandleRequestWrapper,
     sse_client_wrapper,
     stdio_client_wrapper,
-    websocket_client_wrapper,
     streamable_http_client_wrapper,
-    ServerHandleRequestWrapper,
+    websocket_client_wrapper,
 )
-from opentelemetry.instrumentation.mcp.handler import RequestHandler
 from opentelemetry.instrumentation.mcp.utils import (
+    _get_logger,
     _is_version_supported,
     _is_ws_installed,
-    _get_logger,
 )
 from opentelemetry.instrumentation.mcp.version import __version__
-from opentelemetry.instrumentation.mcp.metrics import ClientMetrics, ServerMetrics
+from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.metrics import get_meter
 
 logger = _get_logger(__name__)
 
@@ -44,7 +48,10 @@ RPC_NAME_MAPPING = {
     "call_tool": "tools/call",
 }
 
-_client_session_methods = [(method_name, rpc_name) for method_name, rpc_name in RPC_NAME_MAPPING.items()]
+_client_session_methods = [
+    (method_name, rpc_name)
+    for method_name, rpc_name in RPC_NAME_MAPPING.items()
+]
 
 
 class MCPInstrumentor(BaseInstrumentor):
@@ -57,12 +64,16 @@ class MCPInstrumentor(BaseInstrumentor):
 
     def _instrument(self, **kwargs: Any) -> None:
         if not _is_version_supported():
-            logger.warning("MCP version is not supported, skip instrumentation")
+            logger.warning(
+                "MCP version is not supported, skip instrumentation"
+            )
             return
 
         if not (tracer_provider := kwargs.get("tracer_provider")):
             tracer_provider = trace_api.get_tracer_provider()
-        tracer = trace_api.get_tracer(__name__, __version__, tracer_provider=tracer_provider)
+        tracer = trace_api.get_tracer(
+            __name__, __version__, tracer_provider=tracer_provider
+        )
         meter = get_meter(
             __name__,
             __version__,
@@ -131,7 +142,9 @@ class MCPInstrumentor(BaseInstrumentor):
 
             unwrap(mcp.client.streamable_http, "streamablehttp_client")
         except Exception:
-            logger.warning("Fail to uninstrument streamablehttp_client", exc_info=True)
+            logger.warning(
+                "Fail to uninstrument streamablehttp_client", exc_info=True
+            )
 
         try:
             import mcp.client.stdio
@@ -146,11 +159,15 @@ class MCPInstrumentor(BaseInstrumentor):
 
                 unwrap(mcp.client.websocket, "websocket_client")
             except Exception:
-                logger.warning("Fail to uninstrument websocket_client", exc_info=True)
+                logger.warning(
+                    "Fail to uninstrument websocket_client", exc_info=True
+                )
 
         try:
             import mcp.server.lowlevel.server
 
             unwrap(mcp.server.lowlevel.server, "Server._handle_request")
         except Exception:
-            logger.warning("Fail to uninstrument Server._handle_request", exc_info=True)
+            logger.warning(
+                "Fail to uninstrument Server._handle_request", exc_info=True
+            )

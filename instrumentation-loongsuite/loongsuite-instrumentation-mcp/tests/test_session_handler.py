@@ -1,29 +1,22 @@
-from contextlib import asynccontextmanager
 import os
-from opentelemetry.instrumentation.mcp import MCPInstrumentor, ServerMetrics
+from contextlib import asynccontextmanager
+
+import pytest
 from mcp import JSONRPCRequest
 from mcp.shared.message import SessionMessage
 from mcp.types import JSONRPCMessage
+from pydantic import AnyUrl
+from wrapt import FunctionWrapper
+
 from opentelemetry import context, propagate
+from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.mcp import MCPInstrumentor, ServerMetrics
 from opentelemetry.metrics import get_meter
 from opentelemetry.trace import SpanKind
-from pydantic import AnyUrl
-import pytest
-from wrapt import FunctionWrapper
-from opentelemetry import trace as trace_api
-from .fixtures import (
-    meter_provider,
-    memory_reader,
-    tracer_provider,
-    mcp_server_factory,
-    memory_exporter,
-    _setup_tracer_and_meter_provider,
-    _teardown_tracer_and_meter_provider,
-    find_span,
-)
-from unittest.mock import Mock
 
-FASTMCP_SERVER_SCRIPT = os.path.join(os.path.dirname(__file__), "fastmcp_server.py")
+FASTMCP_SERVER_SCRIPT = os.path.join(
+    os.path.dirname(__file__), "fastmcp_server.py"
+)
 
 
 @asynccontextmanager
@@ -33,15 +26,17 @@ async def mock_client(params):
 
 @pytest.mark.asyncio
 async def test_client_invalid(tracer_provider):
-    import mcp.client.stdio
-    import mcp.client.websocket
     import mcp.client.sse
+    import mcp.client.stdio
     import mcp.client.streamable_http
+    import mcp.client.websocket
 
     stdio_client_backup = mcp.client.stdio.stdio_client
     websocket_client_backup = mcp.client.websocket.websocket_client
     sse_client_backup = mcp.client.sse.sse_client
-    streamablehttp_client_backup = mcp.client.streamable_http.streamablehttp_client
+    streamablehttp_client_backup = (
+        mcp.client.streamable_http.streamablehttp_client
+    )
 
     mcp.client.stdio.stdio_client = mock_client
     mcp.client.websocket.websocket_client = mock_client
@@ -50,10 +45,10 @@ async def test_client_invalid(tracer_provider):
 
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
-    from mcp.client.stdio import stdio_client
-    from mcp.client.websocket import websocket_client
     from mcp.client.sse import sse_client
+    from mcp.client.stdio import stdio_client
     from mcp.client.streamable_http import streamablehttp_client
+    from mcp.client.websocket import websocket_client
 
     assert isinstance(stdio_client, FunctionWrapper)
     assert isinstance(websocket_client, FunctionWrapper)
@@ -61,7 +56,12 @@ async def test_client_invalid(tracer_provider):
     assert isinstance(streamablehttp_client, FunctionWrapper)
 
     # ensure no exception is raised, and result is as expected
-    for testure in [stdio_client, websocket_client, sse_client, streamablehttp_client]:
+    for testure in [
+        stdio_client,
+        websocket_client,
+        sse_client,
+        streamablehttp_client,
+    ]:
         async with testure(None) as result:
             assert result == None
 
@@ -80,7 +80,9 @@ async def test_client_invalid(tracer_provider):
     mcp.client.stdio.stdio_client = stdio_client_backup
     mcp.client.websocket.websocket_client = websocket_client_backup
     mcp.client.sse.sse_client = sse_client_backup
-    mcp.client.streamable_http.streamablehttp_client = streamablehttp_client_backup
+    mcp.client.streamable_http.streamablehttp_client = (
+        streamablehttp_client_backup
+    )
 
 
 class MockStream:
@@ -96,8 +98,11 @@ class MockStream:
 async def test_send_wrapper(tracer_provider):
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
-    from opentelemetry.instrumentation.mcp.session_handler import _writer_send_wrapper
-    from mcp.client.stdio import stdio_client, StdioServerParameters
+    from mcp.client.stdio import StdioServerParameters, stdio_client
+
+    from opentelemetry.instrumentation.mcp.session_handler import (
+        _writer_send_wrapper,
+    )
 
     server_params = StdioServerParameters(
         command="python",
@@ -108,16 +113,24 @@ async def test_send_wrapper(tracer_provider):
 
         mock_stream = MockStream()
 
-        await _writer_send_wrapper(mock_stream.send, mock_stream, (), {})  # len(args) == 0
+        await _writer_send_wrapper(
+            mock_stream.send, mock_stream, (), {}
+        )  # len(args) == 0
         await _writer_send_wrapper(mock_stream.send, mock_stream, (1,), {})
         await _writer_send_wrapper(mock_stream.send, mock_stream, (1, 2), {})
 
         # wrapped func raises exception
         with pytest.raises(Exception):
-            await _writer_send_wrapper(mock_stream.send, mock_stream, (Exception("test"),), {})
+            await _writer_send_wrapper(
+                mock_stream.send, mock_stream, (Exception("test"),), {}
+            )
 
-        tracer = trace_api.get_tracer(__name__, None, tracer_provider=tracer_provider)
-        with tracer.start_as_current_span(name="test_send_request_propagator", kind=SpanKind.CLIENT) as span:
+        tracer = trace_api.get_tracer(
+            __name__, None, tracer_provider=tracer_provider
+        )
+        with tracer.start_as_current_span(
+            name="test_send_request_propagator", kind=SpanKind.CLIENT
+        ) as span:
             # invalid carrier
             meta = set()
             with pytest.raises(TypeError):
@@ -125,9 +138,18 @@ async def test_send_wrapper(tracer_provider):
 
             # here we dont raise exception if inject failed
             session_message = SessionMessage(
-                message=JSONRPCMessage(root=JSONRPCRequest(jsonrpc="2.0", method="test", id=1, params={"_meta": ""}))
+                message=JSONRPCMessage(
+                    root=JSONRPCRequest(
+                        jsonrpc="2.0",
+                        method="test",
+                        id=1,
+                        params={"_meta": ""},
+                    )
+                )
             )
-            await _writer_send_wrapper(mock_stream.send, mock_stream, (session_message,), {})
+            await _writer_send_wrapper(
+                mock_stream.send, mock_stream, (session_message,), {}
+            )
 
     mcp_instrumentor._uninstrument()
 
@@ -138,17 +160,18 @@ async def test_server_handle_request_wrapper(tracer_provider):
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
     from mcp.shared.session import RequestResponder
     from mcp.types import (
-        ClientRequest,
-        ListToolsRequest,
-        GetPromptRequest,
-        GetPromptRequestParams,
         CallToolRequest,
         CallToolRequestParams,
+        ClientRequest,
+        GetPromptRequest,
+        GetPromptRequestParams,
+        ListToolsRequest,
         ReadResourceRequest,
         ReadResourceRequestParams,
         SubscribeRequest,
         SubscribeRequestParams,
     )
+
     from opentelemetry.instrumentation.mcp.semconv import MCPAttributes
 
     wrapper = _create_server_wrapper(mcp_instrumentor, tracer_provider)
@@ -171,7 +194,11 @@ async def test_server_handle_request_wrapper(tracer_provider):
     attributes, span_name = wrapper.extract_attributes((None,))
     attributes, span_name = wrapper.extract_attributes(("invalid str",))
 
-    request = ClientRequest(root=CallToolRequest(method="tools/call", params=CallToolRequestParams(name="test")))
+    request = ClientRequest(
+        root=CallToolRequest(
+            method="tools/call", params=CallToolRequestParams(name="test")
+        )
+    )
     responder = RequestResponder(
         request_id=1,
         request_meta=None,
@@ -186,7 +213,10 @@ async def test_server_handle_request_wrapper(tracer_provider):
     assert span_name == "tools/call test"
 
     request = ClientRequest(
-        root=GetPromptRequest(method="prompts/get", params=GetPromptRequestParams(name="prompt_name"))
+        root=GetPromptRequest(
+            method="prompts/get",
+            params=GetPromptRequestParams(name="prompt_name"),
+        )
     )
     responder = RequestResponder(
         request_id=1,
@@ -203,7 +233,10 @@ async def test_server_handle_request_wrapper(tracer_provider):
 
     request = ClientRequest(
         root=ReadResourceRequest(
-            method="resources/read", params=ReadResourceRequestParams(uri=AnyUrl("test://resource_uri"))
+            method="resources/read",
+            params=ReadResourceRequestParams(
+                uri=AnyUrl("test://resource_uri")
+            ),
         )
     )
     responder = RequestResponder(
@@ -221,7 +254,8 @@ async def test_server_handle_request_wrapper(tracer_provider):
 
     request = ClientRequest(
         root=SubscribeRequest(
-            method="resources/subscribe", params=SubscribeRequestParams(uri=AnyUrl("test://resource_uri"))
+            method="resources/subscribe",
+            params=SubscribeRequestParams(uri=AnyUrl("test://resource_uri")),
         )
     )
     responder = RequestResponder(
@@ -240,9 +274,13 @@ async def test_server_handle_request_wrapper(tracer_provider):
 
 
 def _create_server_wrapper(mcp_instrumentor, tracer_provider):
-    from opentelemetry.instrumentation.mcp.session_handler import ServerHandleRequestWrapper
+    from opentelemetry.instrumentation.mcp.session_handler import (
+        ServerHandleRequestWrapper,
+    )
 
-    tracer = trace_api.get_tracer(__name__, None, tracer_provider=tracer_provider)
+    tracer = trace_api.get_tracer(
+        __name__, None, tracer_provider=tracer_provider
+    )
     meter = get_meter(
         __name__,
         None,
@@ -278,8 +316,12 @@ async def test_server_extract_parent_context(tracer_provider):
     )
     assert wrapper.extract_parent_context((responder,)) is None
 
-    tracer = trace_api.get_tracer(__name__, None, tracer_provider=tracer_provider)
-    with tracer.start_as_current_span(name="test_send_request_propagator", kind=SpanKind.CLIENT) as span:
+    tracer = trace_api.get_tracer(
+        __name__, None, tracer_provider=tracer_provider
+    )
+    with tracer.start_as_current_span(
+        name="test_send_request_propagator", kind=SpanKind.CLIENT
+    ) as span:
         meta = {}
         current_context = context.get_current()
         propagate.get_global_textmap().inject(meta, current_context)
@@ -301,11 +343,15 @@ async def test_server_extract_parent_context(tracer_provider):
 
     assert parent_context is not None
     assert isinstance(parent_context, trace_api.Context)
-    parent_span_context = trace_api.get_current_span(parent_context).get_span_context()
+    parent_span_context = trace_api.get_current_span(
+        parent_context
+    ).get_span_context()
     assert parent_span_context.is_valid
 
     with tracer.start_as_current_span(
-        name="test_send_request_propagator_2", kind=SpanKind.SERVER, context=parent_context
+        name="test_send_request_propagator_2",
+        kind=SpanKind.SERVER,
+        context=parent_context,
     ) as span:
         assert str(span.get_span_context().trace_id) == str(parent_trace_id)
 

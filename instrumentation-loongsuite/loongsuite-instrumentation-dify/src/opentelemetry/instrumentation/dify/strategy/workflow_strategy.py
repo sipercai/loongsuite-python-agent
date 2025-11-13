@@ -1,32 +1,58 @@
 import json
 import time
+from copy import deepcopy
+from typing import (
+    Any,
+    Dict,
+    Mapping,
+    Tuple,
+)
 
-from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import GEN_AI_USAGE_PROMPT_TOKENS, \
-    GEN_AI_USAGE_COMPLETION_TOKENS, GEN_AI_SYSTEM
-
-from opentelemetry.instrumentation.dify.capture_content import set_dict_value, process_content
-from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
-from opentelemetry.instrumentation.dify.dify_utils import get_workflow_run_id
-from opentelemetry.instrumentation.dify.semconv import GEN_AI_SPAN_KIND, SpanKindValues, GEN_AI_SESSION_ID, \
-    GEN_AI_USER_ID, OUTPUT_VALUE, GEN_AI_MODEL_NAME, GEN_AI_REQUEST_MODEL_NAME, RETRIEVAL_DOCUMENTS, DocumentAttributes, \
-    GEN_AI_INPUT_MESSAGES, GEN_AI_OUTPUT_MESSAGES, GEN_AI_USAGE_TOTAL_TOKENS
-from opentelemetry.instrumentation.dify.strategy.strategy import ProcessStrategy
+from opentelemetry import context as context_api
 
 #  dify packages path
 from opentelemetry import trace as trace_api
-from opentelemetry import context as context_api
-from opentelemetry.trace.status import Status, StatusCode
-from typing import (
-    Any,
-    Mapping,
-    Tuple, Dict,
+from opentelemetry.instrumentation.dify.capture_content import (
+    process_content,
+    set_dict_value,
 )
-from opentelemetry.instrumentation.dify.entities import NodeType
-from copy import deepcopy
-from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key, DIFY_APP_ID_KEY
-from opentelemetry.instrumentation.dify.entities import _EventData
-from opentelemetry.instrumentation.dify.utils import get_timestamp_from_datetime_attr, get_llm_common_attributes
-
+from opentelemetry.instrumentation.dify.config import (
+    is_wrapper_version_1,
+    is_wrapper_version_2,
+)
+from opentelemetry.instrumentation.dify.constants import (
+    DIFY_APP_ID_KEY,
+    _get_dify_app_name_key,
+)
+from opentelemetry.instrumentation.dify.dify_utils import get_workflow_run_id
+from opentelemetry.instrumentation.dify.entities import NodeType, _EventData
+from opentelemetry.instrumentation.dify.semconv import (
+    GEN_AI_INPUT_MESSAGES,
+    GEN_AI_MODEL_NAME,
+    GEN_AI_OUTPUT_MESSAGES,
+    GEN_AI_REQUEST_MODEL_NAME,
+    GEN_AI_SESSION_ID,
+    GEN_AI_SPAN_KIND,
+    GEN_AI_USAGE_TOTAL_TOKENS,
+    GEN_AI_USER_ID,
+    OUTPUT_VALUE,
+    RETRIEVAL_DOCUMENTS,
+    DocumentAttributes,
+    SpanKindValues,
+)
+from opentelemetry.instrumentation.dify.strategy.strategy import (
+    ProcessStrategy,
+)
+from opentelemetry.instrumentation.dify.utils import (
+    get_llm_common_attributes,
+    get_timestamp_from_datetime_attr,
+)
+from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import (
+    GEN_AI_SYSTEM,
+    GEN_AI_USAGE_COMPLETION_TOKENS,
+    GEN_AI_USAGE_PROMPT_TOKENS,
+)
+from opentelemetry.trace.status import Status, StatusCode
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
@@ -49,32 +75,56 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
     - Error handling during initialization
     """
 
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
         try:
             event_id = kwargs["id"]
             span = None
             with self._lock:
                 from opentelemetry import context
+
                 ctx = context.get_current()
                 if len(ctx) == 0:
-                    self._logger.info(f"can't get ctx, return : {ctx},kwargs: {kwargs},event_id: {event_id}")
+                    self._logger.info(
+                        f"can't get ctx, return : {ctx},kwargs: {kwargs},event_id: {event_id}"
+                    )
                     graph_runtime_state = kwargs["graph_runtime_state"]
                     previous_node_id = kwargs["previous_node_id"]
                     if graph_runtime_state is None:
                         return
-                    node_run_state = getattr(graph_runtime_state, "node_run_state")
-                    node_state_mapping = getattr(node_run_state, "node_state_mapping")
+                    node_run_state = getattr(
+                        graph_runtime_state, "node_run_state"
+                    )
+                    node_state_mapping = getattr(
+                        node_run_state, "node_state_mapping"
+                    )
                     for k, v in node_state_mapping.items():
                         event_data = self._event_data.get(k)
                         if event_data is not None:
                             start_time = time.time_ns()
-                            parent_ctx = trace_api.set_span_in_context(event_data.span)
-                            span: trace_api.Span = self._tracer.start_span(f"node_run_{event_id}", attributes={
-                                GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value,
-                                "component.name": "dify"}, start_time=start_time, context=parent_ctx)
+                            parent_ctx = trace_api.set_span_in_context(
+                                event_data.span
+                            )
+                            span: trace_api.Span = self._tracer.start_span(
+                                f"node_run_{event_id}",
+                                attributes={
+                                    GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value,
+                                    "component.name": "dify",
+                                },
+                                start_time=start_time,
+                                context=parent_ctx,
+                            )
                             new_ctx = trace_api.set_span_in_context(span)
                             token = context_api.attach(new_ctx)
-                            self._logger.info(f"node event id: {k},event_data: {event_data} {event_data.span}")
+                            self._logger.info(
+                                f"node event id: {k},event_data: {event_data} {event_data.span}"
+                            )
                             self._event_data[event_id] = _EventData(
                                 span=span,
                                 parent_id=None,
@@ -95,8 +145,10 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
                         f"node_run_{event_id}",
                         attributes={
                             GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value,
-                            "component.name": "dify"},
-                        start_time=start_time)
+                            "component.name": "dify",
+                        },
+                        start_time=start_time,
+                    )
                 else:
                     span = event_data.span
                 new_context = trace_api.set_span_in_context(span)
@@ -113,7 +165,10 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
                     otel_token=token,
                 )
         except:
-            self._logger.exception("Fail to process data, func name: BaseNode.__init__")
+            self._logger.exception(
+                "Fail to process data, func name: BaseNode.__init__"
+            )
+
 
 class WorkflowRunStartStrategy(ProcessStrategy):
     """Strategy for handling workflow run start events.
@@ -133,7 +188,14 @@ class WorkflowRunStartStrategy(ProcessStrategy):
     - Performance metrics for workflow starts
     """
 
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
         if is_wrapper_version_1():
             self._handle_workflow_run_start_v1(res)
         elif is_wrapper_version_2():
@@ -142,20 +204,27 @@ class WorkflowRunStartStrategy(ProcessStrategy):
     def _handle_workflow_run_start_v1(self, run):
         event_id = get_workflow_run_id(run)
         if event_id is None:
-            self._logger.warning("workflow_run_start: missing event_id", extra={
-                "run_object": str(run),
-                "component": "workflow_handler"
-            })
+            self._logger.warning(
+                "workflow_run_start: missing event_id",
+                extra={
+                    "run_object": str(run),
+                    "component": "workflow_handler",
+                },
+            )
             return
-        start_time = get_timestamp_from_datetime_attr(run,"created_at")
+        start_time = get_timestamp_from_datetime_attr(run, "created_at")
         with self._lock:
             data = self._event_data.get(event_id)
             if data is not None:
                 return
-        span: trace_api.Span = self._tracer.start_span(f"workflow_run_{event_id}", attributes={
-            GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value, "component.name": "dify"},
-                                                       start_time=start_time,
-                                                       )
+        span: trace_api.Span = self._tracer.start_span(
+            f"workflow_run_{event_id}",
+            attributes={
+                GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value,
+                "component.name": "dify",
+            },
+            start_time=start_time,
+        )
         app_id = getattr(run, "app_id", None)
         app_name = self._handler.get_app_name_by_id(app_id)
         inputs_dict = getattr(run, "inputs_dict", None)
@@ -191,20 +260,27 @@ class WorkflowRunStartStrategy(ProcessStrategy):
     def _handle_workflow_run_start_v2(self, run):
         event_id = get_workflow_run_id(run)
         if event_id is None:
-            self._logger.warning("workflow_run_start: missing event_id", extra={
-                "run_object": str(run),
-                "component": "workflow_handler"
-            })
+            self._logger.warning(
+                "workflow_run_start: missing event_id",
+                extra={
+                    "run_object": str(run),
+                    "component": "workflow_handler",
+                },
+            )
             return
-        start_time = get_timestamp_from_datetime_attr(run,"created_at")
+        start_time = get_timestamp_from_datetime_attr(run, "created_at")
         with self._lock:
             data = self._event_data.get(event_id)
             if data is not None:
                 return
         span: trace_api.Span = self._tracer.start_span(
             f"workflow_run_{event_id}",
-            attributes={GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value, "component.name": "dify"},
-            start_time=start_time,)
+            attributes={
+                GEN_AI_SPAN_KIND: SpanKindValues.CHAIN.value,
+                "component.name": "dify",
+            },
+            start_time=start_time,
+        )
 
         user_id = "DEFAULT_USER_ID"
         session_id = "DEFAULT_SESSION_ID"
@@ -258,16 +334,27 @@ class WorkflowRunSuccessStrategy(ProcessStrategy):
     - Final state recording
     """
 
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
         if is_wrapper_version_1():
             workflow_run = None
             if "workflow_run" in kwargs:
-                workflow_run = kwargs['workflow_run']
+                workflow_run = kwargs["workflow_run"]
             else:
                 workflow_run = res
-            self._handle_workflow_run_success_v1(workflow_run, outputs=kwargs['outputs'])
+            self._handle_workflow_run_success_v1(
+                workflow_run, outputs=kwargs["outputs"]
+            )
         elif is_wrapper_version_2():
-            self._handle_workflow_run_success_v2(res, outputs=kwargs['outputs'])
+            self._handle_workflow_run_success_v2(
+                res, outputs=kwargs["outputs"]
+            )
 
     def _handle_workflow_run_success_v1(self, run, outputs=[]):
         event_id = get_workflow_run_id(run)
@@ -339,7 +426,6 @@ class WorkflowRunSuccessStrategy(ProcessStrategy):
         metrics_attributes["spanKind"] = SpanKindValues.CHAIN.value
         self._record_metrics(event_data, metrics_attributes)
 
-
     def _extract_outputs(self, outputs):
         if outputs is None:
             return {}
@@ -378,16 +464,23 @@ class WorkflowRunFailedStrategy(ProcessStrategy):
     - Error state propagation
     """
 
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
         if is_wrapper_version_1():
             workflow_run = None
             if "workflow_run" in kwargs:
-                workflow_run = kwargs['workflow_run']
+                workflow_run = kwargs["workflow_run"]
             else:
                 workflow_run = res
-            self._handle_workflow_run_failed_v1(workflow_run, kwargs['error'])
+            self._handle_workflow_run_failed_v1(workflow_run, kwargs["error"])
         elif is_wrapper_version_2():
-            self._handle_workflow_run_failed_v2(res,kwargs['error_message'])
+            self._handle_workflow_run_failed_v2(res, kwargs["error_message"])
 
     def _handle_workflow_run_failed_v1(self, run, error):
         event_id = get_workflow_run_id(run)
@@ -480,29 +573,48 @@ class WorkflowNodeStartStrategy(ProcessStrategy):
     - Node-specific metrics
     """
 
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
-        self._workflow_node_start_to_stream_response(kwargs['event'], kwargs['workflow_node_execution'])
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
+        self._workflow_node_start_to_stream_response(
+            kwargs["event"], kwargs["workflow_node_execution"]
+        )
 
-    def _set_value(self, key: str, value: Any, ctx: Any = None) -> context_api.Context:
+    def _set_value(
+        self, key: str, value: Any, ctx: Any = None
+    ) -> context_api.Context:
         if value is not None:
             new_ctx = context_api.set_value(key, value, ctx)
             return new_ctx
         return None
 
-    def _set_values(self, attributes: dict, ctx: Any = None) -> context_api.Context:
+    def _set_values(
+        self, attributes: dict, ctx: Any = None
+    ) -> context_api.Context:
         new_ctx = ctx
         for key, value in attributes.items():
             if value is not None:
                 new_ctx = context_api.set_value(key, value, new_ctx)
         return new_ctx
 
-    def _workflow_node_start_to_stream_response(self, event, workflow_node_execution=None):
-        start_time = get_timestamp_from_datetime_attr(event,"start_at")
+    def _workflow_node_start_to_stream_response(
+        self, event, workflow_node_execution=None
+    ):
+        start_time = get_timestamp_from_datetime_attr(event, "start_at")
         parent_id = None
         if is_wrapper_version_1():
-            workflow_run_id = getattr(workflow_node_execution, "workflow_run_id", None)
+            workflow_run_id = getattr(
+                workflow_node_execution, "workflow_run_id", None
+            )
         else:
-            workflow_run_id = getattr(workflow_node_execution, "workflow_execution_id", None)
+            workflow_run_id = getattr(
+                workflow_node_execution, "workflow_execution_id", None
+            )
         if workflow_run_id is not None:
             parent_id = workflow_run_id
         event_id = getattr(event, "node_execution_id", None)
@@ -521,13 +633,19 @@ class WorkflowNodeStartStrategy(ProcessStrategy):
             if parent_id is not None:
                 parent_event_data = self._event_data.get(parent_id)
                 if parent_event_data is not None:
-                    parent_ctx = trace_api.set_span_in_context(parent_event_data.span)
+                    parent_ctx = trace_api.set_span_in_context(
+                        parent_event_data.span
+                    )
                     common_attributes = parent_event_data.attributes
             event_data = self._event_data.get(event_id)
             span = None
             if event_data is None:
-                span: trace_api.Span = self._tracer.start_span(f"{node_name}({node_type_name})", context=parent_ctx,
-                                                               attributes=common_attributes, start_time=start_time)
+                span: trace_api.Span = self._tracer.start_span(
+                    f"{node_name}({node_type_name})",
+                    context=parent_ctx,
+                    attributes=common_attributes,
+                    start_time=start_time,
+                )
             else:
                 span = event_data.span
                 span.update_name(f"{node_name}({node_type_name})")
@@ -568,15 +686,29 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
     - Final state recording for nodes
     """
 
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
-        self._workflow_node_finish_to_stream_response(kwargs['event'], kwargs['workflow_node_execution'])
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
+        self._workflow_node_finish_to_stream_response(
+            kwargs["event"], kwargs["workflow_node_execution"]
+        )
 
-    def _workflow_node_finish_to_stream_response(self, event, workflow_node_execution=None):
+    def _workflow_node_finish_to_stream_response(
+        self, event, workflow_node_execution=None
+    ):
         end_time = None
         if workflow_node_execution is not None:
             finished_at = getattr(workflow_node_execution, "finished_at", None)
             if finished_at is not None:
-                et = finished_at.timestamp() * 1_000_000_000 + finished_at.microsecond * 1_000
+                et = (
+                    finished_at.timestamp() * 1_000_000_000
+                    + finished_at.microsecond * 1_000
+                )
                 end_time = int(et)
         event_id = getattr(event, "node_execution_id", None)
         if event_id is None:
@@ -608,15 +740,20 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
         span_kind = span_attributes[GEN_AI_SPAN_KIND]
         metrics_attributes["spanKind"] = span_kind
         if span_kind == SpanKindValues.LLM.value:
-            if model_name := self._get_data(span_attributes, GEN_AI_MODEL_NAME, "DEFAULT_MODEL_NAME"):
+            if model_name := self._get_data(
+                span_attributes, GEN_AI_MODEL_NAME, "DEFAULT_MODEL_NAME"
+            ):
                 metrics_attributes["modelName"] = model_name
-            if input_tokens := self._get_data(span_attributes, GEN_AI_USAGE_PROMPT_TOKENS, 0):
+            if input_tokens := self._get_data(
+                span_attributes, GEN_AI_USAGE_PROMPT_TOKENS, 0
+            ):
                 input_attributes = deepcopy(metrics_attributes)
                 input_attributes["usageType"] = "input"
-            if output_tokens := self._get_data(span_attributes, GEN_AI_USAGE_COMPLETION_TOKENS, 0):
+            if output_tokens := self._get_data(
+                span_attributes, GEN_AI_USAGE_COMPLETION_TOKENS, 0
+            ):
                 output_attributes = deepcopy(metrics_attributes)
                 output_attributes["usageType"] = "output"
-
 
     def _extract_workflow_node_attributes(self, event: Any) -> dict:
         node_type = getattr(event, "node_type", None)
@@ -638,7 +775,9 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
             span_attriubtes.update(llm_attributes)
             metrics_attriubtes = get_llm_common_attributes()
             if GEN_AI_REQUEST_MODEL_NAME in span_attriubtes:
-                metrics_attriubtes["modelName"] = span_attriubtes[GEN_AI_REQUEST_MODEL_NAME]
+                metrics_attriubtes["modelName"] = span_attriubtes[
+                    GEN_AI_REQUEST_MODEL_NAME
+                ]
             if GEN_AI_USAGE_PROMPT_TOKENS in span_attriubtes:
                 input_tokens = span_attriubtes[GEN_AI_USAGE_PROMPT_TOKENS]
                 metrics_attriubtes["usageType"] = "input"
@@ -652,11 +791,16 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
 
     def _get_span_kind_by_node_type(self, node_type):
         span_attributes = {}
-        if (node_type == NodeType.LLM.value
-                or node_type == NodeType.QUESTION_CLASSIFIER.value
-                or node_type == NodeType.PARAMETER_EXTRACTOR.value):
+        if (
+            node_type == NodeType.LLM.value
+            or node_type == NodeType.QUESTION_CLASSIFIER.value
+            or node_type == NodeType.PARAMETER_EXTRACTOR.value
+        ):
             span_kind = SpanKindValues.LLM.value
-        elif node_type == NodeType.TOOL.value or node_type == NodeType.HTTP_REQUEST.value:
+        elif (
+            node_type == NodeType.TOOL.value
+            or node_type == NodeType.HTTP_REQUEST.value
+        ):
             span_kind = SpanKindValues.TOOL.value
         elif node_type == NodeType.KNOWLEDGE_RETRIEVAL.value:
             span_kind = SpanKindValues.RETRIEVER.value
@@ -680,25 +824,36 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
                 if "metadata" in document:
                     metadata = document["metadata"]
                     if "document_id" in metadata:
-                        retrieval_attributes[f"{k_prefix}.{DocumentAttributes.DOCUMENT_ID}"] = metadata["document_id"]
+                        retrieval_attributes[
+                            f"{k_prefix}.{DocumentAttributes.DOCUMENT_ID}"
+                        ] = metadata["document_id"]
                     if "score" in metadata:
-                        retrieval_attributes[f"{k_prefix}.{DocumentAttributes.DOCUMENT_SCORE}"] = metadata["score"]
-                    retrieval_attributes[f"{k_prefix}.{DocumentAttributes.DOCUMENT_METADATA}"] = json.dumps(metadata,
-                                                                                                            ensure_ascii=False)
-                set_dict_value(retrieval_attributes,
-                               f"{k_prefix}.{DocumentAttributes.DOCUMENT_CONTENT}",
-                               document["content"])
+                        retrieval_attributes[
+                            f"{k_prefix}.{DocumentAttributes.DOCUMENT_SCORE}"
+                        ] = metadata["score"]
+                    retrieval_attributes[
+                        f"{k_prefix}.{DocumentAttributes.DOCUMENT_METADATA}"
+                    ] = json.dumps(metadata, ensure_ascii=False)
+                set_dict_value(
+                    retrieval_attributes,
+                    f"{k_prefix}.{DocumentAttributes.DOCUMENT_CONTENT}",
+                    document["content"],
+                )
                 idx += 1
         return retrieval_attributes
 
     def _extract_llm_attributes(self, event):
         llm_attributes = {}
         if node_data := getattr(event, "node_data", None):
-            if single_retrieval_config := getattr(node_data, "single_retrieval_config", None):
+            if single_retrieval_config := getattr(
+                node_data, "single_retrieval_config", None
+            ):
                 if model := getattr(single_retrieval_config, "model", None):
                     model = single_retrieval_config["model"]
                     if "name" in model:
-                        llm_attributes[GEN_AI_REQUEST_MODEL_NAME] = model["name"]
+                        llm_attributes[GEN_AI_REQUEST_MODEL_NAME] = model[
+                            "name"
+                        ]
                         llm_attributes[GEN_AI_MODEL_NAME] = model["name"]
                     if "provider" in model:
                         llm_attributes[GEN_AI_SYSTEM] = model["provider"]
@@ -710,31 +865,36 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
                     llm_attributes[GEN_AI_SYSTEM] = provider
 
         if process_data := getattr(event, "process_data", None):
-            llm_attributes[GEN_AI_INPUT_MESSAGES] = self._get_input_messages(process_data)
+            llm_attributes[GEN_AI_INPUT_MESSAGES] = self._get_input_messages(
+                process_data
+            )
 
         if outputs := getattr(event, "outputs", None):
-            llm_attributes[GEN_AI_OUTPUT_MESSAGES] = self._get_output_messages(outputs)
+            llm_attributes[GEN_AI_OUTPUT_MESSAGES] = self._get_output_messages(
+                outputs
+            )
 
             if usage := self._get_data(outputs, "usage", None):
-                if prompt_tokens := self._get_data(usage, "prompt_tokens", None):
+                if prompt_tokens := self._get_data(
+                    usage, "prompt_tokens", None
+                ):
                     llm_attributes[GEN_AI_USAGE_PROMPT_TOKENS] = prompt_tokens
-                if completion_tokens := self._get_data(usage, "completion_tokens"):
-                    llm_attributes[GEN_AI_USAGE_COMPLETION_TOKENS] = completion_tokens
+                if completion_tokens := self._get_data(
+                    usage, "completion_tokens"
+                ):
+                    llm_attributes[GEN_AI_USAGE_COMPLETION_TOKENS] = (
+                        completion_tokens
+                    )
                 if total_tokens := self._get_data(usage, "total_tokens", None):
                     llm_attributes[GEN_AI_USAGE_TOTAL_TOKENS] = total_tokens
         return llm_attributes
 
     def _get_output_messages(self, outputs) -> str:
         output_messages = []
-        output_message: Dict[str, Any] = {
-            "role": "assistant"
-        }
+        output_message: Dict[str, Any] = {"role": "assistant"}
         if text := self._get_data(outputs, "text", None):
             output_message["parts"] = [
-                {
-                    "type": "text",
-                    "content": process_content(text)
-                }
+                {"type": "text", "content": process_content(text)}
             ]
         if finish_reason := self._get_data(outputs, "finish_reason", None):
             output_message["finish_reason"] = finish_reason
@@ -749,12 +909,12 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
         for prompt in prompts:
             input_message = {}
             if "role" in prompt:
-                input_message['role'] = prompt['role']
+                input_message["role"] = prompt["role"]
             if "text" in prompt:
-                input_message['parts'] = [
+                input_message["parts"] = [
                     {
                         "type": "text",
-                        "content": process_content(prompt['text'])
+                        "content": process_content(prompt["text"]),
                     }
                 ]
             input_messages.append(input_message)
@@ -798,10 +958,15 @@ class WorkflowNodeExecutionFailedStrategy(ProcessStrategy):
     - Error state propagation for nodes
     """
 
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
         self._handle_workflow_node_execution_failed()
 
     def _handle_workflow_node_execution_failed(self):
         pass
-
-

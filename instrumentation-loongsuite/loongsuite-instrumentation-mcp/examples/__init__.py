@@ -1,1 +1,1 @@
-# MCP Example Package 
+# MCP Example Package

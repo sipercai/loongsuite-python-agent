@@ -1,9 +1,12 @@
 import unittest
-from unittest.mock import MagicMock, patch, Mock
-from opentelemetry.trace import Status, StatusCode
-from opentelemetry import trace
-from opentelemetry.instrumentation.dify.handler._rag_handler import ToolInvokeHandler, RetrieveHandler, \
-    VectorSearchHandler, FullTextSearchHandler
+from unittest.mock import MagicMock
+
+from opentelemetry.instrumentation.dify.handler._rag_handler import (
+    FullTextSearchHandler,
+    RetrieveHandler,
+    ToolInvokeHandler,
+    VectorSearchHandler,
+)
 from opentelemetry.instrumentation.dify.semconv import SpanKindValues
 
 
@@ -18,18 +21,16 @@ class TestToolInvokeHandler(unittest.TestCase):
         """测试 _get_input_attributes 方法，包含 action 参数"""
         # 准备测试数据
         args = ()
-        kwargs = {
-            'action': MagicMock(action_name='test_tool')
-        }
-        
+        kwargs = {"action": MagicMock(action_name="test_tool")}
+
         # 执行测试
         result = self.handler._get_input_attributes(args, kwargs)
-        
+
         # 验证结果
         expected = {
             "component.name": "dify",
             "gen_ai.span.kind": "TOOL",
-            "tool.name": "test_tool"
+            "tool.name": "test_tool",
         }
         self.assertEqual(result, expected)
 
@@ -38,10 +39,10 @@ class TestToolInvokeHandler(unittest.TestCase):
         # 准备测试数据
         args = ()
         kwargs = {}
-        
+
         # 执行测试
         result = self.handler._get_input_attributes(args, kwargs)
-        
+
         # 验证结果
         expected = {"component.name": "dify"}
         self.assertEqual(result, expected)
@@ -51,10 +52,12 @@ class TestToolInvokeHandler(unittest.TestCase):
         # 准备测试数据
         result = None
         error = Exception("Test error")
-        
+
         # 执行测试
-        attributes, time_cost, span_kind = self.handler._get_output_attributes(result, error)
-        
+        attributes, time_cost, span_kind = self.handler._get_output_attributes(
+            result, error
+        )
+
         # 验证结果
         self.assertEqual(attributes["tool.error"], "Test error")
         self.assertEqual(time_cost, 0.0)
@@ -68,15 +71,17 @@ class TestToolInvokeHandler(unittest.TestCase):
         tool_invoke_meta.time_cost = 1.5
         tool_invoke_meta.error = None
         tool_invoke_meta.tool_config = {
-            'tool_provider': 'test_provider',
-            'tool_provider_type': 'test_type',
-            'tool_parameters': {'param1': 'value1'}
+            "tool_provider": "test_provider",
+            "tool_provider_type": "test_type",
+            "tool_parameters": {"param1": "value1"},
         }
         result = (tool_invoke_response, tool_invoke_meta)
-        
+
         # 执行测试
-        attributes, time_cost, span_kind = self.handler._get_output_attributes(result)
-        
+        attributes, time_cost, span_kind = self.handler._get_output_attributes(
+            result
+        )
+
         # 验证结果
         self.assertEqual(attributes["output.value"], {"result": "success"})
         self.assertEqual(attributes["tool.provider"], "test_provider")
@@ -94,13 +99,15 @@ class TestToolInvokeHandler(unittest.TestCase):
         tool_invoke_meta.time_cost = 1.0
         tool_invoke_meta.error = None
         tool_invoke_meta.tool_config = {
-            'tool_provider': 'junjiem/mcp_sse_test'
+            "tool_provider": "junjiem/mcp_sse_test"
         }
         result = (tool_invoke_response, tool_invoke_meta)
-        
+
         # 执行测试
-        attributes, time_cost, span_kind = self.handler._get_output_attributes(result)
-        
+        attributes, time_cost, span_kind = self.handler._get_output_attributes(
+            result
+        )
+
         # 验证结果
         self.assertEqual(attributes["gen_ai.span.kind"], "MCP_CLIENT")
         # 注意：span_kind 返回值始终是 "TOOL"，但 attributes 中的 gen_ai.span.kind 会根据 provider 设置
@@ -115,11 +122,11 @@ class TestToolInvokeHandler(unittest.TestCase):
         wrapped_func.return_value = (mock_response, mock_meta)
         instance = None
         args = ()
-        kwargs = {'action': MagicMock(action_name='test_tool')}
-        
+        kwargs = {"action": MagicMock(action_name="test_tool")}
+
         # 执行测试
         result = self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证结果 - 不要直接比较 MagicMock 对象，而是比较实际值
         self.assertEqual(result[0], mock_response)
         self.assertEqual(result[1], mock_meta)
@@ -134,12 +141,12 @@ class TestToolInvokeHandler(unittest.TestCase):
         wrapped_func.side_effect = Exception("Test error")
         instance = None
         args = ()
-        kwargs = {'action': MagicMock(action_name='test_tool')}
-        
+        kwargs = {"action": MagicMock(action_name="test_tool")}
+
         # 执行测试并验证异常
         with self.assertRaises(Exception):
             self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证错误处理 - 使用 any_call 来检查 Status 调用
         self.mock_span.set_status.assert_called()
 
@@ -156,20 +163,20 @@ class TestRetrieveHandler(unittest.TestCase):
         # 准备测试数据
         args = ()
         kwargs = {
-            'method': 'semantic_search',
-            'dataset_id': 'test_dataset',
-            'query': 'test query',
-            'top_k': 10,
-            'score_threshold': 0.8,
-            'reranking_model': 'test_model',
-            'reranking_mode': 'test_mode',
-            'weights': {'weight1': 0.5},
-            'document_ids_filter': ['doc1', 'doc2']
+            "method": "semantic_search",
+            "dataset_id": "test_dataset",
+            "query": "test query",
+            "top_k": 10,
+            "score_threshold": 0.8,
+            "reranking_model": "test_model",
+            "reranking_mode": "test_mode",
+            "weights": {"weight1": 0.5},
+            "document_ids_filter": ["doc1", "doc2"],
         }
-        
+
         # 执行测试
         result = self.handler._get_input_attributes(args, kwargs)
-        
+
         # 验证结果
         expected = {
             "component.name": "dify",
@@ -181,7 +188,7 @@ class TestRetrieveHandler(unittest.TestCase):
             "retrieval.reranking_model": "test_model",
             "retrieval.reranking_mode": "test_mode",
             "retrieval.weights": "{'weight1': 0.5}",
-            "retrieval.document_ids_filter": "['doc1', 'doc2']"
+            "retrieval.document_ids_filter": "['doc1', 'doc2']",
         }
         self.assertEqual(result, expected)
 
@@ -189,37 +196,55 @@ class TestRetrieveHandler(unittest.TestCase):
         """测试 _get_output_attributes 方法，包含文档"""
         # 准备测试数据
         mock_doc1 = MagicMock()
-        mock_doc1.metadata = {'document_id': 'doc1', 'score': 0.9}
-        mock_doc1.page_content = 'content1'
-        
+        mock_doc1.metadata = {"document_id": "doc1", "score": 0.9}
+        mock_doc1.page_content = "content1"
+
         mock_doc2 = MagicMock()
-        mock_doc2.metadata = {'document_id': 'doc2', 'score': 0.8}
-        mock_doc2.page_content = 'content2'
-        
+        mock_doc2.metadata = {"document_id": "doc2", "score": 0.8}
+        mock_doc2.page_content = "content2"
+
         result = [mock_doc1, mock_doc2]
-        
+
         # 执行测试
         attributes = self.handler._get_output_attributes(result)
-        
+
         # 验证结果
-        self.assertEqual(attributes["retrieval.documents.0.document.id"], "doc1")
-        self.assertEqual(attributes["retrieval.documents.0.document.score"], 0.9)
-        self.assertEqual(attributes["retrieval.documents.0.document.content"], "content1")
-        self.assertEqual(attributes["retrieval.documents.0.document.metadata"], "{'document_id': 'doc1', 'score': 0.9}")
-        
-        self.assertEqual(attributes["retrieval.documents.1.document.id"], "doc2")
-        self.assertEqual(attributes["retrieval.documents.1.document.score"], 0.8)
-        self.assertEqual(attributes["retrieval.documents.1.document.content"], "content2")
-        self.assertEqual(attributes["retrieval.documents.1.document.metadata"], "{'document_id': 'doc2', 'score': 0.8}")
+        self.assertEqual(
+            attributes["retrieval.documents.0.document.id"], "doc1"
+        )
+        self.assertEqual(
+            attributes["retrieval.documents.0.document.score"], 0.9
+        )
+        self.assertEqual(
+            attributes["retrieval.documents.0.document.content"], "content1"
+        )
+        self.assertEqual(
+            attributes["retrieval.documents.0.document.metadata"],
+            "{'document_id': 'doc1', 'score': 0.9}",
+        )
+
+        self.assertEqual(
+            attributes["retrieval.documents.1.document.id"], "doc2"
+        )
+        self.assertEqual(
+            attributes["retrieval.documents.1.document.score"], 0.8
+        )
+        self.assertEqual(
+            attributes["retrieval.documents.1.document.content"], "content2"
+        )
+        self.assertEqual(
+            attributes["retrieval.documents.1.document.metadata"],
+            "{'document_id': 'doc2', 'score': 0.8}",
+        )
 
     def test_get_output_attributes_empty_result(self):
         """测试 _get_output_attributes 方法，空结果"""
         # 准备测试数据
         result = []
-        
+
         # 执行测试
         attributes = self.handler._get_output_attributes(result)
-        
+
         # 验证结果
         self.assertEqual(attributes, {})
 
@@ -231,14 +256,16 @@ class TestRetrieveHandler(unittest.TestCase):
         wrapped_func.return_value = mock_docs
         instance = None
         args = ()
-        kwargs = {'method': 'semantic_search', 'query': 'test query'}
-        
+        kwargs = {"method": "semantic_search", "query": "test query"}
+
         # 执行测试
         result = self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证结果
         self.assertEqual(result, mock_docs)
-        self.mock_span.set_attribute.assert_called_with("gen_ai.span.kind", SpanKindValues.RETRIEVER.value)
+        self.mock_span.set_attribute.assert_called_with(
+            "gen_ai.span.kind", SpanKindValues.RETRIEVER.value
+        )
         self.mock_span.set_status.assert_called()
 
     def test_call_with_exception(self):
@@ -248,15 +275,17 @@ class TestRetrieveHandler(unittest.TestCase):
         wrapped_func.side_effect = Exception("Test error")
         instance = None
         args = ()
-        kwargs = {'method': 'semantic_search', 'query': 'test query'}
-        
+        kwargs = {"method": "semantic_search", "query": "test query"}
+
         # 执行测试并验证异常
         with self.assertRaises(Exception):
             self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证错误处理
         self.mock_span.set_status.assert_called()
-        self.mock_span.set_attribute.assert_called_with("retrieval.error", "Test error")
+        self.mock_span.set_attribute.assert_called_with(
+            "retrieval.error", "Test error"
+        )
 
 
 class TestVectorSearchHandler(unittest.TestCase):
@@ -269,18 +298,18 @@ class TestVectorSearchHandler(unittest.TestCase):
     def test_get_input_attributes(self):
         """测试 _get_input_attributes 方法"""
         # 准备测试数据
-        args = ('test_query',)
-        kwargs = {'top_k': 10, 'filter': {'field': 'value'}}
-        
+        args = ("test_query",)
+        kwargs = {"top_k": 10, "filter": {"field": "value"}}
+
         # 执行测试
         result = self.handler._get_input_attributes(args, kwargs)
-        
+
         # 验证结果
         expected = {
             "component.name": "dify",
             "vector_search.query": "test_query",
             "vector_search.top_k": "10",
-            "vector_search.filter": "{'field': 'value'}"
+            "vector_search.filter": "{'field': 'value'}",
         }
         self.assertEqual(result, expected)
 
@@ -288,31 +317,44 @@ class TestVectorSearchHandler(unittest.TestCase):
         """测试 _get_output_attributes 方法，包含文档"""
         # 准备测试数据
         mock_doc1 = MagicMock()
-        mock_doc1.page_content = 'content1'
+        mock_doc1.page_content = "content1"
         mock_doc1.vector = [0.1, 0.2, 0.3]
-        mock_doc1.provider = 'test_provider'
-        mock_doc1.metadata = {'key': 'value'}
-        
+        mock_doc1.provider = "test_provider"
+        mock_doc1.metadata = {"key": "value"}
+
         mock_doc2 = MagicMock()
-        mock_doc2.page_content = 'content2'
+        mock_doc2.page_content = "content2"
         mock_doc2.vector = None
-        mock_doc2.provider = 'test_provider2'
-        mock_doc2.metadata = {'key2': 'value2'}
-        
+        mock_doc2.provider = "test_provider2"
+        mock_doc2.metadata = {"key2": "value2"}
+
         result = [mock_doc1, mock_doc2]
-        
+
         # 执行测试
         attributes = self.handler._get_output_attributes(result)
-        
+
         # 验证结果
-        self.assertEqual(attributes["vector_search.document.0.page_content"], "content1")
+        self.assertEqual(
+            attributes["vector_search.document.0.page_content"], "content1"
+        )
         self.assertEqual(attributes["vector_search.document.0.vector_size"], 3)
-        self.assertEqual(attributes["vector_search.document.0.provider"], "test_provider")
-        self.assertEqual(attributes["vector_search.document.0.metadata"], "{'key': 'value'}")
-        
-        self.assertEqual(attributes["vector_search.document.1.page_content"], "content2")
-        self.assertEqual(attributes["vector_search.document.1.provider"], "test_provider2")
-        self.assertEqual(attributes["vector_search.document.1.metadata"], "{'key2': 'value2'}")
+        self.assertEqual(
+            attributes["vector_search.document.0.provider"], "test_provider"
+        )
+        self.assertEqual(
+            attributes["vector_search.document.0.metadata"], "{'key': 'value'}"
+        )
+
+        self.assertEqual(
+            attributes["vector_search.document.1.page_content"], "content2"
+        )
+        self.assertEqual(
+            attributes["vector_search.document.1.provider"], "test_provider2"
+        )
+        self.assertEqual(
+            attributes["vector_search.document.1.metadata"],
+            "{'key2': 'value2'}",
+        )
         # vector_size 不应该存在，因为 vector 为 None
 
     def test_call_success(self):
@@ -323,20 +365,24 @@ class TestVectorSearchHandler(unittest.TestCase):
         wrapped_func.return_value = mock_docs
         instance = MagicMock()
         instance._vector_processor = MagicMock()
-        instance._vector_processor.collection_name = 'test_collection'
-        instance._vector_processor.get_type.return_value = 'test_type'
-        args = ('test_query',)
+        instance._vector_processor.collection_name = "test_collection"
+        instance._vector_processor.get_type.return_value = "test_type"
+        args = ("test_query",)
         kwargs = {}
-        
+
         # 执行测试
         result = self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证结果
         self.assertEqual(result, mock_docs)
         self.mock_span.set_attributes.assert_called()
         self.mock_span.set_status.assert_called()
-        self.mock_span.set_attribute.assert_any_call("vector.collection_name", "test_collection")
-        self.mock_span.set_attribute.assert_any_call("vector.vector_type", "test_type")
+        self.mock_span.set_attribute.assert_any_call(
+            "vector.collection_name", "test_collection"
+        )
+        self.mock_span.set_attribute.assert_any_call(
+            "vector.vector_type", "test_type"
+        )
 
     def test_call_with_exception(self):
         """测试 __call__ 方法，执行异常"""
@@ -344,16 +390,18 @@ class TestVectorSearchHandler(unittest.TestCase):
         wrapped_func = MagicMock()
         wrapped_func.side_effect = Exception("Test error")
         instance = None
-        args = ('test_query',)
+        args = ("test_query",)
         kwargs = {}
-        
+
         # 执行测试并验证异常
         with self.assertRaises(Exception):
             self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证错误处理
         self.mock_span.set_status.assert_called()
-        self.mock_span.set_attribute.assert_called_with("vector_search.error", "Test error")
+        self.mock_span.set_attribute.assert_called_with(
+            "vector_search.error", "Test error"
+        )
 
 
 class TestFullTextSearchHandler(unittest.TestCase):
@@ -366,18 +414,18 @@ class TestFullTextSearchHandler(unittest.TestCase):
     def test_get_input_attributes(self):
         """测试 _get_input_attributes 方法"""
         # 准备测试数据
-        args = ('test_query',)
-        kwargs = {'top_k': 10, 'filter': {'field': 'value'}}
-        
+        args = ("test_query",)
+        kwargs = {"top_k": 10, "filter": {"field": "value"}}
+
         # 执行测试
         result = self.handler._get_input_attributes(args, kwargs)
-        
+
         # 验证结果
         expected = {
             "component.name": "dify",
             "full_text_search.query": "test_query",
             "full_text_search.top_k": "10",
-            "full_text_search.filter": "{'field': 'value'}"
+            "full_text_search.filter": "{'field': 'value'}",
         }
         self.assertEqual(result, expected)
 
@@ -385,31 +433,48 @@ class TestFullTextSearchHandler(unittest.TestCase):
         """测试 _get_output_attributes 方法，包含文档"""
         # 准备测试数据
         mock_doc1 = MagicMock()
-        mock_doc1.page_content = 'content1'
+        mock_doc1.page_content = "content1"
         mock_doc1.vector = [0.1, 0.2, 0.3]
-        mock_doc1.provider = 'test_provider'
-        mock_doc1.metadata = {'key': 'value'}
-        
+        mock_doc1.provider = "test_provider"
+        mock_doc1.metadata = {"key": "value"}
+
         mock_doc2 = MagicMock()
-        mock_doc2.page_content = 'content2'
+        mock_doc2.page_content = "content2"
         mock_doc2.vector = None
-        mock_doc2.provider = 'test_provider2'
-        mock_doc2.metadata = {'key2': 'value2'}
-        
+        mock_doc2.provider = "test_provider2"
+        mock_doc2.metadata = {"key2": "value2"}
+
         result = [mock_doc1, mock_doc2]
-        
+
         # 执行测试
         attributes = self.handler._get_output_attributes(result)
-        
+
         # 验证结果
-        self.assertEqual(attributes["full_text_search.document.0.page_content"], "content1")
-        self.assertEqual(attributes["full_text_search.document.0.vector_size"], 3)
-        self.assertEqual(attributes["full_text_search.document.0.provider"], "test_provider")
-        self.assertEqual(attributes["full_text_search.document.0.metadata"], "{'key': 'value'}")
-        
-        self.assertEqual(attributes["full_text_search.document.1.page_content"], "content2")
-        self.assertEqual(attributes["full_text_search.document.1.provider"], "test_provider2")
-        self.assertEqual(attributes["full_text_search.document.1.metadata"], "{'key2': 'value2'}")
+        self.assertEqual(
+            attributes["full_text_search.document.0.page_content"], "content1"
+        )
+        self.assertEqual(
+            attributes["full_text_search.document.0.vector_size"], 3
+        )
+        self.assertEqual(
+            attributes["full_text_search.document.0.provider"], "test_provider"
+        )
+        self.assertEqual(
+            attributes["full_text_search.document.0.metadata"],
+            "{'key': 'value'}",
+        )
+
+        self.assertEqual(
+            attributes["full_text_search.document.1.page_content"], "content2"
+        )
+        self.assertEqual(
+            attributes["full_text_search.document.1.provider"],
+            "test_provider2",
+        )
+        self.assertEqual(
+            attributes["full_text_search.document.1.metadata"],
+            "{'key2': 'value2'}",
+        )
 
     def test_call_success(self):
         """测试 __call__ 方法，成功执行"""
@@ -418,12 +483,12 @@ class TestFullTextSearchHandler(unittest.TestCase):
         wrapped_func = MagicMock()
         wrapped_func.return_value = mock_docs
         instance = None
-        args = ('test_query',)
+        args = ("test_query",)
         kwargs = {}
-        
+
         # 执行测试
         result = self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证结果
         self.assertEqual(result, mock_docs)
         self.mock_span.set_attributes.assert_called()
@@ -435,17 +500,19 @@ class TestFullTextSearchHandler(unittest.TestCase):
         wrapped_func = MagicMock()
         wrapped_func.side_effect = Exception("Test error")
         instance = None
-        args = ('test_query',)
+        args = ("test_query",)
         kwargs = {}
-        
+
         # 执行测试并验证异常
         with self.assertRaises(Exception):
             self.handler(wrapped_func, instance, args, kwargs)
-        
+
         # 验证错误处理
         self.mock_span.set_status.assert_called()
-        self.mock_span.set_attribute.assert_called_with("full_text_search.error", "Test error")
+        self.mock_span.set_attribute.assert_called_with(
+            "full_text_search.error", "Test error"
+        )
 
 
-if __name__ == '__main__':
-    unittest.main() 
+if __name__ == "__main__":
+    unittest.main()

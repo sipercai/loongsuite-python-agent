@@ -1,16 +1,20 @@
-from typing import Any, Dict
 from abc import ABC
-from opentelemetry.metrics import get_meter
+from typing import Any, Dict
 
 from opentelemetry import trace
-from opentelemetry.trace import Tracer
-
-from opentelemetry.instrumentation.dify.semconv import GEN_AI_USER_ID, GEN_AI_SESSION_ID
+from opentelemetry.context import get_value
+from opentelemetry.instrumentation.dify.constants import (
+    DIFY_APP_ID_KEY,
+    _get_dify_app_name_key,
+)
+from opentelemetry.instrumentation.dify.semconv import (
+    GEN_AI_SESSION_ID,
+    GEN_AI_USER_ID,
+)
 from opentelemetry.instrumentation.dify.utils import get_llm_common_attributes
 from opentelemetry.instrumentation.dify.version import __version__
-from opentelemetry.context import get_value
-from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key, DIFY_APP_ID_KEY
-
+from opentelemetry.metrics import get_meter
+from opentelemetry.trace import Tracer
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
@@ -64,7 +68,9 @@ class BaseWrapper(ABC):
     def after_process(self):
         pass
 
-    def record_call_count(self, attributes: Dict[str, Any] = None, span_kind: str = None):
+    def record_call_count(
+        self, attributes: Dict[str, Any] = None, span_kind: str = None
+    ):
         """记录调用次数"""
         common_attrs = self.get_common_attributes()
         if span_kind:
@@ -72,7 +78,12 @@ class BaseWrapper(ABC):
         if attributes:
             common_attrs.update(attributes)
 
-    def record_duration(self, duration: float, attributes: Dict[str, Any] = None, span_kind: str = None):
+    def record_duration(
+        self,
+        duration: float,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = None,
+    ):
         """记录调用持续时间"""
         common_attrs = self.get_common_attributes()
         if span_kind:
@@ -80,13 +91,16 @@ class BaseWrapper(ABC):
         if attributes:
             common_attrs.update(attributes)
 
-    def record_call_error_count(self, attributes: Dict[str, Any] = None, span_kind: str = None):
+    def record_call_error_count(
+        self, attributes: Dict[str, Any] = None, span_kind: str = None
+    ):
         """记录调用错误次数"""
         common_attrs = self.get_common_attributes()
         if span_kind:
             common_attrs["spanKind"] = span_kind
         if attributes:
             common_attrs.update(attributes)
+
 
 class LLMBaseWrapper(BaseWrapper):
     def __init__(self, tracer: Tracer):
@@ -101,47 +115,76 @@ class LLMBaseWrapper(BaseWrapper):
             return {}
         current_context = current_span.get_span_context()
         # Only inject if we have a valid context
-        if current_context and hasattr(current_context, "trace_id") and hasattr(current_context, "span_id"):
+        if (
+            current_context
+            and hasattr(current_context, "trace_id")
+            and hasattr(current_context, "span_id")
+        ):
             # Create trace headers
             trace_headers = {}
             # Create traceparent header
             trace_id_hex = format(current_context.trace_id, "032x")
             span_id_hex = format(current_context.span_id, "016x")
-            flags = format(int(current_context.trace_flags) if hasattr(current_context, "trace_flags") else 1,
-                           "02x")
+            flags = format(
+                int(current_context.trace_flags)
+                if hasattr(current_context, "trace_flags")
+                else 1,
+                "02x",
+            )
             traceparent = f"00-{trace_id_hex}-{span_id_hex}-{flags}"
             trace_headers["traceparent"] = traceparent
             # Add tracestate if available
-            if hasattr(current_context, "trace_state") and current_context.trace_state:
+            if (
+                hasattr(current_context, "trace_state")
+                and current_context.trace_state
+            ):
                 trace_headers["tracestate"] = str(current_context.trace_state)
 
             return trace_headers
 
-
-    def record_call_count(self, model_name: str, attributes: Dict[str, Any] = None, span_kind: str = "LLM"):
+    def record_call_count(
+        self,
+        model_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录调用次数"""
         if attributes is None:
             attributes = {}
         attributes["modelName"] = model_name
         super().record_call_count(attributes, span_kind)
 
-    def record_duration(self, duration: float, model_name: str, attributes: Dict[str, Any] = None,
-                        span_kind: str = "LLM"):
+    def record_duration(
+        self,
+        duration: float,
+        model_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录调用持续时间"""
         if attributes is None:
             attributes = {}
         attributes["modelName"] = model_name
         super().record_duration(duration, attributes, span_kind)
 
-    def record_call_error_count(self, model_name: str, attributes: Dict[str, Any] = None, span_kind: str = "LLM"):
+    def record_call_error_count(
+        self,
+        model_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录调用错误次数"""
         if attributes is None:
             attributes = {}
         attributes["modelName"] = model_name
         super().record_call_error_count(attributes, span_kind)
 
-    def record_llm_output_token_seconds(self, duration: float, attributes: Dict[str, Any] = None,
-                                        span_kind: str = "LLM"):
+    def record_llm_output_token_seconds(
+        self,
+        duration: float,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录LLM输出token的持续时间"""
         common_attrs = self.get_common_attributes()
         if span_kind:
@@ -149,8 +192,13 @@ class LLMBaseWrapper(BaseWrapper):
         if attributes:
             common_attrs.update(attributes)
 
-    def record_first_token_seconds(self, duration: float, model_name: str, attributes: Dict[str, Any] = None,
-                                   span_kind: str = "LLM"):
+    def record_first_token_seconds(
+        self,
+        duration: float,
+        model_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录首包耗时"""
         common_attrs = self.get_common_attributes()
         if span_kind:
@@ -159,8 +207,14 @@ class LLMBaseWrapper(BaseWrapper):
             common_attrs.update(attributes)
         common_attrs["modelName"] = model_name
 
-    def _record_llm_tokens(self, tokens: int, usage_type: str, model_name: str, attributes: Dict[str, Any] = None,
-                           span_kind: str = "LLM"):
+    def _record_llm_tokens(
+        self,
+        tokens: int,
+        usage_type: str,
+        model_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录LLM token数量的通用方法"""
         common_attrs = self.get_common_attributes()
         if span_kind:
@@ -170,15 +224,29 @@ class LLMBaseWrapper(BaseWrapper):
         common_attrs["usageType"] = usage_type
         common_attrs["modelName"] = model_name
 
-    def record_llm_input_tokens(self, tokens: int, model_name: str, attributes: Dict[str, Any] = None,
-                                span_kind: str = "LLM"):
+    def record_llm_input_tokens(
+        self,
+        tokens: int,
+        model_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录LLM输入token的数量"""
-        self._record_llm_tokens(tokens, "input", model_name, attributes, span_kind)
+        self._record_llm_tokens(
+            tokens, "input", model_name, attributes, span_kind
+        )
 
-    def record_llm_output_tokens(self, tokens: int, model_name: str, attributes: Dict[str, Any] = None,
-                                 span_kind: str = "LLM"):
+    def record_llm_output_tokens(
+        self,
+        tokens: int,
+        model_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "LLM",
+    ):
         """记录LLM输出token的数量"""
-        self._record_llm_tokens(tokens, "output", model_name, attributes, span_kind)
+        self._record_llm_tokens(
+            tokens, "output", model_name, attributes, span_kind
+        )
 
 
 class TOOLBaseWrapper(BaseWrapper):
@@ -188,22 +256,37 @@ class TOOLBaseWrapper(BaseWrapper):
     def _init_metrics(self):
         super()._init_metrics()
 
-    def record_call_count(self, tool_name: str, attributes: Dict[str, Any] = None, span_kind: str = "TOOL"):
+    def record_call_count(
+        self,
+        tool_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "TOOL",
+    ):
         """记录调用次数"""
         if attributes is None:
             attributes = {}
         attributes["rpc"] = tool_name
         super().record_call_count(attributes, span_kind)
 
-    def record_duration(self, duration: float, tool_name: str, attributes: Dict[str, Any] = None,
-                        span_kind: str = "TOOL"):
+    def record_duration(
+        self,
+        duration: float,
+        tool_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "TOOL",
+    ):
         """记录调用持续时间"""
         if attributes is None:
             attributes = {}
         attributes["rpc"] = tool_name
         super().record_duration(duration, attributes, span_kind)
 
-    def record_call_error_count(self, tool_name: str, attributes: Dict[str, Any] = None, span_kind: str = "TOOL"):
+    def record_call_error_count(
+        self,
+        tool_name: str,
+        attributes: Dict[str, Any] = None,
+        span_kind: str = "TOOL",
+    ):
         """记录调用错误次数"""
         if attributes is None:
             attributes = {}

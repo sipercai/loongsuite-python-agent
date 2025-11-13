@@ -1,12 +1,16 @@
-from opentelemetry.instrumentation.dify.config import is_wrapper_version_1, is_wrapper_version_2
+from opentelemetry.instrumentation.dify.config import (
+    is_wrapper_version_1,
+    is_wrapper_version_2,
+)
 
 try:
-    from models.model import App
     from extensions.ext_database import db
-    from models.model import Message
+    from models.model import App, Message
+
     dify_dependencies_available = True
-except ImportError as e:
+except ImportError:
     dify_dependencies_available = False
+
 
 def get_app_name_by_id(app_id: str) -> str:
     if not dify_dependencies_available:
@@ -26,10 +30,12 @@ def get_app_name_by_id(app_id: str) -> str:
         return app_id
     return app_name
 
+
 def get_message_data(message_id: str):
     if not dify_dependencies_available:
         return None
     return db.session.query(Message).filter(Message.id == message_id).first()
+
 
 def get_workflow_run_id(run):
     if is_wrapper_version_1():

@@ -3,13 +3,9 @@ import multiprocessing
 import socket
 import time
 from collections.abc import Generator
-from opentelemetry import trace
-from opentelemetry.trace import SpanKind
+
 import pytest
 import uvicorn
-from pydantic import AnyUrl
-from starlette.applications import Starlette
-from starlette.routing import WebSocketRoute
 from mcp.shared.exceptions import McpError
 from mcp.types import (
     EmptyResult,
@@ -20,33 +16,32 @@ from mcp.types import (
     TextResourceContents,
     Tool,
 )
-from opentelemetry.instrumentation.mcp import MCPInstrumentor
-from .fixtures import (
-    meter_provider,
-    memory_reader,
-    tracer_provider,
-    mcp_server_factory,
-    memory_exporter,
-    _setup_tracer_and_meter_provider,
-    _teardown_tracer_and_meter_provider,
-    find_span,
-)
+from pydantic import AnyUrl
+from starlette.applications import Starlette
+from starlette.routing import WebSocketRoute
+
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.trace import NonRecordingSpan
+from opentelemetry.instrumentation.mcp import MCPInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     SimpleSpanProcessor,
 )
-
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
+)
+from opentelemetry.trace import SpanKind
 
 SERVER_NAME = "test_server_for_WS"
 
 
 # do instrument before each test
 @pytest.fixture(autouse=True)
-def instrumentor(tracer_provider, _setup_tracer_and_meter_provider, _teardown_tracer_and_meter_provider):
+def instrumentor(
+    tracer_provider,
+    _setup_tracer_and_meter_provider,
+    _teardown_tracer_and_meter_provider,
+):
     _setup_tracer_and_meter_provider()
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
@@ -82,7 +77,11 @@ def create_server():
             await asyncio.sleep(2.0)
             return f"Slow response from {uri.host}"
 
-        raise McpError(error=ErrorData(code=404, message="OOPS! no resource with that URI was found"))
+        raise McpError(
+            error=ErrorData(
+                code=404, message="OOPS! no resource with that URI was found"
+            )
+        )
 
     @server.list_tools()
     async def handle_list_tools() -> list[Tool]:
@@ -119,8 +118,12 @@ def make_server_app() -> Starlette:
     from mcp.server.websocket import websocket_server
 
     async def handle_ws(websocket):
-        async with websocket_server(websocket.scope, websocket.receive, websocket.send) as streams:
-            await server.run(streams[0], streams[1], server.create_initialization_options())
+        async with websocket_server(
+            websocket.scope, websocket.receive, websocket.send
+        ) as streams:
+            await server.run(
+                streams[0], streams[1], server.create_initialization_options()
+            )
 
     app = Starlette(
         routes=[
@@ -148,7 +151,11 @@ def run_server(server_port: int) -> None:
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=create_tracer_provider())
     app = make_server_app()
-    server = uvicorn.Server(config=uvicorn.Config(app=app, host="127.0.0.1", port=server_port, log_level="error"))
+    server = uvicorn.Server(
+        config=uvicorn.Config(
+            app=app, host="127.0.0.1", port=server_port, log_level="error"
+        )
+    )
     print(f"starting server on {server_port}")
     server.run()
 
@@ -161,7 +168,9 @@ def run_server(server_port: int) -> None:
 
 @pytest.fixture()
 def server(server_port) -> Generator[None, None, None]:
-    proc = multiprocessing.Process(target=run_server, kwargs={"server_port": server_port}, daemon=True)
+    proc = multiprocessing.Process(
+        target=run_server, kwargs={"server_port": server_port}, daemon=True
+    )
     print("starting process")
     proc.start()
 
@@ -178,7 +187,9 @@ def server(server_port) -> Generator[None, None, None]:
             time.sleep(0.1)
             attempt += 1
     else:
-        raise RuntimeError(f"Server failed to start after {max_attempts} attempts")
+        raise RuntimeError(
+            f"Server failed to start after {max_attempts} attempts"
+        )
 
     yield
 
@@ -232,12 +243,16 @@ async def test_ws_client_happy_request_and_response(
             assert result.contents[0].text == "Read example"
 
             tracer = tracer_provider.get_tracer(__name__)
-            with tracer.start_as_current_span(name="test_send_request_propagator", kind=SpanKind.CLIENT) as span:
+            with tracer.start_as_current_span(
+                name="test_send_request_propagator", kind=SpanKind.CLIENT
+            ) as span:
                 span_id = span.get_span_context().span_id
                 trace_id = span.get_span_context().trace_id
                 result = await session.call_tool("get_server_span")
                 assert isinstance(result.content[0], TextContent)
-                [server_trace_id, server_span_id] = result.content[0].text.split(" ")
+                [server_trace_id, server_span_id] = result.content[
+                    0
+                ].text.split(" ")
                 assert server_trace_id == str(trace_id)
                 assert server_span_id != str(span_id)
 
@@ -246,4 +261,7 @@ async def test_ws_client_happy_request_and_response(
                 if span.name != "test_send_request_propagator":
                     assert span.attributes["server.address"] == "127.0.0.1"
                     assert span.attributes["network.transport"] == "websocket"
-                    assert span.attributes["server.port"] == server_url.split(":")[-1]
+                    assert (
+                        span.attributes["server.port"]
+                        == server_url.split(":")[-1]
+                    )

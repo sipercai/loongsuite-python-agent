@@ -1,6 +1,6 @@
 try:
     HAS_DIFY = True
-    from configs import dify_config # type: ignore
+    from configs import dify_config  # type: ignore
 except:
     HAS_DIFY = False
 
@@ -19,8 +19,8 @@ def _compare_versions(version1, version2):
     Returns:
         int: 如果version1 > version2返回1，如果version1 < version2返回-1，如果相等返回0
     """
-    v1_parts = list(map(int, version1.split('.')))
-    v2_parts = list(map(int, version2.split('.')))
+    v1_parts = list(map(int, version1.split(".")))
+    v2_parts = list(map(int, version2.split(".")))
 
     for v1, v2 in zip(v1_parts, v2_parts):
         if v1 > v2:
@@ -54,34 +54,42 @@ def is_version_supported():
 def is_wrapper_version_1():
     try:
         current_version = dify_config.CURRENT_VERSION
-        return (_compare_versions(current_version, "0.8.3") >= 0
-                and _compare_versions(current_version, "1.3.1") <= 0)
+        return (
+            _compare_versions(current_version, "0.8.3") >= 0
+            and _compare_versions(current_version, "1.3.1") <= 0
+        )
     except:
         return False
+
 
 def is_wrapper_version_1_for_plugin():
     try:
         current_version = dify_config.CURRENT_VERSION
-        return (_compare_versions(current_version, "0.8.3") >= 0
-                and _compare_versions(current_version, "1.3.1") < 0)
+        return (
+            _compare_versions(current_version, "0.8.3") >= 0
+            and _compare_versions(current_version, "1.3.1") < 0
+        )
     except:
         return False
+
 
 def is_wrapper_version_2():
     try:
         current_version = dify_config.CURRENT_VERSION
-        return (_compare_versions(current_version, "1.4.0") >= 0
-                and _compare_versions(current_version, "1.4.3") <= 0)
+        return (
+            _compare_versions(current_version, "1.4.0") >= 0
+            and _compare_versions(current_version, "1.4.3") <= 0
+        )
     except:
         return False
+
 
 def is_wrapper_version_2_for_plugin():
     try:
         current_version = dify_config.CURRENT_VERSION
-        return (_compare_versions(current_version, "1.3.1") >= 0
-                and _compare_versions(current_version, "1.4.3") <= 0)
+        return (
+            _compare_versions(current_version, "1.3.1") >= 0
+            and _compare_versions(current_version, "1.4.3") <= 0
+        )
     except:
         return False
-
-
-

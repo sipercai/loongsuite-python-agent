@@ -1,21 +1,25 @@
-from contextlib import asynccontextmanager
 import time
-from typing import Any, Callable, Dict, Mapping, Tuple, Union
+from contextlib import asynccontextmanager
+from typing import Any, Callable, Dict, Mapping, Tuple, Union, cast
 from urllib.parse import urlparse
-from opentelemetry import propagate
-from opentelemetry.instrumentation.mcp.metrics import ServerMetrics
-from opentelemetry.instrumentation.mcp.semconv import MCPAttributes, _method_names_with_target
-from opentelemetry.trace import SpanKind
+
 import wrapt
+
+from opentelemetry import propagate
 from opentelemetry import trace as trace_api
-from typing import cast
+from opentelemetry.instrumentation.mcp.metrics import ServerMetrics
+from opentelemetry.instrumentation.mcp.semconv import (
+    MCPAttributes,
+    _method_names_with_target,
+)
 from opentelemetry.instrumentation.mcp.utils import _get_logger
+from opentelemetry.trace import SpanKind
 
 has_mcp_types = False
 try:
-    from mcp.shared.session import RequestResponder
-    from mcp.types import ClientRequest, ServerResult, JSONRPCRequest
     from mcp.shared.message import SessionMessage
+    from mcp.shared.session import RequestResponder
+    from mcp.types import ClientRequest, JSONRPCRequest, ServerResult
 
     has_mcp_types = True
 except Exception:
@@ -25,12 +29,13 @@ logger = _get_logger(__name__)
 
 
 class _SessionContext:
-
     def __init__(self, session_attributes: Dict[str, str]):
         self._attributes = session_attributes
         self._session_id_callback = None
 
-    def _set_session_id_callback(self, session_id_callback: Callable[[], Union[str, None]]):
+    def _set_session_id_callback(
+        self, session_id_callback: Callable[[], Union[str, None]]
+    ):
         self._session_id_callback = session_id_callback
 
     def _parse_session_id(self) -> Union[str, None]:
@@ -42,7 +47,9 @@ class _SessionContext:
         try:
             session_id = self._session_id_callback()
             if session_id:
-                self._attributes[MCPAttributes.MCP_SESSION_ID] = str(session_id)
+                self._attributes[MCPAttributes.MCP_SESSION_ID] = str(
+                    session_id
+                )
                 return str(session_id)
         except Exception:
             logger.debug("Failed to get session id", exc_info=True)
@@ -68,7 +75,9 @@ class _SessionContext:
             logger.debug("Failed to detach session context", exc_info=True)
 
 
-def _parse_url(args: Tuple[Any, ...], kwargs: Mapping[str, Any]) -> Tuple[Union[str, None], Union[str, None]]:
+def _parse_url(
+    args: Tuple[Any, ...], kwargs: Mapping[str, Any]
+) -> Tuple[Union[str, None], Union[str, None]]:
     url = None
     if len(args) > 0:
         url = args[0]
@@ -84,7 +93,9 @@ def _parse_url(args: Tuple[Any, ...], kwargs: Mapping[str, Any]) -> Tuple[Union[
         return None, None
 
 
-def _get_session_context(transport: str, args: Tuple[Any, ...], kwargs: Mapping[str, Any]) -> _SessionContext:
+def _get_session_context(
+    transport: str, args: Tuple[Any, ...], kwargs: Mapping[str, Any]
+) -> _SessionContext:
     input_attributes = {
         MCPAttributes.COMPONENT_NAME: MCPAttributes.MCP_CLIENT,
         MCPAttributes.NETWORK_TRANSPORT: transport,
@@ -103,12 +114,17 @@ def _get_session_context(transport: str, args: Tuple[Any, ...], kwargs: Mapping[
 
 # do propagation in send method
 async def _writer_send_wrapper(
-    wrapped: Callable[..., Any], instance: Any, args: Tuple[Any, ...], kwargs: Mapping[str, Any]
+    wrapped: Callable[..., Any],
+    instance: Any,
+    args: Tuple[Any, ...],
+    kwargs: Mapping[str, Any],
 ):
     try:
         if len(args) > 0 and has_mcp_types:
             session_message = args[0]
-            if isinstance(session_message, SessionMessage) and isinstance(session_message.message.root, JSONRPCRequest):
+            if isinstance(session_message, SessionMessage) and isinstance(
+                session_message.message.root, JSONRPCRequest
+            ):
                 request = session_message.message.root
                 if request.params is None:
                     request.params = {}
@@ -202,7 +218,9 @@ def streamable_http_client_wrapper():
             try:
                 session_context._set_session_id_callback(context[2])
             except Exception:
-                logger.debug("Failed to get session id callback", exc_info=True)
+                logger.debug(
+                    "Failed to get session id callback", exc_info=True
+                )
             _safe_propagate(context)
             session_context._safe_attach(context)
             try:
@@ -214,7 +232,9 @@ def streamable_http_client_wrapper():
 
 
 class ServerHandleRequestWrapper:
-    def __init__(self, tracer: trace_api.Tracer, server_metrics: ServerMetrics):
+    def __init__(
+        self, tracer: trace_api.Tracer, server_metrics: ServerMetrics
+    ):
         self._tracer = tracer
         self._server_metrics = server_metrics
 
@@ -223,16 +243,22 @@ class ServerHandleRequestWrapper:
             return None
         try:
             if len(args) > 0:
-                message = cast(RequestResponder[ClientRequest, ServerResult], args[0])
-                carrier = getattr(message.request_meta, "__pydantic_extra__", None)
+                message = cast(
+                    RequestResponder[ClientRequest, ServerResult], args[0]
+                )
+                carrier = getattr(
+                    message.request_meta, "__pydantic_extra__", None
+                )
                 if carrier:
                     return propagate.extract(carrier)
         except Exception:
             logger.debug("Failed to extract trace context", exc_info=True)
         return None
 
-    def extract_attributes(self, args: Tuple[Any, ...]) -> Tuple[Dict[str, str], Union[str, None]]:
-        attributes : Dict[str, str] = {}
+    def extract_attributes(
+        self, args: Tuple[Any, ...]
+    ) -> Tuple[Dict[str, str], Union[str, None]]:
+        attributes: Dict[str, str] = {}
         span_name = None
         if not has_mcp_types:
             return attributes, span_name
@@ -241,7 +267,9 @@ class ServerHandleRequestWrapper:
             if len(args) == 0:
                 return attributes, None
 
-            message = cast(RequestResponder[ClientRequest, ServerResult], args[0])
+            message = cast(
+                RequestResponder[ClientRequest, ServerResult], args[0]
+            )
             method = message.request.root.method
             if method is None:
                 return attributes, None
@@ -251,10 +279,14 @@ class ServerHandleRequestWrapper:
 
             # span name
             if method in ["tools/call", "prompts/get"]:
-                target_name = message.request.root.params.name # type: ignore
+                target_name = message.request.root.params.name  # type: ignore
                 span_name = f"{method} {target_name}"
-            elif method in ["resources/read", "resources/subscribe", "resources/unsubscribe"]:
-                target_name = str(message.request.root.params.uri) # type: ignore
+            elif method in [
+                "resources/read",
+                "resources/subscribe",
+                "resources/unsubscribe",
+            ]:
+                target_name = str(message.request.root.params.uri)  # type: ignore
                 span_name = f"{method} {target_name}"
             else:
                 span_name = method
@@ -269,9 +301,12 @@ class ServerHandleRequestWrapper:
         return attributes, span_name
 
     async def __call__(
-        self, wrapped: Callable[..., Any], instance: Any, args: Tuple[Any, ...], kwargs: Mapping[str, Any]
+        self,
+        wrapped: Callable[..., Any],
+        instance: Any,
+        args: Tuple[Any, ...],
+        kwargs: Mapping[str, Any],
     ):
-
         start_time = time.time()
         parent_context = self.extract_parent_context(args)
         attributes, span_name = self.extract_attributes(args)
@@ -280,13 +315,21 @@ class ServerHandleRequestWrapper:
             return await wrapped(*args, **kwargs)
 
         with self._tracer.start_as_current_span(
-            name=span_name, kind=SpanKind.SERVER, context=parent_context, attributes=attributes
+            name=span_name,
+            kind=SpanKind.SERVER,
+            context=parent_context,
+            attributes=attributes,
         ):
             try:
                 return await wrapped(*args, **kwargs)
             finally:
                 try:
-                    self._server_metrics.operation_duration.record(time.time() - start_time)
+                    self._server_metrics.operation_duration.record(
+                        time.time() - start_time
+                    )
                     self._server_metrics.operation_count.add(1)
                 except Exception:
-                    logger.debug("Failed to record server operation duration", exc_info=True)
+                    logger.debug(
+                        "Failed to record server operation duration",
+                        exc_info=True,
+                    )

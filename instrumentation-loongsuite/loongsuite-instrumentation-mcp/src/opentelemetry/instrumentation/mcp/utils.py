@@ -1,8 +1,9 @@
-from typing import Any, List, Union
+import importlib.metadata
 import json
 import logging
-import importlib.metadata
 from os import environ
+from typing import Any, List, Union
+
 from opentelemetry.instrumentation.mcp.semconv import MCPEnvironmentVariables
 
 _has_mcp_types = False
@@ -47,7 +48,7 @@ def _get_max_attribute_length() -> int:
 
 def _is_ws_installed() -> bool:
     try:
-        import websockets # pyright: ignore[reportUnusedImport]
+        import websockets  # pyright: ignore[reportUnusedImport]
 
         return True
     except ImportError:
@@ -69,11 +70,16 @@ def _is_version_supported() -> bool:
     except Exception as _:
         return False
 
-    return MIN_SUPPORTED_VERSION <= current_version and current_version <= MAX_SUPPORTED_VERSION
+    return (
+        MIN_SUPPORTED_VERSION <= current_version
+        and current_version <= MAX_SUPPORTED_VERSION
+    )
 
 
 def _is_capture_content_enabled() -> bool:
-    capture_content = environ.get(MCPEnvironmentVariables.CAPTURE_INPUT_ENABLED, "true")
+    capture_content = environ.get(
+        MCPEnvironmentVariables.CAPTURE_INPUT_ENABLED, "true"
+    )
     return _is_true_value(capture_content)
 
 
@@ -83,7 +89,7 @@ def _safe_dump_attributes(obj: Any) -> str:
 
 def _safe_json_dumps(obj: Any, max_length: int = -1) -> str:
     try:
-        chunks : List[str] = []
+        chunks: List[str] = []
         current_chunks_length = 0
         encoder = json.JSONEncoder()
         for chunk in encoder.iterencode(obj):
@@ -114,9 +120,13 @@ def _get_resource_result_size(resource_result: Any) -> Union[int, None]:
         return None
     size = 0
     for content in resource_result.contents:
-        if isinstance(content, TextResourceContents) and hasattr(content, "text"):
+        if isinstance(content, TextResourceContents) and hasattr(
+            content, "text"
+        ):
             size += len(content.text)
-        elif isinstance(content, BlobResourceContents) and hasattr(content, "blob"):
+        elif isinstance(content, BlobResourceContents) and hasattr(
+            content, "blob"
+        ):
             size += len(content.blob)
     return size
 
@@ -134,11 +144,17 @@ def _get_prompt_result_size(prompt_result: Any) -> Union[int, None]:
 def _get_call_tool_result_size(call_tool_result: Any) -> Union[int, None]:
     if not _has_mcp_types or not hasattr(call_tool_result, "content"):
         return None
-    return sum([_get_content_size(content) for content in call_tool_result.content])
+    return sum(
+        [_get_content_size(content) for content in call_tool_result.content]
+    )
 
 
 def _get_complete_result_size(complete_result: Any) -> Union[int, None]:
-    if _has_mcp_types and hasattr(complete_result, "completion") and hasattr(complete_result.completion, "values"):
+    if (
+        _has_mcp_types
+        and hasattr(complete_result, "completion")
+        and hasattr(complete_result.completion, "values")
+    ):
         return sum([len(value) for value in complete_result.completion.values])
     return None
 

@@ -1,15 +1,18 @@
-from mcp.server.fastmcp import Image
-from opentelemetry.sdk.trace.export import (
-    SimpleSpanProcessor,
-)
-from opentelemetry import metrics as metrics_api
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
 import pytest
 from fastmcp import FastMCP
+from mcp.server.fastmcp import Image
+from PIL import Image as PILImage
+
+from opentelemetry import metrics as metrics_api
 from opentelemetry import trace as trace_api
+from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import (
     InMemoryMetricReader,
+)
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    SimpleSpanProcessor,
 )
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
@@ -18,8 +21,6 @@ from opentelemetry.test.globals_test import (
     reset_metrics_globals,
     reset_trace_globals,
 )
-from opentelemetry.sdk.metrics import MeterProvider
-from PIL import Image as PILImage
 
 
 @pytest.fixture
@@ -85,7 +86,9 @@ def tracer_provider(memory_exporter):
 
 
 @pytest.fixture(autouse=True)
-def _setup_tracer_and_meter_provider(tracer_provider, memory_exporter, meter_provider):
+def _setup_tracer_and_meter_provider(
+    tracer_provider, memory_exporter, meter_provider
+):
     def callable():
         memory_exporter.clear()
         reset_trace_globals()
@@ -107,7 +110,9 @@ def _teardown_tracer_and_meter_provider():
 
 @pytest.fixture
 def find_span(memory_exporter):
-    def callable(name: str, type: trace_api.SpanKind = trace_api.SpanKind.CLIENT):
+    def callable(
+        name: str, type: trace_api.SpanKind = trace_api.SpanKind.CLIENT
+    ):
         spans = memory_exporter.get_finished_spans()
         for span in spans:
             if span.kind != type:

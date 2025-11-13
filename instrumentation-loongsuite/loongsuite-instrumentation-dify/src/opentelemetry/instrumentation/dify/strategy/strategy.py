@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Any, Tuple, Mapping
-
-from opentelemetry.metrics import get_meter
+from typing import Any, Mapping, Tuple
 
 from opentelemetry.instrumentation.dify.capture_content import set_dict_value
 from opentelemetry.instrumentation.dify.dify_utils import get_message_data
 from opentelemetry.instrumentation.dify.semconv import INPUT_VALUE
 from opentelemetry.instrumentation.dify.version import __version__
+from opentelemetry.metrics import get_meter
 
 
 class ProcessStrategy(ABC):
@@ -55,12 +54,24 @@ class ProcessStrategy(ABC):
         set_dict_value(input_attributes, input_key, input_value)
         return input_attributes
 
-
     @abstractmethod
-    def process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], res: Any) -> None:
+    def process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
         pass
 
-    def before_process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any], ):
+    def before_process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+    ):
         pass
 
     def _get_data(self, src, key, default=None):

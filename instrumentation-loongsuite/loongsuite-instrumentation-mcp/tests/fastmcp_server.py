@@ -1,13 +1,16 @@
 import sys
+
 from fastmcp.server.server import FastMCP
 from mcp.server.fastmcp import Image
+
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.trace import NonRecordingSpan
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     SimpleSpanProcessor,
+)
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
 )
 
 
@@ -23,10 +26,13 @@ def create_tracer_provider():
     tracer_provider.add_span_processor(span_processor)
     return tracer_provider
 
+
 def do_instrument():
     from opentelemetry.instrumentation.mcp import MCPInstrumentor
+
     instrumentor = MCPInstrumentor()
     instrumentor._instrument(tracer_provider=create_tracer_provider())
+
 
 def create_fastmcp_server():
     mcp = FastMCP("testServer")
@@ -38,10 +44,10 @@ def create_fastmcp_server():
     @mcp.resource("config://version")
     def get_version():
         return "2.0.1"
-    
+
     @mcp.resource("config://image")
     def get_image():
-        return Image(data=b'asdsadsa????sdsads', format="png")
+        return Image(data=b"asdsadsa????sdsads", format="png")
 
     @mcp.tool
     def get_server_span() -> str:
@@ -49,7 +55,7 @@ def create_fastmcp_server():
         assert current_span is not None
         trace_id = current_span.get_span_context().trace_id
         span_id = current_span.get_span_context().span_id
-        return f'{trace_id} {span_id}'
+        return f"{trace_id} {span_id}"
 
     @mcp.resource("users://{user_id}/profile")
     def get_profile(user_id: int):

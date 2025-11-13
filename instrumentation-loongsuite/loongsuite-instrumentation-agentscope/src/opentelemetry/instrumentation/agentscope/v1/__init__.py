@@ -2,11 +2,13 @@
 """AgentScope v1.x instrumentation."""
 
 from typing import Any, Collection
+
 from wrapt import wrap_function_wrapper
-from opentelemetry.instrumentation.utils import unwrap
-from opentelemetry._events import get_event_logger
+
 from opentelemetry import trace as trace_api
+from opentelemetry._events import get_event_logger
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.instrumentation.version import (
     __version__,
 )
@@ -14,18 +16,16 @@ from opentelemetry.metrics import get_meter
 from opentelemetry.semconv.schemas import Schemas
 
 from ._wrapper import (
+    AgentScopeV1AgentWrapper,
     AgentScopeV1ChatModelWrapper,
     AgentScopeV1EmbeddingModelWrapper,
-    AgentScopeV1AgentWrapper,
 )
 from .patch import (
-    toolkit_call_tool_function,
     formatter_format,
+    toolkit_call_tool_function,
 )
 
-_instruments = (
-    "agentscope>=1.0.0",
-)
+_instruments = ("agentscope>=1.0.0",)
 
 """OpenTelemetry instrumentation for AgentScope v1.x"""
 
@@ -37,8 +37,8 @@ _EMBEDDING_MODULE = "agentscope.embedding"
 
 __all__ = ["AgentScopeV1Instrumentor"]
 
-class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
 
+class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
     def __init__(self):
         self._meter = None
 
@@ -59,7 +59,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
             tracer_provider,
             schema_url=Schemas.V1_28_0.value,
         )
-        
+
         event_logger_provider = kwargs.get("event_logger_provider")
         event_logger = get_event_logger(
             __name__,
@@ -67,7 +67,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
             schema_url=Schemas.V1_28_0.value,
             event_logger_provider=event_logger_provider,
         )
-        
+
         meter_provider = kwargs.get("meter_provider")
         self._meter = get_meter(
             __name__,
@@ -76,7 +76,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
             schema_url=Schemas.V1_28_0.value,
         )
         # agent chatmodel embedding need wrap init
-        # LLM 
+        # LLM
         try:
             wrap_function_wrapper(
                 module=_MODEL_MODULE,
@@ -88,7 +88,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
             )
         except Exception:
             pass
-            
+
         # embedding
         try:
             wrap_function_wrapper(
@@ -121,24 +121,26 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
                 module=_TOOL_MODULE,
                 name="Toolkit.call_tool_function",
                 wrapper=toolkit_call_tool_function(
-                    tracer, event_logger,
+                    tracer,
+                    event_logger,
                 ),
             )
         except Exception:
             pass
-            
+
         # format
         try:
             wrap_function_wrapper(
                 module=_FORMATTER_MODULE,
                 name="TruncatedFormatterBase.format",
                 wrapper=formatter_format(
-                    tracer, event_logger,
+                    tracer,
+                    event_logger,
                 ),
             )
         except Exception:
             pass
-            
+
         # setup_tracing - 替换为 pass
         try:
             wrap_function_wrapper(
@@ -153,49 +155,55 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
         """移除插装。"""
         # 恢复被动态替换的方法
         from ._wrapper import (
+            AgentScopeV1AgentWrapper,
             AgentScopeV1ChatModelWrapper,
             AgentScopeV1EmbeddingModelWrapper,
-            AgentScopeV1AgentWrapper,
         )
-        
+
         AgentScopeV1ChatModelWrapper.restore_original_methods()
         AgentScopeV1EmbeddingModelWrapper.restore_original_methods()
         AgentScopeV1AgentWrapper.restore_original_methods()
-        
+
         # 恢复直接包装的方法
         try:
             import agentscope.model
+
             unwrap(agentscope.model.ChatModelBase, "__init__")
         except Exception:
             pass
-            
+
         try:
             import agentscope.embedding
+
             unwrap(agentscope.embedding.EmbeddingModelBase, "__init__")
         except Exception:
             pass
-            
+
         try:
             import agentscope.agent
+
             unwrap(agentscope.agent.AgentBase, "__init__")
         except Exception:
             pass
-            
+
         try:
             import agentscope.tool
+
             unwrap(agentscope.tool.Toolkit, "call_tool_function")
         except Exception:
             pass
-            
+
         try:
             import agentscope.formatter
+
             unwrap(agentscope.formatter.FormatterBase, "format")
         except Exception:
             pass
-            
+
         # 恢复 setup_tracing
         try:
             import agentscope.tracing
+
             unwrap(agentscope.tracing, "setup_tracing")
         except Exception:
             pass

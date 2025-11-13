@@ -1,42 +1,71 @@
 import asyncio
 import json
 import logging
+import os
 import random
 from contextlib import suppress
 from itertools import count
-from typing import Any, AsyncIterator, Dict, Generator, Iterable, Iterator, List, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Generator,
+    Iterable,
+    Iterator,
+    List,
+    Tuple,
+)
 
 import numpy as np
 import openai
-import os
 import pytest
 from httpx import AsyncByteStream, Response, SyncByteStream
 from langchain.chains import RetrievalQA
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.retrievers import KNNRetriever
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableSequence
 from langchain_openai import ChatOpenAI
-from opentelemetry.instrumentation.langchain import LangChainInstrumentor
-from opentelemetry.instrumentation.langchain.internal.semconv import (
-    SpanKindValues, MimeTypeValues,
-    LLM_SPAN_KIND, LLM_MODEL_NAME, LLM_PROMPT_TEMPLATE, LLM_PROMPT_TEMPLATE_VARIABLES,
-    LLM_PROMPTS, LLM_OUTPUT_MESSAGES, LLM_USAGE_TOTAL_TOKENS, LLM_USAGE_PROMPT_TOKENS,
-    LLM_USAGE_COMPLETION_TOKENS, LLM_RESPONSE_FINISH_REASON, LLM_RESPONSE_MODEL_NAME,
-    INPUT_MIME_TYPE, INPUT_VALUE, OUTPUT_MIME_TYPE, OUTPUT_VALUE,
-    DOCUMENT_CONTENT, RETRIEVAL_DOCUMENTS, MESSAGE_ROLE, MESSAGE_CONTENT,
-    CONTENT, METADATA
-)
-from opentelemetry import trace as trace_api
-from opentelemetry.sdk import trace as trace_sdk
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.sdk.metrics.export import InMemoryMetricReader
-from opentelemetry.sdk.metrics import MeterProvider
 from respx import MockRouter
 
+from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.langchain import LangChainInstrumentor
+from opentelemetry.instrumentation.langchain.internal.semconv import (
+    CONTENT,
+    DOCUMENT_CONTENT,
+    INPUT_MIME_TYPE,
+    INPUT_VALUE,
+    LLM_MODEL_NAME,
+    LLM_OUTPUT_MESSAGES,
+    LLM_PROMPT_TEMPLATE,
+    LLM_PROMPT_TEMPLATE_VARIABLES,
+    LLM_PROMPTS,
+    LLM_RESPONSE_FINISH_REASON,
+    LLM_RESPONSE_MODEL_NAME,
+    LLM_SPAN_KIND,
+    LLM_USAGE_COMPLETION_TOKENS,
+    LLM_USAGE_PROMPT_TOKENS,
+    LLM_USAGE_TOTAL_TOKENS,
+    MESSAGE_CONTENT,
+    MESSAGE_ROLE,
+    METADATA,
+    OUTPUT_MIME_TYPE,
+    OUTPUT_VALUE,
+    RETRIEVAL_DOCUMENTS,
+    MimeTypeValues,
+    SpanKindValues,
+)
+from opentelemetry.sdk import trace as trace_sdk
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import InMemoryMetricReader
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
+)
+
 for name, logger in logging.root.manager.loggerDict.items():
-    if name.startswith("opentelemetry.") and isinstance(logger, logging.Logger):
+    if name.startswith("opentelemetry.") and isinstance(
+        logger, logging.Logger
+    ):
         logger.setLevel(logging.DEBUG)
         logger.handlers.clear()
         logger.addHandler(logging.StreamHandler())
@@ -46,21 +75,25 @@ for name, logger in logging.root.manager.loggerDict.items():
 @pytest.mark.parametrize("is_stream", [False, True])
 @pytest.mark.parametrize("status_code", [200, 400])
 def test_callback_llm(
-        is_async: bool,
-        is_stream: bool,
-        status_code: int,
-        respx_mock: MockRouter,
-        in_memory_span_exporter: InMemorySpanExporter,
-        documents: List[str],
-        chat_completion_mock_stream: Tuple[List[bytes], List[Dict[str, Any]]],
-        model_name: str,
-        completion_usage: Dict[str, Any],
+    is_async: bool,
+    is_stream: bool,
+    status_code: int,
+    respx_mock: MockRouter,
+    in_memory_span_exporter: InMemorySpanExporter,
+    documents: List[str],
+    chat_completion_mock_stream: Tuple[List[bytes], List[Dict[str, Any]]],
+    model_name: str,
+    completion_usage: Dict[str, Any],
 ) -> None:
     question = randstr()
     template = "{context}{question}"
-    prompt = PromptTemplate(input_variables=["context", "question"], template=template)
+    prompt = PromptTemplate(
+        input_variables=["context", "question"], template=template
+    )
     output_messages: List[Dict[str, Any]] = (
-        chat_completion_mock_stream[1] if is_stream else [{"role": randstr(), "content": randstr()}]
+        chat_completion_mock_stream[1]
+        if is_stream
+        else [{"role": randstr(), "content": randstr()}]
     )
     url = "https://api.openai.com/v1/chat/completions"
     respx_kwargs: Dict[str, Any] = {
@@ -70,7 +103,11 @@ def test_callback_llm(
             else {
                 "json": {
                     "choices": [
-                        {"index": i, "message": message, "finish_reason": "stop"}
+                        {
+                            "index": i,
+                            "message": message,
+                            "finish_reason": "stop",
+                        }
                         for i, message in enumerate(output_messages)
                     ],
                     "model": model_name,
@@ -79,7 +116,9 @@ def test_callback_llm(
             }
         ),
     }
-    respx_mock.post(url).mock(return_value=Response(status_code=status_code, **respx_kwargs))
+    respx_mock.post(url).mock(
+        return_value=Response(status_code=status_code, **respx_kwargs)
+    )
     chat_model = ChatOpenAI(model_name="gpt-3.5-turbo", streaming=is_stream)  # type: ignore
     retriever = KNNRetriever(
         index=np.ones((len(documents), 2)),
@@ -103,11 +142,16 @@ def test_callback_llm(
     assert (rqa_span := spans_by_name.pop("RetrievalQA")) is not None
     assert rqa_span.parent is None
     rqa_attributes = dict(rqa_span.attributes or {})
-    assert rqa_attributes.pop(LLM_SPAN_KIND, None) == SpanKindValues.CHAIN.value
+    assert (
+        rqa_attributes.pop(LLM_SPAN_KIND, None) == SpanKindValues.CHAIN.value
+    )
     assert rqa_attributes.pop(INPUT_VALUE, None) == question
     if status_code == 200:
         assert rqa_span.status.status_code == trace_api.StatusCode.OK
-        assert rqa_attributes.pop(OUTPUT_VALUE, None) == output_messages[0]["content"]
+        assert (
+            rqa_attributes.pop(OUTPUT_VALUE, None)
+            == output_messages[0]["content"]
+        )
     elif status_code == 400:
         assert rqa_span.status.status_code == trace_api.StatusCode.ERROR
         assert rqa_span.events[0].name == "exception"
@@ -120,10 +164,15 @@ def test_callback_llm(
     sd_attributes = dict(sd_span.attributes or {})
     assert sd_attributes.pop(LLM_SPAN_KIND, None) == SpanKindValues.CHAIN.value
     assert sd_attributes.pop(INPUT_VALUE, None) is not None
-    assert sd_attributes.pop(INPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
+    assert (
+        sd_attributes.pop(INPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
+    )
     if status_code == 200:
         assert sd_span.status.status_code == trace_api.StatusCode.OK
-        assert sd_attributes.pop(OUTPUT_VALUE, None) == output_messages[0]["content"]
+        assert (
+            sd_attributes.pop(OUTPUT_VALUE, None)
+            == output_messages[0]["content"]
+        )
     elif status_code == 400:
         assert sd_span.status.status_code == trace_api.StatusCode.ERROR
     assert sd_attributes == {}
@@ -138,16 +187,28 @@ def test_callback_llm(
     assert retriever_span.parent.span_id == rqa_span.context.span_id
     assert retriever_span.context.trace_id == rqa_span.context.trace_id
     retriever_attributes = dict(retriever_span.attributes or {})
-    assert retriever_attributes.pop(LLM_SPAN_KIND, None) == SpanKindValues.RETRIEVER.value
+    assert (
+        retriever_attributes.pop(LLM_SPAN_KIND, None)
+        == SpanKindValues.RETRIEVER.value
+    )
     assert retriever_attributes.pop(INPUT_VALUE, None) == question
     assert retriever_attributes.pop(OUTPUT_VALUE, None) is not None
-    assert retriever_attributes.pop(OUTPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
+    assert (
+        retriever_attributes.pop(OUTPUT_MIME_TYPE, None)
+        == MimeTypeValues.JSON.value
+    )
     for i, text in enumerate(documents):
         assert (
-                retriever_attributes.pop(f"{RETRIEVAL_DOCUMENTS}.{i}.{DOCUMENT_CONTENT}", None) == text
+            retriever_attributes.pop(
+                f"{RETRIEVAL_DOCUMENTS}.{i}.{DOCUMENT_CONTENT}", None
+            )
+            == text
         )
     allowed_extra = {"metadata"}
-    assert not retriever_attributes or set(retriever_attributes.keys()) <= allowed_extra
+    assert (
+        not retriever_attributes
+        or set(retriever_attributes.keys()) <= allowed_extra
+    )
 
     assert (llm_span := spans_by_name.pop("LLMChain", None)) is not None
     assert llm_span.parent is not None
@@ -162,17 +223,26 @@ def test_callback_llm(
 
     if LLM_PROMPT_TEMPLATE in llm_attributes:
         assert llm_attributes.pop(LLM_PROMPT_TEMPLATE, None) == template
-        template_variables_json_string = llm_attributes.pop(LLM_PROMPT_TEMPLATE_VARIABLES, None)
+        template_variables_json_string = llm_attributes.pop(
+            LLM_PROMPT_TEMPLATE_VARIABLES, None
+        )
         assert isinstance(template_variables_json_string, str)
         assert json.loads(template_variables_json_string) == {
             "context": "\n\n".join(documents),
             "question": question,
         }
-    assert llm_attributes.pop(LLM_SPAN_KIND, None) == SpanKindValues.CHAIN.value
-    assert llm_attributes.pop(INPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
+    assert (
+        llm_attributes.pop(LLM_SPAN_KIND, None) == SpanKindValues.CHAIN.value
+    )
+    assert (
+        llm_attributes.pop(INPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
+    )
 
     if status_code == 200:
-        assert llm_attributes.pop(OUTPUT_VALUE, None) == output_messages[0]["content"]
+        assert (
+            llm_attributes.pop(OUTPUT_VALUE, None)
+            == output_messages[0]["content"]
+        )
     elif status_code == 400:
         assert llm_span.status.status_code == trace_api.StatusCode.ERROR
 
@@ -184,35 +254,45 @@ def test_callback_llm(
     assert oai_attributes.pop(LLM_SPAN_KIND, None) == SpanKindValues.LLM.value
     assert oai_attributes.pop(LLM_MODEL_NAME, None) is not None
     assert oai_attributes.pop(INPUT_VALUE, None) is not None
-    assert oai_attributes.pop(INPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
+    assert (
+        oai_attributes.pop(INPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
+    )
     assert oai_attributes.pop(LLM_PROMPTS + ".0." + CONTENT, None) is not None
     if oai_attributes.__contains__(METADATA):
         assert oai_attributes.pop(METADATA)
     if status_code == 200:
         assert oai_span.status.status_code == trace_api.StatusCode.OK
         assert oai_attributes.pop(OUTPUT_VALUE, None) is not None
-        assert oai_attributes.pop(OUTPUT_MIME_TYPE, None) == MimeTypeValues.JSON.value
         assert (
-                oai_attributes.pop(f"{LLM_OUTPUT_MESSAGES}.0.{MESSAGE_ROLE}", None)
-                == output_messages[0]["role"]
+            oai_attributes.pop(OUTPUT_MIME_TYPE, None)
+            == MimeTypeValues.JSON.value
         )
         assert (
-                oai_attributes.pop(f"{LLM_OUTPUT_MESSAGES}.0.{MESSAGE_CONTENT}", None)
-                == output_messages[0]["content"]
+            oai_attributes.pop(f"{LLM_OUTPUT_MESSAGES}.0.{MESSAGE_ROLE}", None)
+            == output_messages[0]["role"]
+        )
+        assert (
+            oai_attributes.pop(
+                f"{LLM_OUTPUT_MESSAGES}.0.{MESSAGE_CONTENT}", None
+            )
+            == output_messages[0]["content"]
         )
         if not is_stream:
-            assert (oai_attributes.pop(LLM_RESPONSE_FINISH_REASON, None) == "stop")
+            assert (
+                oai_attributes.pop(LLM_RESPONSE_FINISH_REASON, None) == "stop"
+            )
             oai_attributes.pop(LLM_RESPONSE_MODEL_NAME)
             assert (
-                    oai_attributes.pop(LLM_USAGE_TOTAL_TOKENS, None) == completion_usage["total_tokens"]
+                oai_attributes.pop(LLM_USAGE_TOTAL_TOKENS, None)
+                == completion_usage["total_tokens"]
             )
             assert (
-                    oai_attributes.pop(LLM_USAGE_PROMPT_TOKENS, None)
-                    == completion_usage["prompt_tokens"]
+                oai_attributes.pop(LLM_USAGE_PROMPT_TOKENS, None)
+                == completion_usage["prompt_tokens"]
             )
             assert (
-                    oai_attributes.pop(LLM_USAGE_COMPLETION_TOKENS, None)
-                    == completion_usage["completion_tokens"]
+                oai_attributes.pop(LLM_USAGE_COMPLETION_TOKENS, None)
+                == completion_usage["completion_tokens"]
             )
     elif status_code == 400:
         assert oai_span.status.status_code == trace_api.StatusCode.ERROR
@@ -224,21 +304,25 @@ def test_callback_llm(
 @pytest.mark.parametrize("is_stream", [False, True])
 @pytest.mark.parametrize("status_code", [200, 400])
 def test_llm_metrics(
-        is_async: bool,
-        is_stream: bool,
-        status_code: int,
-        respx_mock: MockRouter,
-        in_memory_metric_reader: InMemoryMetricReader,
-        documents: List[str],
-        chat_completion_mock_stream: Tuple[List[bytes], List[Dict[str, Any]]],
-        model_name: str,
-        completion_usage: Dict[str, Any],
+    is_async: bool,
+    is_stream: bool,
+    status_code: int,
+    respx_mock: MockRouter,
+    in_memory_metric_reader: InMemoryMetricReader,
+    documents: List[str],
+    chat_completion_mock_stream: Tuple[List[bytes], List[Dict[str, Any]]],
+    model_name: str,
+    completion_usage: Dict[str, Any],
 ) -> None:
     question = randstr()
     template = "{context}{question}"
-    prompt = PromptTemplate(input_variables=["context", "question"], template=template)
+    prompt = PromptTemplate(
+        input_variables=["context", "question"], template=template
+    )
     output_messages: List[Dict[str, Any]] = (
-        chat_completion_mock_stream[1] if is_stream else [{"role": randstr(), "content": randstr()}]
+        chat_completion_mock_stream[1]
+        if is_stream
+        else [{"role": randstr(), "content": randstr()}]
     )
     url = "https://api.openai.com/v1/chat/completions"
     respx_kwargs: Dict[str, Any] = {
@@ -248,7 +332,11 @@ def test_llm_metrics(
             else {
                 "json": {
                     "choices": [
-                        {"index": i, "message": message, "finish_reason": "stop"}
+                        {
+                            "index": i,
+                            "message": message,
+                            "finish_reason": "stop",
+                        }
                         for i, message in enumerate(output_messages)
                     ],
                     "model": model_name,
@@ -257,7 +345,9 @@ def test_llm_metrics(
             }
         ),
     }
-    respx_mock.post(url).mock(return_value=Response(status_code=status_code, **respx_kwargs))
+    respx_mock.post(url).mock(
+        return_value=Response(status_code=status_code, **respx_kwargs)
+    )
     chat_model = ChatOpenAI(model_name="gpt-3.5-turbo", streaming=is_stream)  # type: ignore
     retriever = KNNRetriever(
         index=np.ones((len(documents), 2)),
@@ -300,9 +390,9 @@ def test_llm_metrics(
 
 
 def test_chain_metadata(
-        respx_mock: MockRouter,
-        in_memory_span_exporter: InMemorySpanExporter,
-        completion_usage: Dict[str, Any],
+    respx_mock: MockRouter,
+    in_memory_span_exporter: InMemorySpanExporter,
+    completion_usage: Dict[str, Any],
 ) -> None:
     url = "https://api.openai.com/v1/chat/completions"
     respx_kwargs: Dict[str, Any] = {
@@ -318,9 +408,13 @@ def test_chain_metadata(
             "usage": completion_usage,
         }
     }
-    respx_mock.post(url).mock(return_value=Response(status_code=200, **respx_kwargs))
+    respx_mock.post(url).mock(
+        return_value=Response(status_code=200, **respx_kwargs)
+    )
     prompt_template = "Tell me a {adjective} joke"
-    prompt = PromptTemplate(input_variables=["adjective"], template=prompt_template)
+    prompt = PromptTemplate(
+        input_variables=["adjective"], template=prompt_template
+    )
     llm = ChatOpenAI()
     chain = prompt | llm
     chain = chain.with_config({"metadata": {"category": "jokes"}})
@@ -328,22 +422,36 @@ def test_chain_metadata(
     spans = in_memory_span_exporter.get_finished_spans()
     spans_by_name = {span.name: span for span in spans}
 
-    assert (llm_chain_span := spans_by_name.pop("RunnableSequence")) is not None
+    assert (
+        llm_chain_span := spans_by_name.pop("RunnableSequence")
+    ) is not None
     assert llm_chain_span.attributes
     assert llm_chain_span.attributes.get(METADATA) == '{"category": "jokes"}'
 
 
-def test_callback_llm_exception_event(respx_mock, in_memory_span_exporter, documents, chat_completion_mock_stream, model_name, completion_usage):
+def test_callback_llm_exception_event(
+    respx_mock,
+    in_memory_span_exporter,
+    documents,
+    chat_completion_mock_stream,
+    model_name,
+    completion_usage,
+):
     """
     用特殊的mock触发异常
     """
+
     # 用自定义异常，避免openai.BadRequestError构造问题
     class MyCustomError(Exception):
         pass
+
     class ErrorLLM(ChatOpenAI):
         def _generate(self, *args, **kwargs):
             raise MyCustomError("mock error")
-    prompt = PromptTemplate(input_variables=["question"], template="{question}")
+
+    prompt = PromptTemplate(
+        input_variables=["question"], template="{question}"
+    )
     llm = ErrorLLM()
     chain = prompt | llm
     with pytest.raises(MyCustomError):
@@ -352,33 +460,58 @@ def test_callback_llm_exception_event(respx_mock, in_memory_span_exporter, docum
     for span in spans:
         if span.name == "RunnableSequence":
             from opentelemetry import trace as trace_api
+
             assert span.status.status_code == trace_api.StatusCode.ERROR
             assert span.events[0].name == "exception"
-            assert "MyCustomError" in span.events[0].attributes.get("exception.type", "")
+            assert "MyCustomError" in span.events[0].attributes.get(
+                "exception.type", ""
+            )
             break
     else:
         assert False, "No RunnableSequence span found"
 
 
-def test_environment_control_comprehensive(respx_mock, in_memory_span_exporter, in_memory_metric_reader, documents, chat_completion_mock_stream, model_name, completion_usage):
+def test_environment_control_comprehensive(
+    respx_mock,
+    in_memory_span_exporter,
+    in_memory_metric_reader,
+    documents,
+    chat_completion_mock_stream,
+    model_name,
+    completion_usage,
+):
     """
     测试环境变量控制的完整分支，确保所有环境变量分支都被覆盖
     """
     # 统一mock
     url = "https://api.openai.com/v1/chat/completions"
-    respx_mock.post(url).mock(return_value=Response(200, json={
-        "choices": [
-            {"index": 0, "message": {"role": "assistant", "content": "test response"}, "finish_reason": "stop"}
-        ],
-        "model": "gpt-3.5-turbo",
-        "usage": completion_usage,
-    }))
+    respx_mock.post(url).mock(
+        return_value=Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "test response",
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "model": "gpt-3.5-turbo",
+                "usage": completion_usage,
+            },
+        )
+    )
 
     original_env = os.getenv("ENABLE_LANGCHAIN_INSTRUMENTOR")
 
     os.environ["ENABLE_LANGCHAIN_INSTRUMENTOR"] = "FALSE"
     try:
-        prompt = PromptTemplate(input_variables=["question"], template="{question}")
+        prompt = PromptTemplate(
+            input_variables=["question"], template="{question}"
+        )
         llm = ChatOpenAI(model_name="gpt-3.5-turbo")
         chain = prompt | llm
         chain.invoke({"question": "test?"})
@@ -391,7 +524,9 @@ def test_environment_control_comprehensive(respx_mock, in_memory_span_exporter, 
             os.environ["ENABLE_LANGCHAIN_INSTRUMENTOR"] = original_env
 
     os.environ["ENABLE_LANGCHAIN_INSTRUMENTOR"] = "True"
-    prompt = PromptTemplate(input_variables=["question"], template="{question}")
+    prompt = PromptTemplate(
+        input_variables=["question"], template="{question}"
+    )
     llm = ChatOpenAI(model_name="gpt-3.5-turbo")
     chain = prompt | llm
     result = chain.invoke({"question": "test?"})
@@ -429,28 +564,34 @@ def in_memory_metric_reader() -> InMemoryMetricReader:
 
 
 @pytest.fixture(scope="module")
-def tracer_provider(in_memory_span_exporter: InMemorySpanExporter) -> trace_api.TracerProvider:
+def tracer_provider(
+    in_memory_span_exporter: InMemorySpanExporter,
+) -> trace_api.TracerProvider:
     tracer_provider = trace_sdk.TracerProvider()
-    tracer_provider.add_span_processor(SimpleSpanProcessor(in_memory_span_exporter))
+    tracer_provider.add_span_processor(
+        SimpleSpanProcessor(in_memory_span_exporter)
+    )
     return tracer_provider
 
 
 @pytest.fixture(scope="module")
-def meter_provider(in_memory_metric_reader: InMemoryMetricReader) -> MeterProvider:
-    meter_provider = MeterProvider(
-        metric_readers=[in_memory_metric_reader]
-    )
+def meter_provider(
+    in_memory_metric_reader: InMemoryMetricReader,
+) -> MeterProvider:
+    meter_provider = MeterProvider(metric_readers=[in_memory_metric_reader])
     return meter_provider
 
 
 @pytest.fixture(autouse=True)
 def instrument(
-        tracer_provider: trace_api.TracerProvider,
-        in_memory_span_exporter: InMemorySpanExporter,
-        meter_provider: MeterProvider,
-        in_memory_metric_reader: InMemoryMetricReader,
+    tracer_provider: trace_api.TracerProvider,
+    in_memory_span_exporter: InMemorySpanExporter,
+    meter_provider: MeterProvider,
+    in_memory_metric_reader: InMemoryMetricReader,
 ) -> Generator[None, None, None]:
-    LangChainInstrumentor().instrument(tracer_provider=tracer_provider, meter_provider=meter_provider)
+    LangChainInstrumentor().instrument(
+        tracer_provider=tracer_provider, meter_provider=meter_provider
+    )
     yield
     LangChainInstrumentor().uninstrument()
     in_memory_span_exporter.clear()

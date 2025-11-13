@@ -235,16 +235,20 @@ def generate_misc_workflow(
         workflow_directory_path,
     )
 
+
 # LoongSuite Extension
 def get_loongsuite_tox_envs(additional_config_path: Path) -> list:
     if not additional_config_path or not additional_config_path.exists():
         return []
-    
+
     additional_tox_ini = ToxIni(additional_config_path)
     additional_conf = State(get_options(), []).conf
     additional_section = next(additional_tox_ini.sections())
     additional_config_set = CoreConfigSet(
-        additional_conf, additional_section, additional_config_path.parent, additional_config_path
+        additional_conf,
+        additional_section,
+        additional_config_path.parent,
+        additional_config_path,
     )
     (
         additional_config_set.loaders.extend(
@@ -265,17 +269,14 @@ def generate_extension_test_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
     additional_config_path: Path,
-    *operating_systems
+    *operating_systems,
 ) -> None:
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
         return
-    
+
     _generate_workflow_with_template(
-        get_test_job_datas(
-            loongsuite_envs,
-            list(operating_systems)
-        ),
+        get_test_job_datas(loongsuite_envs, list(operating_systems)),
         "loongsuite_test",
         "test",
         workflow_directory_path,
@@ -290,7 +291,7 @@ def generate_extension_lint_workflow(
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
         return
-    
+
     _generate_workflow_with_template(
         get_lint_job_datas(loongsuite_envs),
         "loongsuite_lint",
@@ -307,7 +308,7 @@ def generate_extension_misc_workflow(
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
         return
-    
+
     _generate_workflow_with_template(
         get_misc_job_datas(loongsuite_envs),
         "loongsuite_misc",
@@ -317,7 +318,11 @@ def generate_extension_misc_workflow(
 
 
 def _generate_workflow_with_template(
-    job_datas: list, name: str, template_name: str, workflow_directory_path: Path, max_jobs=250
+    job_datas: list,
+    name: str,
+    template_name: str,
+    workflow_directory_path: Path,
+    max_jobs=250,
 ):
     # Github seems to limit the amount of jobs in a workflow file, that is why
     # they are split in groups of 250 per workflow file.

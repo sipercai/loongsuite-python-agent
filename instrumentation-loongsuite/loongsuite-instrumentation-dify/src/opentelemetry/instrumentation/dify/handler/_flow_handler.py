@@ -1,9 +1,5 @@
 import threading
 from logging import getLogger
-
-from opentelemetry.metrics import get_meter
-from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key
-from opentelemetry import trace as trace_api
 from typing import (
     Any,
     Callable,
@@ -14,11 +10,15 @@ from typing import (
     Tuple,
     TypeVar,
 )
-from typing_extensions import TypeAlias
-from opentelemetry.instrumentation.dify.version import __version__
-from opentelemetry.instrumentation.dify.strategy.factory import StrategyFactory
 
+from typing_extensions import TypeAlias
+
+from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key
 from opentelemetry.instrumentation.dify.dify_utils import get_app_name_by_id
+from opentelemetry.instrumentation.dify.strategy.factory import StrategyFactory
+from opentelemetry.instrumentation.dify.version import __version__
+from opentelemetry.metrics import get_meter
 
 _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
@@ -40,9 +40,9 @@ class _BoundedDict(OrderedDict[str, _Value]):
     """  # noqa: E501
 
     def __init__(
-            self,
-            capacity: int = 1000,
-            on_evict_fn: Optional[Callable[[_Value], None]] = None,
+        self,
+        capacity: int = 1000,
+        on_evict_fn: Optional[Callable[[_Value], None]] = None,
     ) -> None:
         super().__init__()
         self._capacity = capacity
@@ -84,11 +84,11 @@ class FlowHandler:
         return app_name
 
     def __call__(
-            self,
-            wrapped: Callable[..., Any],
-            instance: Any,
-            args: Tuple[type, Any],
-            kwargs: Mapping[str, Any],
+        self,
+        wrapped: Callable[..., Any],
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
     ) -> Any:
         try:
             method = wrapped.__name__
@@ -99,18 +99,29 @@ class FlowHandler:
         try:
             method = wrapped.__name__
             self._after_process(method, instance, args, kwargs, res)
-        except Exception as e:
+        except Exception:
             pass
         return res
 
-    def _before_process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any]):
+    def _before_process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+    ):
         strategy = self._strategy_factory.get_strategy(method)
         if strategy:
             strategy.before_process(method, instance, args, kwargs)
 
-    def _after_process(self, method: str, instance: Any, args: Tuple[type, Any], kwargs: Mapping[str, Any],
-                       res: Any) -> None:
+    def _after_process(
+        self,
+        method: str,
+        instance: Any,
+        args: Tuple[type, Any],
+        kwargs: Mapping[str, Any],
+        res: Any,
+    ) -> None:
         strategy = self._strategy_factory.get_strategy(method)
         if strategy:
             strategy.process(method, instance, args, kwargs, res)
-

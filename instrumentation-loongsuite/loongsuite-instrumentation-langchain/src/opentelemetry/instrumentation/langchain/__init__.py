@@ -1,13 +1,20 @@
 from typing import TYPE_CHECKING, Any, Callable, Collection, Type
-from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
-from opentelemetry import trace as trace_api
+
 from wrapt import wrap_function_wrapper
+
+from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.instrumentor import (
+    BaseInstrumentor,  # type: ignore
+)
 from opentelemetry.instrumentation.langchain.package import _instruments
-from opentelemetry.metrics import get_meter, Meter
+from opentelemetry.metrics import Meter, get_meter
 
 if TYPE_CHECKING:
     from langchain_core.callbacks import BaseCallbackManager
-    from opentelemetry.instrumentation.langchain.internal._tracer import LoongsuiteTracer
+
+    from opentelemetry.instrumentation.langchain.internal._tracer import (
+        LoongsuiteTracer,
+    )
 
 
 class LangChainInstrumentor(BaseInstrumentor):  # type: ignore
@@ -21,8 +28,11 @@ class LangChainInstrumentor(BaseInstrumentor):  # type: ignore
     def _instrument(self, **kwargs: Any) -> None:
         if not (tracer_provider := kwargs.get("tracer_provider")):
             tracer_provider = trace_api.get_tracer_provider()
-        tracer = trace_api.get_tracer(__name__, '', tracer_provider)
-        from opentelemetry.instrumentation.langchain.internal._tracer import LoongsuiteTracer
+        tracer = trace_api.get_tracer(__name__, "", tracer_provider)
+        from opentelemetry.instrumentation.langchain.internal._tracer import (
+            LoongsuiteTracer,
+        )
+
         meter_provider = kwargs.get("meter_provider")
         meter = get_meter(
             __name__,
@@ -32,7 +42,9 @@ class LangChainInstrumentor(BaseInstrumentor):  # type: ignore
         wrap_function_wrapper(
             module="langchain_core.callbacks",
             name="BaseCallbackManager.__init__",
-            wrapper=_BaseCallbackManagerInit(tracer=tracer, meter=meter, cls=LoongsuiteTracer),
+            wrapper=_BaseCallbackManagerInit(
+                tracer=tracer, meter=meter, cls=LoongsuiteTracer
+            ),
         )
 
     def _uninstrument(self, **kwargs: Any) -> None:
@@ -42,18 +54,23 @@ class LangChainInstrumentor(BaseInstrumentor):  # type: ignore
 class _BaseCallbackManagerInit:
     __slots__ = ("_tracer_instance",)
 
-    def __init__(self, tracer: trace_api.Tracer, meter: Meter, cls: Type["LoongsuiteTracer"]):
+    def __init__(
+        self,
+        tracer: trace_api.Tracer,
+        meter: Meter,
+        cls: Type["LoongsuiteTracer"],
+    ):
         self._tracer_instance = cls(tracer=tracer, meter=meter)
 
     def __call__(
-            self,
-            wrapped: Callable[..., None],
-            instance: "BaseCallbackManager",
-            args: Any,
-            kwargs: Any,
+        self,
+        wrapped: Callable[..., None],
+        instance: "BaseCallbackManager",
+        args: Any,
+        kwargs: Any,
     ) -> None:
         wrapped(*args, **kwargs)
-        
+
         for handler in instance.inheritable_handlers:
             if isinstance(handler, type(self._tracer_instance)):
                 break

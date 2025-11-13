@@ -1,7 +1,9 @@
 import os
+
 # dify app name resource key
 DIFY_APP_NAME_KEY = "app.name"
 DIFY_APP_ID_KEY = "app.id"
+
 
 def _get_dify_app_name_key():
     """Get the Dify application name key from environment variable or default value.
@@ -16,10 +18,12 @@ def _get_dify_app_name_key():
     dify_app_name_key = os.getenv("DIFY_APP_NAME_KEY", DIFY_APP_NAME_KEY)
     return dify_app_name_key
 
+
 class NodeType:
     """
     Node Types.
     """
+
     START = "start"
     END = "end"
     ANSWER = "answer"
@@ -38,4 +42,3 @@ class NodeType:
     ITERATION_START = "iteration-start"  # fake start node for iteration
     PARAMETER_EXTRACTOR = "parameter-extractor"
     CONVERSATION_VARIABLE_ASSIGNER = "assigner"
-

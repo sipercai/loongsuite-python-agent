@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
-"""AgentScope v0.x (< 1.0.0) """
+"""AgentScope v0.x (< 1.0.0)"""
 
 from typing import Any, Collection
+
 from wrapt import wrap_function_wrapper
-from opentelemetry.instrumentation.utils import unwrap
-from opentelemetry.instrumentation.agentscope.v0._wrapper import AgentscopeRequestWrapper, AgentscopeToolcallWrapper
+
 from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.agentscope.v0._wrapper import (
+    AgentscopeRequestWrapper,
+    AgentscopeToolcallWrapper,
+)
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.instrumentation.version import (
     __version__,
 )
@@ -34,7 +39,7 @@ class AgentScopeV0Instrumentor(BaseInstrumentor):  # type: ignore
         if not (tracer_provider := kwargs.get("tracer_provider")):
             tracer_provider = trace_api.get_tracer_provider()
         tracer = trace_api.get_tracer(__name__, __version__, tracer_provider)
-        
+
         wrap_function_wrapper(
             module=_MODULE,
             name="ModelWrapperBase.__init__",
@@ -47,8 +52,11 @@ class AgentScopeV0Instrumentor(BaseInstrumentor):  # type: ignore
         )
 
     def _uninstrument(self, **kwargs: Any) -> None:
-        
         import agentscope.models.model
+
         unwrap(agentscope.models.model.ModelWrapperBase, "__init__")
         import agentscope.service.service_toolkit
-        unwrap(agentscope.service.service_toolkit.ServiceToolkit, "_execute_func")
+
+        unwrap(
+            agentscope.service.service_toolkit.ServiceToolkit, "_execute_func"
+        )
