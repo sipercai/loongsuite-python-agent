@@ -7,7 +7,7 @@ This package provides OpenTelemetry instrumentation for LangChain applications, 
 ```bash
 git clone https://github.com/alibaba/loongsuite-python-agent.git
 cd loongsuite-python-agent
-pip install ./instrumentation-genai/opentelemetry-instrumentation-langchain
+pip install ./instrumentation-loongsuite/loongsuite-instrumentation-langchain
 ```
 
 ## RUN

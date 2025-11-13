@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "opentelemetry-instrumentation-agentscope"
+name = "loongsuite-instrumentation-agentscope"
 dynamic = ["version"]
 description = "OpenTelemetry AgentScope Instrumentation"
 readme = "README.md"

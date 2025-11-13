@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "opentelemetry-instrumentation-mcp"
+name = "loongsuite-instrumentation-mcp"
 dynamic = ["version"]
 description = "OpenTelemetry MCP (Model Context Protocol) instrumentation"
 readme = "README.md"
@@ -52,7 +52,7 @@ type-check = []
 mcp = "opentelemetry.instrumentation.mcp:MCPInstrumentor"
 
 [project.urls]
-Homepage = "https://github.com/alibaba/loongsuite-python-agent/tree/main/instrumentation-genai/opentelemetry-instrumentation-mcp"
+Homepage = "https://github.com/alibaba/loongsuite-python-agent/tree/main/instrumentation-loongsuite/loongsuite-instrumentation-mcp"
 Repository = "https://github.com/alibaba/loongsuite-python-agent"
 
 [tool.hatch.version]

@@ -19,7 +19,7 @@ pip install agentscope
 #AgentScopeInstrumentor
 git clone https://github.com/alibaba/loongsuite-python-agent.git
 cd loongsuite-python-agent
-pip install ./instrumentation-genai/opentelemetry-instrumentation-agentscope
+pip install ./instrumentation-loongsuite/loongsuite-instrumentation-agentscope
 ```
 
 ## RUN

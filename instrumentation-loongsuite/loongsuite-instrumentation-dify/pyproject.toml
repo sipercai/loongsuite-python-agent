@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "opentelemetry-instrumentation-dify"
+name = "loongsuite-instrumentation-dify"
 dynamic = ["version"]
 description = "OpenTelemetry Dify Instrumentation"
 readme = "README.md"

@@ -6,7 +6,7 @@ Agno Python Agent provides observability for Agno applications. This document pr
   
 ```shell
 git clone https://github.com/alibaba/loongsuite-python-agent.git
-pip install ./instrumentation-genai/opentelemetry-instrumentation-agno
+pip install ./instrumentation-loongsuite/loongsuite-instrumentation-agno
 ```
 
 ## RUN

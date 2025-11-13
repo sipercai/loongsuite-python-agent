@@ -51,3 +51,9 @@ components:
 
   instrumentation-genai/opentelemetry-instrumentation-openai-agents-v2:
     - nagkumar91
+
+  # LoongSuite Extension
+  instrumentation-loongsuite:
+    - cirilla-zmh
+    - ralf0131
+    - 123liuziming

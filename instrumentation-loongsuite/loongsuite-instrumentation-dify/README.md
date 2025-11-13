@@ -8,7 +8,7 @@ Dify Python Agent provides observability for Dify applications. This document pr
 # DifyInstrumentor
 git clone https://github.com/alibaba/loongsuite-python-agent.git
 cd loongsuite-python-agent
-pip install ./instrumentation-genai/opentelemetry-instrumentation-dify
+pip install ./instrumentation-loongsuite/loongsuite-instrumentation-dify
 ```
 
 ## RUN Dify

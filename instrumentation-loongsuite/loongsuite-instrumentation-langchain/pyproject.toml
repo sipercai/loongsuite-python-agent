@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "opentelemetry-instrumentation-langchain"
+name = "loongsuite-instrumentation-langchain"
 dynamic = ["version"]
 description = "OpenTelemetry LangChain Instrumentation"
 readme = "README.md"
