@@ -63,7 +63,7 @@ async def test_client_invalid(tracer_provider):
         streamablehttp_client,
     ]:
         async with testure(None) as result:
-            assert result == None
+            assert result is None
 
         async with testure([]) as result:
             assert result == []
@@ -129,8 +129,10 @@ async def test_send_wrapper(tracer_provider):
             __name__, None, tracer_provider=tracer_provider
         )
         with tracer.start_as_current_span(
-            name="test_send_request_propagator", kind=SpanKind.CLIENT
-        ) as span:
+            name="test_send_request_propagator",
+            kind=SpanKind.CLIENT,
+            # FIXME: ruff failed, why not end span?
+        ) as span:  # noqa: F841
             # invalid carrier
             meta = set()
             with pytest.raises(TypeError):
@@ -320,8 +322,10 @@ async def test_server_extract_parent_context(tracer_provider):
         __name__, None, tracer_provider=tracer_provider
     )
     with tracer.start_as_current_span(
-        name="test_send_request_propagator", kind=SpanKind.CLIENT
-    ) as span:
+        name="test_send_request_propagator",
+        kind=SpanKind.CLIENT,
+        # FIXME: ruff failed
+    ) as span:  # noqa: F841
         meta = {}
         current_context = context.get_current()
         propagate.get_global_textmap().inject(meta, current_context)

@@ -89,7 +89,8 @@ def tracer_provider(memory_exporter):
 def _setup_tracer_and_meter_provider(
     tracer_provider, memory_exporter, meter_provider
 ):
-    def callable():
+    # FIXME: ruff failed
+    def callable():  # noqa: A001
         memory_exporter.clear()
         reset_trace_globals()
         trace_api.set_tracer_provider(tracer_provider)
@@ -101,7 +102,8 @@ def _setup_tracer_and_meter_provider(
 
 @pytest.fixture
 def _teardown_tracer_and_meter_provider():
-    def callable():
+    # FIXME: ruff failed
+    def callable():  # noqa: A001
         reset_trace_globals()
         reset_metrics_globals()
 
@@ -110,8 +112,10 @@ def _teardown_tracer_and_meter_provider():
 
 @pytest.fixture
 def find_span(memory_exporter):
-    def callable(
-        name: str, type: trace_api.SpanKind = trace_api.SpanKind.CLIENT
+    # FIXME: ruff failed
+    def callable(  # noqa: A001
+        name: str,
+        type: trace_api.SpanKind = trace_api.SpanKind.CLIENT,  # noqa: A002
     ):
         spans = memory_exporter.get_finished_spans()
         for span in spans:

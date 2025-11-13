@@ -65,7 +65,8 @@ class ToolCallResponsePart(MessagePart):
 class GenericPart(MessagePart):
     """通用部件，支持任意属性"""
 
-    def __init__(self, type: str, **kwargs: Any):
+    # FIXME: ruff failed
+    def __init__(self, type: str, **kwargs: Any):  # noqa: A002
         super().__init__(type)
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -100,7 +101,8 @@ class PartFactory:
     @staticmethod
     def create_tool_call_part(
         name: str,
-        id: Optional[str] = None,
+        # FIXME: ruff failed
+        id: Optional[str] = None,  # noqa: A002
         arguments: Optional[Dict[str, Any]] = None,
     ) -> ToolCallRequestPart:
         """创建工具调用部件"""
@@ -110,7 +112,9 @@ class PartFactory:
 
     @staticmethod
     def create_tool_response_part(
-        response: Any, id: Optional[str] = None
+        response: Any,
+        # FIXME: ruff failed
+        id: Optional[str] = None,  # noqa: A002
     ) -> ToolCallResponsePart:
         """创建工具响应部件"""
         return ToolCallResponsePart(

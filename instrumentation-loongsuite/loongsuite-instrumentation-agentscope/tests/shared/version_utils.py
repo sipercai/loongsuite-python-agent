@@ -13,7 +13,8 @@ src_path = os.path.join(
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
-from opentelemetry.instrumentation.agentscope.utils import (
+# FIXME: ruff failed
+from opentelemetry.instrumentation.agentscope.utils import (  # noqa: E402
     _AGENTSCOPE_VERSION,
     is_agentscope_v1,
 )
@@ -43,7 +44,8 @@ def skip_if_not_v1():
 def skip_if_no_agentscope():
     """如果没有安装agentscope则跳过测试"""
     try:
-        import agentscope
+        # test the import of agentscope, skip the warning
+        import agentscope  # noqa: F401
 
         return pytest.mark.skipif(False, reason="")
     except ImportError:

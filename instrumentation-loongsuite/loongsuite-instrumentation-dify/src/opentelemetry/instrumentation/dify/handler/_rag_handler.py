@@ -1,19 +1,17 @@
+import time
 from logging import getLogger
 from typing import Any, Callable, Dict, Mapping, Tuple
 
 from opentelemetry import trace
+from opentelemetry.instrumentation.dify._base_wrapper import (
+    BaseWrapper,
+    TOOLBaseWrapper,
+)
 from opentelemetry.instrumentation.dify.capture_content import set_dict_value
 from opentelemetry.instrumentation.dify.semconv import SpanKindValues
 from opentelemetry.trace import Status, StatusCode
 
 logger = getLogger(__name__)
-
-import time
-
-from opentelemetry.instrumentation.dify._base_wrapper import (
-    BaseWrapper,
-    TOOLBaseWrapper,
-)
 
 
 class ToolInvokeHandler(TOOLBaseWrapper):

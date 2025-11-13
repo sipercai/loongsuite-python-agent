@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Any, Callable, Collection, Optional
-
-from typing_extensions import Coroutine
+from typing import Any, Collection
 
 from opentelemetry.instrumentation.agentscope.package import _instruments
 from opentelemetry.instrumentation.agentscope.utils import is_agentscope_v1

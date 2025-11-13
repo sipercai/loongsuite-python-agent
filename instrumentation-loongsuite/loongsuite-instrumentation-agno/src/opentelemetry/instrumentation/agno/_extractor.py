@@ -178,7 +178,8 @@ class ModelResponseExtractor(object):
                     f"{GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS}.image",
                     json.dumps(response.image.to_dict(), indent=2),
                 )
-            for idx, exec in enumerate(
+            # FIXME: ruff failed
+            for idx, exec in enumerate(  # noqa: A001
                 getattr(response, "tool_executions", []) or []
             ):
                 yield (

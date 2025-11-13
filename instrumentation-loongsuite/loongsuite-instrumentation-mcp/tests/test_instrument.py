@@ -109,7 +109,7 @@ def test_instrument_multiple_times():
     for i in range(2):
         do_instrument()
         do_uninstrument()
-    assert type(MyTestClass.do_something) == original_type
+    assert isinstance(MyTestClass.do_something, original_type)
     assert MyTestClass.do_something == original_func
 
     test_class = MyTestClass()

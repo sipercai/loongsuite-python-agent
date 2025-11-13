@@ -1,7 +1,7 @@
 try:
     HAS_DIFY = True
     from configs import dify_config  # type: ignore
-except:
+except Exception:
     HAS_DIFY = False
 
 # 支持的最低版本号
@@ -47,7 +47,7 @@ def is_version_supported():
 
         # 当前版本必须大于等于最小版本且小于等于最大版本
         return min_check >= 0 and max_check <= 0
-    except:
+    except Exception:
         return False
 
 
@@ -58,7 +58,7 @@ def is_wrapper_version_1():
             _compare_versions(current_version, "0.8.3") >= 0
             and _compare_versions(current_version, "1.3.1") <= 0
         )
-    except:
+    except Exception:
         return False
 
 
@@ -69,7 +69,7 @@ def is_wrapper_version_1_for_plugin():
             _compare_versions(current_version, "0.8.3") >= 0
             and _compare_versions(current_version, "1.3.1") < 0
         )
-    except:
+    except Exception:
         return False
 
 
@@ -80,7 +80,7 @@ def is_wrapper_version_2():
             _compare_versions(current_version, "1.4.0") >= 0
             and _compare_versions(current_version, "1.4.3") <= 0
         )
-    except:
+    except Exception:
         return False
 
 
@@ -91,5 +91,5 @@ def is_wrapper_version_2_for_plugin():
             _compare_versions(current_version, "1.3.1") >= 0
             and _compare_versions(current_version, "1.4.3") <= 0
         )
-    except:
+    except Exception:
         return False

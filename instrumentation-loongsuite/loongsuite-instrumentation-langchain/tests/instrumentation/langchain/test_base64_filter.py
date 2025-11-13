@@ -303,7 +303,7 @@ class TestBase64Filter:
             # 应该返回原始对象，因为解析失败时保持原样
             assert result == test_input
 
-    def test_filter_base64_images_early_return(self):
+    def test_filter_base64_images_unexpected_type(self):
         """测试_filter_base64_images函数中的非期望类型直接返回"""
 
         miss = (

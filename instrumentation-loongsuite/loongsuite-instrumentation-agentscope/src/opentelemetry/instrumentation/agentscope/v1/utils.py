@@ -5,6 +5,7 @@ import datetime
 import enum
 import inspect
 import json
+import logging
 from dataclasses import is_dataclass
 from typing import Any, AsyncGenerator, Optional, TypeVar, Union
 
@@ -31,8 +32,6 @@ from ..shared import (
 from ._response_attributes_extractor import _get_chatmodel_output_messages
 
 T = TypeVar("T")
-
-import logging
 
 logger = logging.getLogger(__name__)
 

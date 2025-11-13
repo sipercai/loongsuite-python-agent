@@ -95,7 +95,8 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
                         f"can't get ctx, return : {ctx},kwargs: {kwargs},event_id: {event_id}"
                     )
                     graph_runtime_state = kwargs["graph_runtime_state"]
-                    previous_node_id = kwargs["previous_node_id"]
+                    # FIXME: ruff failed
+                    previous_node_id = kwargs["previous_node_id"]  # noqa: F841
                     if graph_runtime_state is None:
                         return
                     node_run_state = getattr(
@@ -164,7 +165,7 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
                     start_time=start_time,
                     otel_token=token,
                 )
-        except:
+        except Exception:
             self._logger.exception(
                 "Fail to process data, func name: BaseNode.__init__"
             )
@@ -744,12 +745,14 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
                 span_attributes, GEN_AI_MODEL_NAME, "DEFAULT_MODEL_NAME"
             ):
                 metrics_attributes["modelName"] = model_name
-            if input_tokens := self._get_data(
+            # FIXME: ruff failed
+            if input_tokens := self._get_data(  # noqa: F841
                 span_attributes, GEN_AI_USAGE_PROMPT_TOKENS, 0
             ):
                 input_attributes = deepcopy(metrics_attributes)
                 input_attributes["usageType"] = "input"
-            if output_tokens := self._get_data(
+            # FIXME: ruff failed
+            if output_tokens := self._get_data(  # noqa: F841
                 span_attributes, GEN_AI_USAGE_COMPLETION_TOKENS, 0
             ):
                 output_attributes = deepcopy(metrics_attributes)
@@ -779,10 +782,12 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
                     GEN_AI_REQUEST_MODEL_NAME
                 ]
             if GEN_AI_USAGE_PROMPT_TOKENS in span_attriubtes:
-                input_tokens = span_attriubtes[GEN_AI_USAGE_PROMPT_TOKENS]
+                # FIXME: ruff failed
+                input_tokens = span_attriubtes[GEN_AI_USAGE_PROMPT_TOKENS]  # noqa: F841
                 metrics_attriubtes["usageType"] = "input"
             if GEN_AI_USAGE_COMPLETION_TOKENS in span_attriubtes:
-                output_tokens = span_attriubtes[GEN_AI_USAGE_COMPLETION_TOKENS]
+                # FIXME: ruff failed
+                output_tokens = span_attriubtes[GEN_AI_USAGE_COMPLETION_TOKENS]  # noqa: F841
                 metrics_attriubtes["usageType"] = "output"
         if span_kind == SpanKindValues.RETRIEVER.value:
             retriever_attributes = self._extract_retrieval_attributes(event)
@@ -790,7 +795,6 @@ class WorkflowNodeFinishStrategy(ProcessStrategy):
         return span_attriubtes
 
     def _get_span_kind_by_node_type(self, node_type):
-        span_attributes = {}
         if (
             node_type == NodeType.LLM.value
             or node_type == NodeType.QUESTION_CLASSIFIER.value

@@ -36,7 +36,42 @@ from opentelemetry.semconv.trace import SpanAttributes as OTELSpanAttributes
 from opentelemetry.util.types import AttributeValue
 
 from ._utils import _filter_base64_images, process_content
-from .semconv import *
+from .semconv import (
+    CONTENT,
+    DOCUMENT_CONTENT,
+    DOCUMENT_METADATA,
+    INPUT_MIME_TYPE,
+    INPUT_VALUE,
+    LLM_INPUT_MESSAGES,
+    LLM_MODEL_NAME,
+    LLM_OUTPUT_MESSAGES,
+    LLM_PROMPT_TEMPLATE,
+    LLM_PROMPT_TEMPLATE_VARIABLES,
+    LLM_RESPONSE_FINISH_REASON,
+    LLM_RESPONSE_MODEL_NAME,
+    LLM_SESSION_ID,
+    LLM_SPAN_KIND,
+    LLM_USAGE_COMPLETION_TOKENS,
+    LLM_USAGE_PROMPT_TOKENS,
+    LLM_USAGE_TOTAL_TOKENS,
+    LLM_USER_ID,
+    MESSAGE_CONTENT,
+    MESSAGE_FUNCTION_CALL_ARGUMENTS_JSON,
+    MESSAGE_FUNCTION_CALL_NAME,
+    MESSAGE_NAME,
+    MESSAGE_ROLE,
+    MESSAGE_TOOL_CALLS,
+    METADATA,
+    OUTPUT_MIME_TYPE,
+    OUTPUT_VALUE,
+    RETRIEVAL_DOCUMENTS,
+    TOOL_CALL_FUNCTION_ARGUMENTS_JSON,
+    TOOL_CALL_FUNCTION_NAME,
+    TOOL_DESCRIPTION,
+    TOOL_NAME,
+    MimeTypeValues,
+    SpanKindValues,
+)
 
 logger = logging.getLogger(__name__)
 

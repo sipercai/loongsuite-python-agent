@@ -48,7 +48,8 @@ def _get_max_attribute_length() -> int:
 
 def _is_ws_installed() -> bool:
     try:
-        import websockets  # pyright: ignore[reportUnusedImport]
+        # test the import of websockets, skip the warning
+        import websockets  # noqa: F401
 
         return True
     except ImportError:

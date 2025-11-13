@@ -33,7 +33,8 @@ class BaseWrapper(ABC):
         self._init_metrics()
 
     def _init_metrics(self):
-        meter = self._meter
+        # FIXME: ruff failed
+        meter = self._meter  # noqa: F841
 
     def set_span_kind(self, span_kind: str):
         self._span_kind = span_kind

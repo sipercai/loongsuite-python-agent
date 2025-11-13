@@ -16,6 +16,9 @@ from typing_extensions import TypeAlias
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.dify.constants import _get_dify_app_name_key
 from opentelemetry.instrumentation.dify.dify_utils import get_app_name_by_id
+from opentelemetry.instrumentation.dify.entities import (
+    _EventData,
+)
 from opentelemetry.instrumentation.dify.strategy.factory import StrategyFactory
 from opentelemetry.instrumentation.dify.version import __version__
 from opentelemetry.metrics import get_meter
@@ -24,8 +27,6 @@ _DIFY_APP_NAME_KEY = _get_dify_app_name_key()
 
 _EventId: TypeAlias = str
 _ParentId: TypeAlias = str
-
-from opentelemetry.instrumentation.dify.entities import _EventData
 
 _Value = TypeVar("_Value")
 
@@ -93,7 +94,7 @@ class FlowHandler:
         try:
             method = wrapped.__name__
             self._before_process(method, instance, args, kwargs)
-        except:
+        except Exception:
             pass
         res = wrapped(*args, **kwargs)
         try:

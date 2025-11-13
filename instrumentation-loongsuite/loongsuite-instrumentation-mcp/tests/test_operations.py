@@ -241,7 +241,8 @@ async def test_read_resource(mcp_server, memory_exporter, find_span):
 @pytest.mark.asyncio
 async def test_read_not_exist_resource(mcp_server, memory_exporter, find_span):
     async with Client(mcp_server) as client:
-        with pytest.raises(McpError) as exc_info:
+        # FIXME: ruff failed
+        with pytest.raises(McpError) as exc_info:  # noqa: F841
             await client.read_resource("config://resources-not-exist")
 
         spans = memory_exporter.get_finished_spans()
@@ -273,7 +274,8 @@ async def test_read_not_exist_resource(mcp_server, memory_exporter, find_span):
 @pytest.mark.asyncio
 async def test_call_tool_name_invalid(mcp_server, memory_exporter, find_span):
     async with Client(mcp_server) as client:
-        with pytest.raises(ValidationError) as exc_info:
+        # FIXME: ruff failed
+        with pytest.raises(ValidationError) as exc_info:  # noqa: F841
             await client.call_tool(123, {"name": "World"})  # type: ignore
         spans = memory_exporter.get_finished_spans()
         assert len(spans) >= 2
@@ -292,7 +294,8 @@ async def test_call_tool_name_invalid(mcp_server, memory_exporter, find_span):
 @pytest.mark.asyncio
 async def test_call_tool_not_exists(mcp_server, memory_exporter, find_span):
     async with Client(mcp_server) as client:
-        with pytest.raises(ToolError) as exc_info:
+        # FIXME: ruff failed
+        with pytest.raises(ToolError) as exc_info:  # noqa: F841
             await client.call_tool("hello", {"name": "World"})  # type: ignore
         spans = memory_exporter.get_finished_spans()
         assert len(spans) >= 2
