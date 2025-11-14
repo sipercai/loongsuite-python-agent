@@ -1,41 +1,53 @@
-import pytest
-from opentelemetry.instrumentation.agentscope import AgentScopeInstrumentor
-from opentelemetry import trace as trace_api
-from opentelemetry.sdk.trace import TracerProvider, Resource
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
-from typing import (
-    Generator
-)
+from typing import Generator
+
 import agentscope
+import pytest
 from agentscope.agents import ReActAgent
-from agentscope.service import ServiceToolkit, execute_shell_command
 from agentscope.message import Msg
+from agentscope.service import ServiceToolkit, execute_shell_command
+
+from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.agentscope import AgentScopeInstrumentor
+from opentelemetry.sdk.trace import Resource, TracerProvider
+from opentelemetry.sdk.trace.export import (
+    ConsoleSpanExporter,
+    SimpleSpanProcessor,
+)
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
+)
+
 
 @pytest.fixture(scope="module")
 def in_memory_span_exporter() -> InMemorySpanExporter:
     return InMemorySpanExporter()
 
+
 @pytest.fixture(scope="module")
-def tracer_provider(in_memory_span_exporter: InMemorySpanExporter) -> trace_api.TracerProvider:
+def tracer_provider(
+    in_memory_span_exporter: InMemorySpanExporter,
+) -> trace_api.TracerProvider:
     resource = Resource(attributes={})
     tracer_provider = TracerProvider(resource=resource)
     span_processor = SimpleSpanProcessor(span_exporter=in_memory_span_exporter)
     tracer_provider.add_span_processor(span_processor=span_processor)
-    tracer_provider.add_span_processor(span_processor=SimpleSpanProcessor(ConsoleSpanExporter()))
+    tracer_provider.add_span_processor(
+        span_processor=SimpleSpanProcessor(ConsoleSpanExporter())
+    )
     return tracer_provider
 
-@pytest.fixture(autouse=True,scope="module")
+
+@pytest.fixture(autouse=True, scope="module")
 def instrument(
-        tracer_provider: trace_api.TracerProvider,
-        in_memory_span_exporter: InMemorySpanExporter
+    tracer_provider: trace_api.TracerProvider,
+    in_memory_span_exporter: InMemorySpanExporter,
 ) -> Generator:
     AgentScopeInstrumentor().instrument(tracer_provider=tracer_provider)
     yield
     AgentScopeInstrumentor().uninstrument()
 
+
 def test_agentscope(request, in_memory_span_exporter: InMemorySpanExporter):
-    
     toolkit = ServiceToolkit()
     toolkit.add(execute_shell_command)
     agentscope.init(

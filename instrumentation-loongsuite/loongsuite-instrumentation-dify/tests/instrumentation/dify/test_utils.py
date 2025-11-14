@@ -1,9 +1,11 @@
 import time
-from datetime import datetime
 import unittest
+from datetime import datetime
 from unittest.mock import Mock
 
-from opentelemetry.instrumentation.dify.utils import get_timestamp_from_datetime_attr
+from opentelemetry.instrumentation.dify.utils import (
+    get_timestamp_from_datetime_attr,
+)
 
 
 class TestGetTimestampFromDatetimeAttr(unittest.TestCase):
@@ -19,12 +21,16 @@ class TestGetTimestampFromDatetimeAttr(unittest.TestCase):
 
         result = get_timestamp_from_datetime_attr(self.test_obj, "created_at")
 
-        expected_timestamp = int(1698748000.123456 * 1_000_000_000 + 789000 * 1_000)
+        expected_timestamp = int(
+            1698748000.123456 * 1_000_000_000 + 789000 * 1_000
+        )
 
         self.assertEqual(result, expected_timestamp)
 
     def test_attr_does_not_exist(self):
-        result = get_timestamp_from_datetime_attr(self.test_obj, "non_existent_attr")
+        result = get_timestamp_from_datetime_attr(
+            self.test_obj, "non_existent_attr"
+        )
 
         current_time_ns = time.time_ns()
         self.assertTrue(
@@ -32,5 +38,6 @@ class TestGetTimestampFromDatetimeAttr(unittest.TestCase):
             f"Returned timestamp {result} is not close to current time {current_time_ns}",
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

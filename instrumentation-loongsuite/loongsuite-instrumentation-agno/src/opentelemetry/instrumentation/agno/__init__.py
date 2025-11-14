@@ -1,14 +1,16 @@
 from typing import Any, Collection
+
 from wrapt import wrap_function_wrapper
-from opentelemetry.instrumentation.agno.package import _instruments
+
+from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.agno._wrapper import (
     AgnoAgentWrapper,
     AgnoFunctionCallWrapper,
     AgnoModelWrapper,
 )
-from opentelemetry import trace as trace_api
-from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.instrumentation.agno.package import _instruments
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.instrumentation.version import (
     __version__,
 )
@@ -19,6 +21,7 @@ _AGENT = "agno.agent"
 _MODULE = "agno.models.base"
 _TOOLKIT = "agno.tools.function"
 __all__ = ["AgnoInstrumentor"]
+
 
 class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
     """
@@ -60,7 +63,7 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
         )
 
         # Wrap the function
-        wrap_function_wrapper (
+        wrap_function_wrapper(
             module=_TOOLKIT,
             name="FunctionCall.execute",
             wrapper=function_call_wrapper.execute,
@@ -71,7 +74,7 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
             wrapper=function_call_wrapper.aexecute,
         )
 
-        #Warp the model
+        # Warp the model
         wrap_function_wrapper(
             module=_MODULE,
             name="Model.response",
@@ -90,12 +93,13 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
         wrap_function_wrapper(
             module=_MODULE,
             name="Model.aresponse_stream",
-            wrapper=model_wrapper.aresponse_stream,)
+            wrapper=model_wrapper.aresponse_stream,
+        )
 
     def _uninstrument(self, **kwargs: Any) -> None:
-
         # Unwrap the agent call function
         import agno.agent
+
         unwrap(agno.agent.Agent, "_run")
         unwrap(agno.agent.Agent, "_arun")
         unwrap(agno.agent.Agent, "_run_stream")
@@ -103,11 +107,13 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
 
         # Unwrap the function call
         import agno.tools.function
+
         unwrap(agno.tools.function.FunctionCall, "execute")
         unwrap(agno.tools.function.FunctionCall, "aexecute")
 
         # Unwrap the model
         import agno.models.base
+
         unwrap(agno.models.base.Model, "response")
         unwrap(agno.models.base.Model, "aresponse")
         unwrap(agno.models.base.Model, "response_stream")

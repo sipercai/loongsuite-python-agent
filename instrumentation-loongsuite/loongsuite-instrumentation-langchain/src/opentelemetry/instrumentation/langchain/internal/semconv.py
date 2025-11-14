@@ -10,7 +10,7 @@ from enum import Enum
 class SpanKindValues(Enum):
     LLM = "llm"
     CHAIN = "chain"
-    AGENT = "agent"  
+    AGENT = "agent"
     TOOL = "tool"
     RETRIEVER = "retriever"
     RERANKER = "reranker"

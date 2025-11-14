@@ -1,12 +1,17 @@
 import logging
 from typing import Any, Collection
 
+from opentelemetry import trace as trace_api
+from opentelemetry.instrumentation.dify.config import (
+    MAX_SUPPORTED_VERSION,
+    MIN_SUPPORTED_VERSION,
+    is_version_supported,
+)
 from opentelemetry.instrumentation.dify.package import _instruments
 from opentelemetry.instrumentation.dify.wrapper import set_wrappers
-from opentelemetry import trace as trace_api
-from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
-
-from opentelemetry.instrumentation.dify.config import is_version_supported, MIN_SUPPORTED_VERSION, MAX_SUPPORTED_VERSION
+from opentelemetry.instrumentation.instrumentor import (
+    BaseInstrumentor,  # type: ignore
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -28,7 +33,9 @@ class DifyInstrumentor(BaseInstrumentor):  # type: ignore
             return
         if not (tracer_provider := kwargs.get("tracer_provider")):
             tracer_provider = trace_api.get_tracer_provider()
-        tracer = trace_api.get_tracer(__name__, None, tracer_provider=tracer_provider)
+        tracer = trace_api.get_tracer(
+            __name__, None, tracer_provider=tracer_provider
+        )
 
         set_wrappers(tracer)
 

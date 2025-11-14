@@ -5,10 +5,11 @@ This module defines the semantic conventions used for MCP instrumentation,
 following OpenTelemetry standards and best practices.
 """
 
+
 # MCP core semantic conventions
 class MCPAttributes:
     """MCP semantic conventions constants"""
-    
+
     MCP_METHOD_NAME = "mcp.method.name"
     MCP_TOOL_NAME = "mcp.tool.name"
     MCP_RESOURCE_URI = "mcp.resource.uri"
@@ -32,7 +33,7 @@ class MCPAttributes:
 
 class MCPMetricsAttributes:
     """MCP metrics attributes"""
-    
+
     CLIENT_OPERATION_DURATION_METRIC = "mcp.client.operation.duration"
     CLIENT_OPERATION_COUNT_METRIC = "mcp.client.operation.count"
 
@@ -42,7 +43,10 @@ class MCPMetricsAttributes:
 
 class MCPEnvironmentVariables:
     CAPTURE_INPUT_ENABLED = "OTEL_INSTRUMENTATION_MCP_CAPTURE_INPUT"
-    CAPTURE_INPUT_MAX_LENGTH = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT_MAX_LENGTH"
+    CAPTURE_INPUT_MAX_LENGTH = (
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT_MAX_LENGTH"
+    )
+
 
 _method_names_with_target = {
     "prompts/get": (MCPAttributes.MCP_PROMPT_NAME, "name"),

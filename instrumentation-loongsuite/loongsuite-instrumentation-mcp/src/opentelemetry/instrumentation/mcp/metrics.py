@@ -1,5 +1,6 @@
-from opentelemetry.metrics import Meter
 from opentelemetry.instrumentation.mcp.semconv import MCPMetricsAttributes
+from opentelemetry.metrics import Meter
+
 
 class ServerMetrics:
     def __init__(self, meter: Meter):
@@ -22,7 +23,7 @@ class ClientMetrics:
             description="The duration of the MCP request or notification as observed on the sender from the time it was sent until the response or ack is received.",
             unit="s",
         )
-        self.operation_count = meter.create_counter( 
+        self.operation_count = meter.create_counter(
             name=MCPMetricsAttributes.CLIENT_OPERATION_COUNT_METRIC,
             description="The number of MCP client operations",
         )

@@ -1,25 +1,21 @@
 import os
+
+import pytest
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters
 from mcp.types import TextContent
 from pydantic import AnyUrl
-import pytest
 
 from opentelemetry.instrumentation.mcp import MCPInstrumentor
-from .fixtures import (
-    meter_provider,
-    memory_reader,
-    tracer_provider,
-    mcp_server_factory,
-    memory_exporter,
-    _setup_tracer_and_meter_provider,
-    _teardown_tracer_and_meter_provider,
-)
 
 
 # do instrument before each test
 @pytest.fixture(autouse=True)
-def instrumentor(tracer_provider, _setup_tracer_and_meter_provider, _teardown_tracer_and_meter_provider):
+def instrumentor(
+    tracer_provider,
+    _setup_tracer_and_meter_provider,
+    _teardown_tracer_and_meter_provider,
+):
     _setup_tracer_and_meter_provider()
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
@@ -28,7 +24,9 @@ def instrumentor(tracer_provider, _setup_tracer_and_meter_provider, _teardown_tr
     _teardown_tracer_and_meter_provider()
 
 
-FASTMCP_SERVER_SCRIPT = os.path.join(os.path.dirname(__file__), "fastmcp_server.py")
+FASTMCP_SERVER_SCRIPT = os.path.join(
+    os.path.dirname(__file__), "fastmcp_server.py"
+)
 MCP_SERVER_SCRIPT = os.path.join(os.path.dirname(__file__), "mcp_server.py")
 
 
@@ -80,20 +78,43 @@ async def test_subscribe_resource(memory_exporter):
             (initialize_span, subscribe_resource_span) = spans
             assert initialize_span.name == "initialize"
             assert initialize_span.attributes["rpc.jsonrpc.request_id"] == "0"
-            assert subscribe_resource_span.name == "resources/subscribe schema://any"
-            assert subscribe_resource_span.attributes["mcp.resource.uri"] == "schema://any"
-            assert subscribe_resource_span.attributes["mcp.method.name"] == "resources/subscribe"
-            assert subscribe_resource_span.attributes["rpc.jsonrpc.request_id"] == "1"
+            assert (
+                subscribe_resource_span.name
+                == "resources/subscribe schema://any"
+            )
+            assert (
+                subscribe_resource_span.attributes["mcp.resource.uri"]
+                == "schema://any"
+            )
+            assert (
+                subscribe_resource_span.attributes["mcp.method.name"]
+                == "resources/subscribe"
+            )
+            assert (
+                subscribe_resource_span.attributes["rpc.jsonrpc.request_id"]
+                == "1"
+            )
 
             await session.unsubscribe_resource(AnyUrl("schema://any"))
             spans = memory_exporter.get_finished_spans()
             assert len(spans) == 3
             unsubscribe_resource_span = spans[2]
-            assert unsubscribe_resource_span.name == "resources/unsubscribe schema://any"
-            assert unsubscribe_resource_span.attributes["mcp.resource.uri"] == "schema://any"
-            assert unsubscribe_resource_span.attributes["mcp.method.name"] == "resources/unsubscribe"
-            assert unsubscribe_resource_span.attributes["rpc.jsonrpc.request_id"] == "2"
+            assert (
+                unsubscribe_resource_span.name
+                == "resources/unsubscribe schema://any"
+            )
+            assert (
+                unsubscribe_resource_span.attributes["mcp.resource.uri"]
+                == "schema://any"
+            )
+            assert (
+                unsubscribe_resource_span.attributes["mcp.method.name"]
+                == "resources/unsubscribe"
+            )
+            assert (
+                unsubscribe_resource_span.attributes["rpc.jsonrpc.request_id"]
+                == "2"
+            )
 
             for span in spans:
                 assert span.attributes["network.transport"] == "stdio"
-

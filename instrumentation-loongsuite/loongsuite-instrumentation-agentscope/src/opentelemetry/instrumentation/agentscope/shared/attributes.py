@@ -9,15 +9,18 @@ for different types of operations (LLM, Embedding, Agent, Tool).
 from abc import ABC
 from dataclasses import dataclass, fields
 from typing import Dict, List, Optional
+
+from agentscope import _config
+
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
 from opentelemetry.util.types import AttributeValue
+
 from .constants import (
     CommonAttributes,
     GenAiSpanKind,
 )
-from agentscope import _config
 
 
 class ASBaseAttributes(ABC):
@@ -45,12 +48,14 @@ class ASBaseAttributes(ABC):
 
         return attributes
 
+
 @dataclass
 class LLMRequestAttributes(ASBaseAttributes):
     """LLM 请求属性类
-    
+
     用于存储和管理 LLM 请求相关的 GenAI 语义约定属性。
     """
+
     SPAN_KIND = GenAiSpanKind.LLM.value
 
     provider_name: Optional[str] = None
@@ -73,9 +78,10 @@ class LLMRequestAttributes(ASBaseAttributes):
 @dataclass
 class LLMResponseAttributes(ASBaseAttributes):
     """LLM 响应属性类
-    
+
     用于存储和管理 LLM 响应相关的 GenAI 语义约定属性。
     """
+
     response_id: Optional[str] = None
     response_model: Optional[str] = None
     output_type: Optional[str] = None
@@ -87,9 +93,10 @@ class LLMResponseAttributes(ASBaseAttributes):
 @dataclass
 class EmbeddingRequestAttributes(ASBaseAttributes):
     """Embedding 请求属性类
-    
+
     用于存储和管理 Embedding 请求相关的 GenAI 语义约定属性。
     """
+
     SPAN_KIND = GenAiSpanKind.EMBEDDING.value
 
     provider_name: Optional[str] = None
@@ -102,9 +109,10 @@ class EmbeddingRequestAttributes(ASBaseAttributes):
 @dataclass
 class AgentRequestAttributes(ASBaseAttributes):
     """Agent 请求属性类
-    
+
     用于存储和管理 Agent 请求相关的 GenAI 语义约定属性。
     """
+
     SPAN_KIND = GenAiSpanKind.AGENT.value
 
     agent_id: Optional[str] = None
@@ -120,9 +128,10 @@ class AgentRequestAttributes(ASBaseAttributes):
 @dataclass
 class ToolRequestAttributes(ASBaseAttributes):
     """Tool 请求属性类
-    
+
     用于存储和管理 Tool 请求相关的 GenAI 语义约定属性。
     """
+
     SPAN_KIND = GenAiSpanKind.TOOL.value
 
     tool_call_id: Optional[str] = None
@@ -148,25 +157,21 @@ ATTRIBUTE_MAPPING = {
     "request_stop_sequences": GenAIAttributes.GEN_AI_REQUEST_STOP_SEQUENCES,
     "system_instructions": GenAIAttributes.GEN_AI_SYSTEM_INSTRUCTIONS,
     "input_messages": GenAIAttributes.GEN_AI_INPUT_MESSAGES,
-    "request_tool_definitions": CommonAttributes.GEN_AI_REQUEST_TOOL_DEFINITIONS, # agentscope semconv
-
+    "request_tool_definitions": CommonAttributes.GEN_AI_REQUEST_TOOL_DEFINITIONS,  # agentscope semconv
     "response_id": GenAIAttributes.GEN_AI_RESPONSE_ID,
     "response_model": GenAIAttributes.GEN_AI_RESPONSE_MODEL,
     "output_type": GenAIAttributes.GEN_AI_OUTPUT_TYPE,
     "response_finish_reasons": GenAIAttributes.GEN_AI_RESPONSE_FINISH_REASONS,
     "usage_input_tokens": GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS,
     "usage_output_tokens": GenAIAttributes.GEN_AI_USAGE_OUTPUT_TOKENS,
-
     "request_encoding_formats": GenAIAttributes.GEN_AI_REQUEST_ENCODING_FORMATS,
-
     "agent_id": GenAIAttributes.GEN_AI_AGENT_ID,
     "agent_name": GenAIAttributes.GEN_AI_AGENT_NAME,
     "agent_description": GenAIAttributes.GEN_AI_AGENT_DESCRIPTION,
     "conversation_id": GenAIAttributes.GEN_AI_CONVERSATION_ID,
-
     "tool_call_id": GenAIAttributes.GEN_AI_TOOL_CALL_ID,
     "tool_name": GenAIAttributes.GEN_AI_TOOL_NAME,
     "tool_description": GenAIAttributes.GEN_AI_TOOL_DESCRIPTION,
     "tool_type": GenAIAttributes.GEN_AI_TOOL_TYPE,
-    "tool_call_arguments": CommonAttributes.GEN_AI_TOOL_CALL_ARGUMENTS, # agentscope semconv
+    "tool_call_arguments": CommonAttributes.GEN_AI_TOOL_CALL_ARGUMENTS,  # agentscope semconv
 }

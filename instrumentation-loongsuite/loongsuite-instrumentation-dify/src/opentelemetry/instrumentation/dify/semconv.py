@@ -26,6 +26,7 @@ class SpanKindValues(Enum):
     TASK = "TASK"
     UNKNOWN = "UNKNOWN"
 
+
 class DocumentAttributes:
     """
     Attributes for a document

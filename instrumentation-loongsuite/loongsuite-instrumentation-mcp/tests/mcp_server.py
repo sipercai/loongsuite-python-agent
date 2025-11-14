@@ -1,19 +1,21 @@
 import sys
+
 from opentelemetry import trace
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.trace import NonRecordingSpan
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     SimpleSpanProcessor,
+)
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
 )
 
 do_instrument = False
 
 
 def create_mcp_server():
-    from mcp.server import Server
     import mcp.types as types
+    from mcp.server import Server
 
     server = Server("example-server")
 
@@ -23,7 +25,13 @@ def create_mcp_server():
             types.Prompt(
                 name="example-prompt",
                 description="An example prompt template",
-                arguments=[types.PromptArgument(name="arg1", description="Example argument", required=True)],
+                arguments=[
+                    types.PromptArgument(
+                        name="arg1",
+                        description="Example argument",
+                        required=True,
+                    )
+                ],
             )
         ]
 
@@ -45,16 +53,25 @@ def create_mcp_server():
         ]
 
     @server.get_prompt()
-    async def handle_get_prompt(name: str, arguments: dict[str, str] | None) -> types.GetPromptResult:
+    async def handle_get_prompt(
+        name: str, arguments: dict[str, str] | None
+    ) -> types.GetPromptResult:
         return types.GetPromptResult(
             description="Example prompt",
             messages=[
-                types.PromptMessage(role="user", content=types.TextContent(type="text", text="Example prompt text"))
+                types.PromptMessage(
+                    role="user",
+                    content=types.TextContent(
+                        type="text", text="Example prompt text"
+                    ),
+                )
             ],
         )
 
     @server.call_tool()
-    async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent]:
+    async def handle_call_tool(
+        name: str, arguments: dict
+    ) -> list[types.TextContent]:
         if name == "get_server_span":
             current_span = trace.get_current_span()
             assert current_span is not None
@@ -104,9 +121,9 @@ async def main():
         instrumentor = MCPInstrumentor()
         instrumentor._instrument(tracer_provider=create_tracer_provider())
 
-    from mcp.server.stdio import stdio_server
-    from mcp.server.models import InitializationOptions
     from mcp.server import NotificationOptions
+    from mcp.server.models import InitializationOptions
+    from mcp.server.stdio import stdio_server
 
     server = create_mcp_server()
     async with stdio_server() as (read_stream, write_stream):
