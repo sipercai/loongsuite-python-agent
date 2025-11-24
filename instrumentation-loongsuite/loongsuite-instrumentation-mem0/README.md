@@ -1,4 +1,4 @@
-# OpenTelemetry Mem0 Instrumentation
+# LoongSuite Mem0 Instrumentation
 
 [![PyPI version](https://badge.fury.io/py/opentelemetry-instrumentation-mem0.svg)](https://badge.fury.io/py/opentelemetry-instrumentation-mem0)
 
@@ -10,7 +10,7 @@ For details on usage and installation of LoongSuite and Jaeger, please refer to
 ## Installing Mem0 Instrumentation
 
 ```bash
-pip install opentelemetry-instrumentation-mem0
+pip install loongsuite-instrumentation-mem0
 ```
 
 If you have not installed OpenTelemetry yet, you can install a minimal setup with:
