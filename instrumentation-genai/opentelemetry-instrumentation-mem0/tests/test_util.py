@@ -207,7 +207,7 @@ class TestExtractUtils(unittest.TestCase):
                         {
                             "source": "may",
                             "relationship": "likes",
-                            "target": "Shanghai Bund",
+                            "target": "Shanghai Bind",
                         }
                     ],
                 ],

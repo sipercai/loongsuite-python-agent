@@ -26,7 +26,7 @@ class TestOutputPreviewExtraction(unittest.TestCase):
         """Tests string output preview extraction"""
         result = "This is a test output"
         preview = _extract_output_preview(result, 20)
-        self.assertEqual(preview, "This is a test outpu...")
+        self.assertEqual(preview, "This is a test output...")
 
     def test_extract_output_preview_dict_with_memory(self):
         """Tests dict with memory field output preview extraction"""
@@ -573,7 +573,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
                             {
                                 "source": "may",
                                 "relationship": "likes",
-                                "target": "Shanghai Bund",
+                                "target": "Shanghai Bind",
                             }
                         ],
                     ],
