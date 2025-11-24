@@ -17,6 +17,10 @@
 
 libraries = [
     {
+        "library": "mem0ai >= 1.0.0",
+        "instrumentation": "opentelemetry-instrumentation-mem0==0.1.0",
+    },
+    {
         "library": "openai >= 1.26.0",
         "instrumentation": "opentelemetry-instrumentation-openai-v2",
     },

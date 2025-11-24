@@ -6,27 +6,39 @@ Provides OTel exporters, VCR configuration, and convenient instrumentor fixtures
 
 import json
 import os
+
 import pytest
+
+# Provide wrapt.unwrap for test patching (some environments don't export unwrap)
+import wrapt as _wrapt  # type: ignore
 import yaml
+
 from opentelemetry.sdk._logs import LoggerProvider
-from opentelemetry.sdk._logs.export import InMemoryLogExporter, SimpleLogRecordProcessor
+from opentelemetry.sdk._logs.export import (
+    InMemoryLogExporter,
+    SimpleLogRecordProcessor,
+)
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
+)
 
-# Provide wrapt.unwrap for test patching (some environments don't export unwrap)
-import wrapt as _wrapt  # type: ignore
 try:
-    from opentelemetry.instrumentation.utils import unwrap as _otel_unwrap  # type: ignore
+    from opentelemetry.instrumentation.utils import (
+        unwrap as _otel_unwrap,  # type: ignore
+    )
+
     if not hasattr(_wrapt, "unwrap"):  # type: ignore
         setattr(_wrapt, "unwrap", _otel_unwrap)  # type: ignore
 except Exception:
     pass
 
-from opentelemetry.instrumentation.mem0 import Mem0Instrumentor
 from typing import Any, Dict, List, cast
+
+from opentelemetry.instrumentation.mem0 import Mem0Instrumentor
 
 
 # Fake classes for testing
@@ -40,21 +52,26 @@ class FakeVectorStore:
                 self.id = _id
                 self.score = 0.5
                 self.payload = {
-                    "data": _data if _data else "fake memory data",  # Ensure data is not empty
+                    "data": _data
+                    if _data
+                    else "fake memory data",  # Ensure data is not empty
                     "hash": None,
                     "created_at": None,
                     "updated_at": None,
                 }
+
         results: List[Any] = []
         for k, v in self._items.items():
-            data_value = v.get("data", "") if v.get("data") else "fake memory data"
+            data_value = (
+                v.get("data", "") if v.get("data") else "fake memory data"
+            )
             results.append(_Hit(k, data_value))
         limit_value: Any = kwargs.get("limit", 5)
         try:
             limit = int(limit_value) if limit_value is not None else 5
         except Exception:
             limit = 5
-        return results[: limit]
+        return results[:limit]
 
     def insert(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         payloads_value: Any = kwargs.get("payloads")
@@ -80,6 +97,7 @@ class FakeVectorStore:
 
     def list(self, **kwargs: Dict[str, Any]) -> List[List[Any]]:
         """Returns double-nested list structure to match mem0 expectations."""
+
         class _Hit:
             def __init__(self, _id: str, _data: str) -> None:
                 self.id = _id
@@ -90,6 +108,7 @@ class FakeVectorStore:
                     "created_at": None,
                     "updated_at": None,
                 }
+
         hits: List[Any] = []
         for k, v in self._items.items():
             data_value = v.get("data", "")
@@ -103,6 +122,7 @@ class FakeVectorStore:
         """Gets a single memory item, returns object or None."""
         vector_id = kwargs.get("vector_id")
         if vector_id and str(vector_id) in self._items:
+
             class _Hit:
                 def __init__(self, _id: str, _data: str) -> None:
                     self.id = _id
@@ -113,7 +133,10 @@ class FakeVectorStore:
                         "created_at": None,
                         "updated_at": None,
                     }
-            data_value = self._items[str(vector_id)].get("data", "fake memory data")
+
+            data_value = self._items[str(vector_id)].get(
+                "data", "fake memory data"
+            )
             return _Hit(str(vector_id), data_value)
         return None
 
@@ -124,16 +147,18 @@ class FakeVectorStore:
 
 class FakeReranker:
     provider: str = "fake"
-    
-    def rerank(self, query: str, documents: List[Dict[str, Any]], top_k: int = 5) -> List[Dict[str, Any]]:
+
+    def rerank(
+        self, query: str, documents: List[Dict[str, Any]], top_k: int = 5
+    ) -> List[Dict[str, Any]]:
         """
         Rerank documents based on query.
-        
+
         Args:
             query: Search query
             documents: List of documents (memory items) to rerank
             top_k: Number of top documents to return
-            
+
         Returns:
             List of reranked documents
         """
@@ -145,8 +170,10 @@ class FakeReranker:
             reranked.append(doc_copy)
         return reranked
 
+
 # Global FakeVectorStore instance for test data injection/reading
 FAKE_VECTOR_STORE_INSTANCE: "FakeVectorStore | None" = None
+
 
 def get_fake_vector_store() -> FakeVectorStore:
     """
@@ -161,17 +188,25 @@ def get_fake_vector_store() -> FakeVectorStore:
 
 class FakeGraphStore:
     provider: str = "fake"
-    
-    def add(self, *args: Any, **kwargs: Dict[str, Any]) -> Dict[str, List[int]]:
+
+    def add(
+        self, *args: Any, **kwargs: Dict[str, Any]
+    ) -> Dict[str, List[int]]:
         return {"nodes": [1]}
 
-    def get_all(self, *args: Any, **kwargs: Dict[str, Any]) -> Dict[str, List[int]]:
+    def get_all(
+        self, *args: Any, **kwargs: Dict[str, Any]
+    ) -> Dict[str, List[int]]:
         return {"nodes": []}
 
-    def search(self, *args: Any, **kwargs: Dict[str, Any]) -> Dict[str, List[int]]:
+    def search(
+        self, *args: Any, **kwargs: Dict[str, Any]
+    ) -> Dict[str, List[int]]:
         return {"nodes": []}
 
-    def delete_all(self, *args: Any, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def delete_all(
+        self, *args: Any, **kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         return {"ok": True}
 
     def reset(self, *args: Any, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -181,7 +216,7 @@ class FakeGraphStore:
 class FakeEmbedder:
     def embed(self, *args: Any, **kwargs: Dict[str, Any]) -> List[float]:
         return [0.0] * 128
-    
+
     class config:
         embedding_dims = 128
 
@@ -193,6 +228,7 @@ class FakeLLM:
 
 def patch_factories(monkeypatch: Any) -> None:
     """Generic factory patching method."""
+
     def try_patch(module_path: str, factory_name: str, create_fn: Any) -> None:
         try:
             mod = __import__(module_path, fromlist=[factory_name])
@@ -206,32 +242,38 @@ def patch_factories(monkeypatch: Any) -> None:
     global FAKE_VECTOR_STORE_INSTANCE
     FAKE_VECTOR_STORE_INSTANCE = get_fake_vector_store()
     _fake_vector_store = FAKE_VECTOR_STORE_INSTANCE
+
     def vs_create(*a: Any, **k: Any) -> FakeVectorStore:
         return _fake_vector_store
+
     try_patch("mem0.utils.factory", "VectorStoreFactory", vs_create)
     try_patch("mem0.vector_stores.factory", "VectorStoreFactory", vs_create)
 
     # Reranker
     def rr_create(*a: Any, **k: Any) -> FakeReranker:
         return FakeReranker()
+
     try_patch("mem0.utils.factory", "RerankerFactory", rr_create)
     try_patch("mem0.rerank.factory", "RerankerFactory", rr_create)
 
     # GraphStore
     def gs_create(*a: Any, **k: Any) -> FakeGraphStore:
         return FakeGraphStore()
+
     try_patch("mem0.utils.factory", "GraphStoreFactory", gs_create)
     try_patch("mem0.graph.factory", "GraphStoreFactory", gs_create)
 
     # Embedder
     def emb_create(*a: Any, **k: Any) -> FakeEmbedder:
         return FakeEmbedder()
+
     try_patch("mem0.utils.factory", "EmbedderFactory", emb_create)
     try_patch("mem0.embeddings.factory", "EmbedderFactory", emb_create)
 
     # LLM
     def llm_create(*a: Any, **k: Any) -> FakeLLM:
         return FakeLLM()
+
     try_patch("mem0.utils.factory", "LLMFactory", llm_create)
     try_patch("mem0.llms.factory", "LLMFactory", llm_create)
 
@@ -280,7 +322,9 @@ def environment():
     os.environ.setdefault("OPENAI_API_KEY", "test_openai_api_key")
     os.environ.setdefault("MEM0_API_KEY", "test_mem0_api_key")
     # Allow capturing message content and internal phases (controlled by tests as needed)
-    os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "True")
+    os.environ.setdefault(
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "True"
+    )
     yield
     # Don't clean up, maintain consistency across test cases
 
@@ -289,7 +333,9 @@ def environment():
 def instrument_with_content(tracer_provider, meter_provider):
     os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "True"
     instrumentor = Mem0Instrumentor()
-    instrumentor.instrument(tracer_provider=tracer_provider, meter_provider=meter_provider)
+    instrumentor.instrument(
+        tracer_provider=tracer_provider, meter_provider=meter_provider
+    )
     yield instrumentor
     instrumentor.uninstrument()
     os.environ.pop("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", None)
@@ -299,25 +345,31 @@ def instrument_with_content(tracer_provider, meter_provider):
 def instrument_no_content(tracer_provider, meter_provider):
     os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "False"
     instrumentor = Mem0Instrumentor()
-    instrumentor.instrument(tracer_provider=tracer_provider, meter_provider=meter_provider)
+    instrumentor.instrument(
+        tracer_provider=tracer_provider, meter_provider=meter_provider
+    )
     yield instrumentor
     instrumentor.uninstrument()
     os.environ.pop("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", None)
 
 
 @pytest.fixture(scope="function")
-def instrument_with_factories_patched(tracer_provider, meter_provider, monkeypatch):
+def instrument_with_factories_patched(
+    tracer_provider, meter_provider, monkeypatch
+):
     """
     Patches factory methods before instrumentation so instrumentor wraps the patched factories.
     """
     # Patch factory methods first
     patch_factories(monkeypatch)
-    
+
     # Then instrument (enable internal phase capture)
     os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "True"
     os.environ["OTEL_INSTRUMENTATION_MEM0_CAPTURE_INTERNAL_PHASES"] = "True"
     instrumentor = Mem0Instrumentor()
-    instrumentor.instrument(tracer_provider=tracer_provider, meter_provider=meter_provider)
+    instrumentor.instrument(
+        tracer_provider=tracer_provider, meter_provider=meter_provider
+    )
     yield instrumentor
     instrumentor.uninstrument()
     os.environ.pop("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", None)
@@ -333,15 +385,20 @@ def vcr_config(request):
         record_mode = request.config.getoption("--record-mode") or "none"  # type: ignore
     except Exception:
         pass
+
     # Flatten cassette files to tests/cassettes directory without subdirectories
     def _flatten_path(path: str) -> str:
         import os as _os
+
         base = _os.path.basename(path)
         if not base.endswith(".yaml"):
             base = f"{base}.yaml"
         return base
+
     return {
-        "cassette_library_dir": os.path.join(os.path.dirname(__file__), "cassettes"),
+        "cassette_library_dir": os.path.join(
+            os.path.dirname(__file__), "cassettes"
+        ),
         "path_transformer": _flatten_path,
         "filter_headers": [
             ("authorization", "Bearer test_api_key"),
@@ -353,7 +410,15 @@ def vcr_config(request):
         "before_record_response": scrub_response_headers,
         "record_mode": record_mode,
         # Match requests by body content to distinguish different requests with same URL
-        "match_on": ["method", "scheme", "host", "port", "path", "query", "body"],
+        "match_on": [
+            "method",
+            "scheme",
+            "host",
+            "port",
+            "path",
+            "query",
+            "body",
+        ],
         # Ignore analytics/telemetry domains to avoid playback failures
         "ignore_hosts": ["us.i.posthog.com", "app.posthog.com"],
     }
@@ -373,7 +438,9 @@ yaml.add_representer(LiteralBlockScalar, literal_block_scalar_presenter)
 def _process_string_value(string_value):
     try:
         json_data = json.loads(string_value)
-        return LiteralBlockScalar(json.dumps(json_data, indent=2, ensure_ascii=False))
+        return LiteralBlockScalar(
+            json.dumps(json_data, indent=2, ensure_ascii=False)
+        )
     except (ValueError, TypeError):
         if isinstance(string_value, str) and len(string_value) > 80:
             return LiteralBlockScalar(string_value)
@@ -399,7 +466,9 @@ class PrettyPrintJSONBody:
     @staticmethod
     def serialize(cassette_dict):
         cassette_dict = _convert_body_to_literal(cassette_dict)
-        return yaml.dump(cassette_dict, default_flow_style=False, allow_unicode=True)
+        return yaml.dump(
+            cassette_dict, default_flow_style=False, allow_unicode=True
+        )
 
     @staticmethod
     def deserialize(cassette_string):

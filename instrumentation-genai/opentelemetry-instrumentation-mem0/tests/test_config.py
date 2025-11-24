@@ -3,21 +3,22 @@
 Tests for Mem0 instrumentation configuration.
 """
 
-import unittest
 import os
+import unittest
+
 try:
-    from unittest.mock import patch, Mock
+    from unittest.mock import patch
 except ImportError:
-    from mock import patch, Mock
+    from mock import patch
 from opentelemetry.instrumentation.mem0.config import (
     Mem0InstrumentationConfig,
-    is_internal_phases_enabled,
-    should_capture_content,
-    get_slow_threshold_seconds,
+    first_present_bool,
     get_bool_env,
     get_int_env,
     get_optional_bool_env,
-    first_present_bool,
+    get_slow_threshold_seconds,
+    is_internal_phases_enabled,
+    should_capture_content,
 )
 
 
@@ -100,7 +101,6 @@ class TestMem0InstrumentationConfig(unittest.TestCase):
         self.assertTrue(Mem0InstrumentationConfig.INTERNAL_PHASES_ENABLED)
 
 
-
 class TestConfigFunctions(unittest.TestCase):
     """Tests for configuration functions."""
 
@@ -141,13 +141,19 @@ class TestConfigFunctions(unittest.TestCase):
 
     def test_should_capture_content_true(self):
         """Tests content capture enabled."""
-        with patch.dict(os.environ, {"OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true"}):
+        with patch.dict(
+            os.environ,
+            {"OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true"},
+        ):
             result = should_capture_content()
             self.assertTrue(result)
 
     def test_should_capture_content_false(self):
         """Tests content capture disabled."""
-        with patch.dict(os.environ, {"OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "false"}):
+        with patch.dict(
+            os.environ,
+            {"OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "false"},
+        ):
             result = should_capture_content()
             self.assertFalse(result)
 
@@ -159,5 +165,3 @@ class TestConfigFunctions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-

@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 class ThreadPoolContextPropagationHandler:
     """
     Handler for propagating OpenTelemetry context through ThreadPoolExecutor.
-    
+
     This handler wraps ThreadPoolExecutor.submit to automatically propagate
     the current OpenTelemetry context to submitted tasks, ensuring proper
     span parent-child relationships in concurrent operations.
     """
-    
+
     def __call__(
         self,
         wrapped: Callable[..., Any],
@@ -54,7 +54,7 @@ class ThreadPoolContextPropagationHandler:
 
         # Extract the function to be executed
         original_func = args[0]
-        
+
         # Verify that the first argument is callable
         if not callable(original_func):
             return wrapped(*args, **kwargs)
@@ -90,4 +90,3 @@ class ThreadPoolContextPropagationHandler:
 
         # Call the original submit method with the wrapped function
         return wrapped(*new_args, **kwargs)
-

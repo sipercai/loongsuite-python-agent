@@ -6,15 +6,16 @@ VCR test cases for MemoryClient HTTP layer exceptions:
 """
 
 import os
-import pytest
-import threading
-from typing import Any, Tuple
-from http.server import BaseHTTPRequestHandler, HTTPServer
 import socket
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any, Tuple
+
+import pytest
 
 
 def _new_client_for_error(host: str):
-    mem0 = pytest.importorskip("mem0")
+    pytest.importorskip("mem0")
     MemoryClient = pytest.importorskip("mem0.client.main").MemoryClient  # type: ignore
     # Use placeholder API Key, VCR filters sensitive headers in conftest
     api_key = os.environ.get("MEM0_API_KEY", "test_mem0_api_key")
@@ -22,7 +23,9 @@ def _new_client_for_error(host: str):
 
 
 @pytest.mark.vcr()
-def test_client_connection_error_vcr(span_exporter: Any, instrument_with_content: Any, monkeypatch: Any):
+def test_client_connection_error_vcr(
+    span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
+):
     """
     Constructs connection error:
     - Uses unreachable port (e.g. 127.0.0.1:9) to cause connection failure
@@ -37,7 +40,9 @@ def test_client_connection_error_vcr(span_exporter: Any, instrument_with_content
     # Avoid triggering validation requests during __init__, ensure error occurs in wrapped method
     MemoryClient = pytest.importorskip("mem0.client.main").MemoryClient  # type: ignore
     Project = pytest.importorskip("mem0.client.project").Project  # type: ignore
-    monkeypatch.setattr(MemoryClient, "_validate_api_key", lambda self: "test@example.com")
+    monkeypatch.setattr(
+        MemoryClient, "_validate_api_key", lambda self: "test@example.com"
+    )
     monkeypatch.setattr(Project, "_validate_org_project", lambda self: None)
     client = _new_client_for_error(host)
 
@@ -47,9 +52,15 @@ def test_client_connection_error_vcr(span_exporter: Any, instrument_with_content
 
     spans = span_exporter.get_finished_spans()
     # For MemoryClient top-level operations, instrumentation writes gen_ai.memory.operation in attributes
-    error_spans = [s for s in spans if s.status.status_code == StatusCode.ERROR]
-    assert error_spans, "Should generate at least one top-level span with ERROR status"
-    assert any("error.type" in s.attributes for s in error_spans), "Error span should contain error.type"
+    error_spans = [
+        s for s in spans if s.status.status_code == StatusCode.ERROR
+    ]
+    assert (
+        error_spans
+    ), "Should generate at least one top-level span with ERROR status"
+    assert any(
+        "error.type" in s.attributes for s in error_spans
+    ), "Error span should contain error.type"
 
 
 def _start_test_http_server(status_code: int) -> Tuple[HTTPServer, str]:
@@ -57,24 +68,29 @@ def _start_test_http_server(status_code: int) -> Tuple[HTTPServer, str]:
     Starts a simple HTTP server that returns given status_code for all requests.
     Returns (server, base_url)
     """
+
     class _Handler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802
             self.send_response(status_code)
             self.end_headers()
             self.wfile.write(b"")
+
         def do_POST(self):  # noqa: N802
             self.send_response(status_code)
             self.end_headers()
             self.wfile.write(b"")
+
         def do_DELETE(self):  # noqa: N802
             self.send_response(status_code)
             self.end_headers()
             self.wfile.write(b"")
+
         def do_PUT(self):  # noqa: N802
             self.send_response(status_code)
             self.end_headers()
             self.wfile.write(b"")
-        def log_message(self, format, *args):  # noqa: A003
+
+        def log_message(self, fmt, *args):
             return
 
     # Bind to random available port
@@ -90,22 +106,31 @@ def _start_test_http_server(status_code: int) -> Tuple[HTTPServer, str]:
 
 
 @pytest.mark.vcr()
-def test_client_http_401_vcr(span_exporter: Any, instrument_with_content: Any, monkeypatch: Any):
+def test_client_http_401_vcr(
+    span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
+):
     """
     Returns 401 via local controllable HTTP service, records and replays exception.
     """
     from opentelemetry.trace import StatusCode
+
     server, base_url = _start_test_http_server(401)
     try:
         MemoryClient = pytest.importorskip("mem0.client.main").MemoryClient  # type: ignore
         Project = pytest.importorskip("mem0.client.project").Project  # type: ignore
-        monkeypatch.setattr(MemoryClient, "_validate_api_key", lambda self: "test@example.com")
-        monkeypatch.setattr(Project, "_validate_org_project", lambda self: None)
+        monkeypatch.setattr(
+            MemoryClient, "_validate_api_key", lambda self: "test@example.com"
+        )
+        monkeypatch.setattr(
+            Project, "_validate_org_project", lambda self: None
+        )
         client = _new_client_for_error(base_url)
         with pytest.raises(Exception):
             client.get_all(filters={"user_id": "u_401"}, top_k=1)
         spans = span_exporter.get_finished_spans()
-        error_spans = [s for s in spans if s.status.status_code == StatusCode.ERROR]
+        error_spans = [
+            s for s in spans if s.status.status_code == StatusCode.ERROR
+        ]
         assert error_spans
         assert any("error.type" in s.attributes for s in error_spans)
     finally:
@@ -116,22 +141,31 @@ def test_client_http_401_vcr(span_exporter: Any, instrument_with_content: Any, m
 
 
 @pytest.mark.vcr()
-def test_client_http_500_vcr(span_exporter: Any, instrument_with_content: Any, monkeypatch: Any):
+def test_client_http_500_vcr(
+    span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
+):
     """
     Returns 500 via local controllable HTTP service, records and replays exception.
     """
     from opentelemetry.trace import StatusCode
+
     server, base_url = _start_test_http_server(500)
     try:
         MemoryClient = pytest.importorskip("mem0.client.main").MemoryClient  # type: ignore
         Project = pytest.importorskip("mem0.client.project").Project  # type: ignore
-        monkeypatch.setattr(MemoryClient, "_validate_api_key", lambda self: "test@example.com")
-        monkeypatch.setattr(Project, "_validate_org_project", lambda self: None)
+        monkeypatch.setattr(
+            MemoryClient, "_validate_api_key", lambda self: "test@example.com"
+        )
+        monkeypatch.setattr(
+            Project, "_validate_org_project", lambda self: None
+        )
         client = _new_client_for_error(base_url)
         with pytest.raises(Exception):
             client.get_all(filters={"user_id": "u_500"}, top_k=1)
         spans = span_exporter.get_finished_spans()
-        error_spans = [s for s in spans if s.status.status_code == StatusCode.ERROR]
+        error_spans = [
+            s for s in spans if s.status.status_code == StatusCode.ERROR
+        ]
         assert error_spans
         assert any("error.type" in s.attributes for s in error_spans)
     finally:
@@ -139,5 +173,3 @@ def test_client_http_500_vcr(span_exporter: Any, instrument_with_content: Any, m
             server.shutdown()
         except Exception:
             pass
-
-

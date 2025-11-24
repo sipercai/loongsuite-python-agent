@@ -41,7 +41,9 @@ class SemanticAttributes:
     GEN_AI_MEMORY_QUERY = "gen_ai.memory.query"
     GEN_AI_MEMORY_THRESHOLD = "gen_ai.memory.threshold"
     GEN_AI_MEMORY_RERANK = "gen_ai.memory.rerank"
-    GEN_AI_MEMORY_ONLY_METADATA_BASED_SEARCH = "gen_ai.memory.only_metadata_based_search"
+    GEN_AI_MEMORY_ONLY_METADATA_BASED_SEARCH = (
+        "gen_ai.memory.only_metadata_based_search"
+    )
     GEN_AI_MEMORY_KEYWORD_SEARCH = "gen_ai.memory.keyword_search"
     GEN_AI_MEMORY_FIELDS = "gen_ai.memory.fields"
     GEN_AI_MEMORY_CATEGORIES = "gen_ai.memory.categories"
@@ -77,9 +79,15 @@ class SemanticAttributes:
     GEN_AI_MEMORY_RERANKER_INPUT_COUNT = "gen_ai.memory.reranker.input_count"
     GEN_AI_MEMORY_RERANKER_TEMPERATURE = "gen_ai.memory.reranker.temperature"
     GEN_AI_MEMORY_RERANKER_MAX_TOKENS = "gen_ai.memory.reranker.max_tokens"
-    GEN_AI_MEMORY_RERANKER_CUSTOM_PROMPT = "gen_ai.memory.reranker.custom_prompt"
-    GEN_AI_MEMORY_RERANKER_RETURN_DOCUMENTS = "gen_ai.memory.reranker.return_documents"
-    GEN_AI_MEMORY_RERANKER_MAX_CHUNKS_PER_DOC = "gen_ai.memory.reranker.max_chunks_per_doc"
+    GEN_AI_MEMORY_RERANKER_CUSTOM_PROMPT = (
+        "gen_ai.memory.reranker.custom_prompt"
+    )
+    GEN_AI_MEMORY_RERANKER_RETURN_DOCUMENTS = (
+        "gen_ai.memory.reranker.return_documents"
+    )
+    GEN_AI_MEMORY_RERANKER_MAX_CHUNKS_PER_DOC = (
+        "gen_ai.memory.reranker.max_chunks_per_doc"
+    )
     GEN_AI_MEMORY_RERANKER_DEVICE = "gen_ai.memory.reranker.device"
     GEN_AI_MEMORY_RERANKER_BATCH_SIZE = "gen_ai.memory.reranker.batch_size"
     GEN_AI_MEMORY_RERANKER_MAX_LENGTH = "gen_ai.memory.reranker.max_length"
@@ -92,20 +100,36 @@ class SemanticAttributes:
     METRIC_OPERATION_ERROR_COUNT = "gen_ai_memory_operation_error_count"
     METRIC_OPERATION_SLOW_COUNT = "gen_ai_memory_operation_slow_count"
 
-    METRIC_VECTOR_OPERATION_DURATION = "gen_ai_memory_vector_operation_duration"
+    METRIC_VECTOR_OPERATION_DURATION = (
+        "gen_ai_memory_vector_operation_duration"
+    )
     METRIC_VECTOR_OPERATION_COUNT = "gen_ai_memory_vector_operation_count"
-    METRIC_VECTOR_OPERATION_ERROR_COUNT = "gen_ai_memory_vector_operation_error_count"
-    METRIC_VECTOR_OPERATION_SLOW_COUNT = "gen_ai_memory_vector_operation_slow_count"
+    METRIC_VECTOR_OPERATION_ERROR_COUNT = (
+        "gen_ai_memory_vector_operation_error_count"
+    )
+    METRIC_VECTOR_OPERATION_SLOW_COUNT = (
+        "gen_ai_memory_vector_operation_slow_count"
+    )
 
     METRIC_GRAPH_OPERATION_DURATION = "gen_ai_memory_graph_operation_duration"
     METRIC_GRAPH_OPERATION_COUNT = "gen_ai_memory_graph_operation_count"
-    METRIC_GRAPH_OPERATION_ERROR_COUNT = "gen_ai_memory_graph_operation_error_count"
-    METRIC_GRAPH_OPERATION_SLOW_COUNT = "gen_ai_memory_graph_operation_slow_count"
+    METRIC_GRAPH_OPERATION_ERROR_COUNT = (
+        "gen_ai_memory_graph_operation_error_count"
+    )
+    METRIC_GRAPH_OPERATION_SLOW_COUNT = (
+        "gen_ai_memory_graph_operation_slow_count"
+    )
 
-    METRIC_RERANKER_OPERATION_DURATION = "gen_ai_memory_reranker_operation_duration"
+    METRIC_RERANKER_OPERATION_DURATION = (
+        "gen_ai_memory_reranker_operation_duration"
+    )
     METRIC_RERANKER_OPERATION_COUNT = "gen_ai_memory_reranker_operation_count"
-    METRIC_RERANKER_OPERATION_ERROR_COUNT = "gen_ai_memory_reranker_operation_error_count"
-    METRIC_RERANKER_OPERATION_SLOW_COUNT = "gen_ai_memory_reranker_operation_slow_count"
+    METRIC_RERANKER_OPERATION_ERROR_COUNT = (
+        "gen_ai_memory_reranker_operation_error_count"
+    )
+    METRIC_RERANKER_OPERATION_SLOW_COUNT = (
+        "gen_ai_memory_reranker_operation_slow_count"
+    )
 
     # ========== Metric Dimension Attributes ==========
     METRIC_GEN_AI_OPERATION_NAME = "gen_ai_operation_name"
@@ -134,27 +158,50 @@ class SpanName:
 
 # ========== Provider Inference Constants ==========
 # Common suffixes for inferring provider name from class name
-PROVIDER_CLASS_SUFFIXES = ("GraphStore", "VectorStore", "Client", "Store", "Graph", "Vector", "DB", "Reranker")
+PROVIDER_CLASS_SUFFIXES = (
+    "GraphStore",
+    "VectorStore",
+    "Client",
+    "Store",
+    "Graph",
+    "Vector",
+    "DB",
+    "Reranker",
+)
 
 
 # ========== Content Extraction Key Sets ==========
 class ContentExtractionKeys:
     """Key names for content extraction to avoid hardcoding."""
-    
+
     # Input content priority keys (ordered by priority)
-    INPUT_MESSAGE_KEYS = ("messages", "query", "memory", "text", "input", "content", "data", "prompt")
-    
+    INPUT_MESSAGE_KEYS = (
+        "messages",
+        "query",
+        "memory",
+        "text",
+        "input",
+        "content",
+        "data",
+        "prompt",
+    )
+
     # Output content: simple fields (direct string values)
     OUTPUT_SIMPLE_KEYS = ("memory", "output", "text", "content", "message")
-    
+
     # Output content: container fields (fields containing lists)
     # Including graph-specific fields (added_entities, deleted_entities, nodes, edges)
-    OUTPUT_CONTAINER_KEYS = ("results", "memories", "data", "items", "relations", 
-                             "added_entities", "deleted_entities", "nodes", "edges")
-    
+    OUTPUT_CONTAINER_KEYS = (
+        "results",
+        "memories",
+        "data",
+        "items",
+        "relations",
+        "added_entities",
+        "deleted_entities",
+        "nodes",
+        "edges",
+    )
+
     # Batch operation keys
     BATCH_OPERATION_KEYS = ("memories", "ids", "items", "data_list")
-
-
-
-

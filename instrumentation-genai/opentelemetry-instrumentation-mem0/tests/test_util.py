@@ -4,27 +4,27 @@ Tests for Mem0 instrumentation utility functions.
 """
 
 import unittest
+
 try:
-    from unittest.mock import Mock, patch
+    from unittest.mock import Mock
 except ImportError:
-    from mock import Mock, patch
+    from mock import Mock
 from opentelemetry.instrumentation.mem0.internal._util import (
-    truncate_string,
-    safe_get,
-    safe_int,
-    safe_float,
-    safe_str,
-    extract_result_count,
     extract_affected_count,
     extract_filters_keys,
     extract_provider,
+    extract_result_count,
     extract_server_info,
     get_exception_type,
+    safe_float,
+    safe_get,
+    safe_int,
+    safe_str,
+    truncate_string,
 )
 
 
 class TestStringUtils(unittest.TestCase):
-
     def test_truncate_string_normal(self):
         result = truncate_string("hello world", 5)
         self.assertEqual(result, "hello...")
@@ -43,7 +43,6 @@ class TestStringUtils(unittest.TestCase):
 
 
 class TestSafeGetUtils(unittest.TestCase):
-
     def test_safe_get_dict(self):
         data = {"a": {"b": "value"}}
         result = safe_get(data, "a", "b")
@@ -66,7 +65,6 @@ class TestSafeGetUtils(unittest.TestCase):
 
 
 class TestSafeTypeConversion(unittest.TestCase):
-
     def test_safe_int_valid(self):
         result = safe_int("123")
         self.assertEqual(result, 123)
@@ -93,7 +91,6 @@ class TestSafeTypeConversion(unittest.TestCase):
 
 
 class TestExtractUtils(unittest.TestCase):
-
     def test_extract_result_count_direct_list(self):
         data = [1, 2, 3, 4, 5]
         result = extract_result_count(data)
@@ -108,7 +105,7 @@ class TestExtractUtils(unittest.TestCase):
         data = {"results": [1, 2, 3, 4]}
         result = extract_result_count(data)
         self.assertEqual(result, 4)
-    
+
     def test_extract_result_count_dict_with_nodes_key(self):
         data = {"nodes": [{"id": 1}, {"id": 2}]}
         result = extract_result_count(data)
@@ -118,13 +115,13 @@ class TestExtractUtils(unittest.TestCase):
     # Reason: Avoid mistakenly extracting list fields like categories (see comments in _util.py lines 159-160)
     # First strategy: Prioritize using explicit list fields (results, points, memories, etc.),
     # If the dictionary has no these fields, return None
-    # 
+    #
     # def test_extract_result_count_dict_with_count_key(self):
     #     """Test extracting result count from dict count key"""
     #     data = {"count": 5}
     #     result = extract_result_count(data)
     #     self.assertEqual(result, 5)
-    # 
+    #
     # def test_extract_result_count_dict_with_total_count_key(self):
     #     """Test extracting result count from dict total_count key"""
     #     data = {"total_count": 10, "page": 1}
@@ -134,7 +131,7 @@ class TestExtractUtils(unittest.TestCase):
     def test_extract_result_count_none(self):
         result = extract_result_count(None)
         self.assertIsNone(result)
-    
+
     def test_extract_result_count_empty_dict(self):
         result = extract_result_count({})
         self.assertIsNone(result)
@@ -143,26 +140,26 @@ class TestExtractUtils(unittest.TestCase):
         data = {"affected_count": 10}
         result = extract_affected_count(data)
         self.assertEqual(result, 10)
-    
+
     def test_extract_affected_count_dict_deleted(self):
         data = {"deleted_count": 5}
         result = extract_affected_count(data)
         self.assertEqual(result, 5)
-    
+
     def test_extract_affected_count_dict_updated(self):
         data = {"updated_count": 3}
         result = extract_affected_count(data)
         self.assertEqual(result, 3)
-    
+
     def test_extract_affected_count_dict_modified(self):
         data = {"modified_count": 7}
         result = extract_affected_count(data)
         self.assertEqual(result, 7)
-    
+
     def test_extract_affected_count_bool_true(self):
         result = extract_affected_count(True)
         self.assertEqual(result, 1)
-    
+
     def test_extract_affected_count_bool_false(self):
         result = extract_affected_count(False)
         self.assertIsNone(result)
@@ -170,7 +167,7 @@ class TestExtractUtils(unittest.TestCase):
     def test_extract_affected_count_none(self):
         result = extract_affected_count(None)
         self.assertIsNone(result)
-    
+
     def test_extract_affected_count_empty_dict(self):
         result = extract_affected_count({})
         self.assertIsNone(result)
@@ -183,168 +180,192 @@ class TestExtractUtils(unittest.TestCase):
     def test_extract_filters_keys_none(self):
         result = extract_filters_keys(None)
         self.assertIsNone(result)
-    
+
     # ===== Graph structure tests =====
     def test_extract_result_count_graph_add_structure(self):
         # Memory.add returns: {"results": [], "relations": {"added_entities": [[...]], "deleted_entities": [[]]}}
         data = {
-            'results': [],
-            'relations': {
-                'deleted_entities': [[]],
-                'added_entities': [
-                    [{'source': 'user', 'relationship': 'called', 'target': 'may'}],
-                    [{'source': 'may', 'relationship': 'likes', 'target': '浪漫movies'}],
-                    [{'source': 'may', 'relationship': 'likes', 'target': 'Shanghai Bund'}]
-                ]
-            }
+            "results": [],
+            "relations": {
+                "deleted_entities": [[]],
+                "added_entities": [
+                    [
+                        {
+                            "source": "user",
+                            "relationship": "called",
+                            "target": "may",
+                        }
+                    ],
+                    [
+                        {
+                            "source": "may",
+                            "relationship": "likes",
+                            "target": "浪漫movies",
+                        }
+                    ],
+                    [
+                        {
+                            "source": "may",
+                            "relationship": "likes",
+                            "target": "Shanghai Bund",
+                        }
+                    ],
+                ],
+            },
         }
         result = extract_result_count(data)
         # should return 0 (results) + 3 (3 entities in added_entities) = 3
-        self.assertEqual(result, 3, "Memory add with graph should count added_entities")
-    
+        self.assertEqual(
+            result, 3, "Memory add with graph should count added_entities"
+        )
+
     def test_extract_result_count_graph_mixed_vector_and_graph(self):
         data = {
-            'results': [
-                {'id': '123', 'memory': 'vec1'},
-                {'id': '456', 'memory': 'vec2'},
+            "results": [
+                {"id": "123", "memory": "vec1"},
+                {"id": "456", "memory": "vec2"},
             ],
-            'relations': {
-                'added_entities': [
-                    [{'source': 'A', 'relationship': 'rel1', 'target': 'B'}],
-                    [{'source': 'C', 'relationship': 'rel2', 'target': 'D'}],
+            "relations": {
+                "added_entities": [
+                    [{"source": "A", "relationship": "rel1", "target": "B"}],
+                    [{"source": "C", "relationship": "rel2", "target": "D"}],
                 ]
-            }
+            },
         }
         result = extract_result_count(data)
         # should return 2 (results) + 2 (added_entities) = 4
-        self.assertEqual(result, 4, "Should count both vector results and graph entities")
-    
+        self.assertEqual(
+            result, 4, "Should count both vector results and graph entities"
+        )
+
     def test_extract_result_count_graph_only_results(self):
         data = {
-            'results': [{'id': '1'}, {'id': '2'}, {'id': '3'}],
+            "results": [{"id": "1"}, {"id": "2"}, {"id": "3"}],
         }
         result = extract_result_count(data)
         self.assertEqual(result, 3, "Should count only vector results")
-    
+
     def test_extract_result_count_graph_only_added_entities(self):
         # Graph subphase directly returns: {"added_entities": [[...]], "deleted_entities": [[...]]}
         data = {
-            'added_entities': [
-                [{'entity_id': '1'}],
-                [{'entity_id': '2'}],
+            "added_entities": [
+                [{"entity_id": "1"}],
+                [{"entity_id": "2"}],
             ],
-            'deleted_entities': [[]]
+            "deleted_entities": [[]],
         }
         result = extract_result_count(data)
         # should return 2 (added_entities)
-        self.assertEqual(result, 2, "Graph operations should count added_entities")
-    
+        self.assertEqual(
+            result, 2, "Graph operations should count added_entities"
+        )
+
     def test_extract_result_count_graph_nested_empty_lists(self):
-        data = {
-            'added_entities': [[], [], []],
-            'deleted_entities': [[]]
-        }
+        data = {"added_entities": [[], [], []], "deleted_entities": [[]]}
         result = extract_result_count(data)
         # all are empty lists, should return 0
         self.assertEqual(result, 0, "Nested empty lists should return 0")
-    
+
     def test_extract_result_count_graph_search_list_format(self):
         # Graph.search may return: [[node1, node2], [node3]]
-        data = [[{'node': 'A'}, {'node': 'B'}], [{'node': 'C'}]]
+        data = [[{"node": "A"}, {"node": "B"}], [{"node": "C"}]]
         result = extract_result_count(data)
         # should return sum([2, 1]) = 3
-        self.assertEqual(result, 3, "Graph search nested list should sum all inner lists")
-    
+        self.assertEqual(
+            result, 3, "Graph search nested list should sum all inner lists"
+        )
+
     def test_extract_result_count_graph_empty_relations(self):
-        data = {
-            'results': [],
-            'relations': {}
-        }
+        data = {"results": [], "relations": {}}
         result = extract_result_count(data)
         # no any results, should return 0
         self.assertEqual(result, 0, "Empty relations should return 0")
-    
+
     def test_extract_result_count_graph_relations_with_nodes(self):
         data = {
-            'results': [{'id': '1'}],
-            'relations': {
-                'nodes': [{'node': 'A'}, {'node': 'B'}, {'node': 'C'}]
-            }
+            "results": [{"id": "1"}],
+            "relations": {
+                "nodes": [{"node": "A"}, {"node": "B"}, {"node": "C"}]
+            },
         }
         result = extract_result_count(data)
         # should return 1 (results) + 3 (nodes) = 4
-        self.assertEqual(result, 4, "Should count both results and relation nodes")
-    
+        self.assertEqual(
+            result, 4, "Should count both results and relation nodes"
+        )
+
     # ===== Vector structure tests =====
     def test_extract_result_count_vector_points(self):
-        data = {'points': [1, 2, 3, 4]}
+        data = {"points": [1, 2, 3, 4]}
         result = extract_result_count(data)
         self.assertEqual(result, 4, "Should extract count from points field")
-    
+
     def test_extract_result_count_vector_hits(self):
-        data = {'hits': [1, 2, 3]}
+        data = {"hits": [1, 2, 3]}
         result = extract_result_count(data)
         self.assertEqual(result, 3, "Should extract count from hits field")
-    
+
     def test_extract_result_count_vector_tuple_format(self):
         data = ([1, 2, 3], "next_offset")
         result = extract_result_count(data)
-        self.assertEqual(result, 3, "Should extract count from tuple's first element")
-    
+        self.assertEqual(
+            result, 3, "Should extract count from tuple's first element"
+        )
+
     def test_extract_result_count_nested_list_vector_batch(self):
         data = [[1, 2, 3], [4, 5]]
         result = extract_result_count(data)
         # sum([3, 2]) = 5
         self.assertEqual(result, 5, "Should sum all inner list lengths")
-    
+
     def test_extract_server_info_https_default_port(self):
         obj = Mock()
         obj.host = "https://api.mem0.ai"
         address, port = extract_server_info(obj)
         self.assertEqual(address, "api.mem0.ai")
         self.assertEqual(port, 443)
-    
+
     def test_extract_server_info_http_default_port(self):
         obj = Mock()
         obj.host = "http://localhost"
         address, port = extract_server_info(obj)
         self.assertEqual(address, "localhost")
         self.assertEqual(port, 80)
-    
+
     def test_extract_server_info_custom_port(self):
         obj = Mock()
         obj.host = "http://localhost:8080"
         address, port = extract_server_info(obj)
         self.assertEqual(address, "localhost")
         self.assertEqual(port, 8080)
-    
+
     def test_extract_server_info_https_custom_port(self):
         obj = Mock()
         obj.host = "https://api.example.com:8443"
         address, port = extract_server_info(obj)
         self.assertEqual(address, "api.example.com")
         self.assertEqual(port, 8443)
-    
+
     def test_extract_server_info_no_protocol(self):
         obj = Mock()
         obj.host = "localhost:9000"
         address, port = extract_server_info(obj)
         self.assertEqual(address, "localhost")
         self.assertEqual(port, 9000)
-    
+
     def test_extract_server_info_plain_hostname(self):
         obj = Mock()
         obj.host = "api.example.com"
         address, port = extract_server_info(obj)
         self.assertEqual(address, "api.example.com")
         self.assertIsNone(port)
-    
+
     def test_extract_server_info_no_host_attr(self):
         obj = Mock(spec=[])  # empty spec ensures no host attribute
         address, port = extract_server_info(obj)
         self.assertIsNone(address)
         self.assertIsNone(port)
-    
+
     def test_extract_server_info_none_host(self):
         obj = Mock()
         obj.host = None
@@ -354,7 +375,6 @@ class TestExtractUtils(unittest.TestCase):
 
 
 class TestExceptionUtils(unittest.TestCase):
-
     def test_get_exception_type_builtin(self):
         try:
             raise ValueError("test error")
@@ -386,7 +406,7 @@ class TestExtractProvider(unittest.TestCase):
         instance.config = Mock(spec=["vector_store"])
         instance.config.vector_store = Mock(spec=["provider"])
         instance.config.vector_store.provider = "config_provider"
-        
+
         result = extract_provider(instance, "vector_store")
         self.assertEqual(result, "direct_provider")
 
@@ -396,7 +416,7 @@ class TestExtractProvider(unittest.TestCase):
         instance.config = Mock(spec=["vector_store"])
         instance.config.vector_store = Mock(spec=["provider"])
         instance.config.vector_store.provider = "milvus"
-        
+
         result = extract_provider(instance, "vector_store")
         self.assertEqual(result, "milvus")
 
@@ -406,7 +426,7 @@ class TestExtractProvider(unittest.TestCase):
         instance.config = Mock(spec=["graph_store"])
         instance.config.graph_store = Mock(spec=["provider"])
         instance.config.graph_store.provider = "neo4j"
-        
+
         result = extract_provider(instance, "graph_store")
         self.assertEqual(result, "neo4j")
 
@@ -415,44 +435,48 @@ class TestExtractProvider(unittest.TestCase):
         instance = Mock(spec=["config"])
         instance.config = Mock(spec=["provider"])
         instance.config.provider = "generic_provider"
-        
+
         result = extract_provider(instance, "vector_store")
         self.assertEqual(result, "generic_provider")
 
     def test_extract_provider_from_class_name_qdrant(self):
         """Infer provider from class name (Qdrant example)"""
+
         class Qdrant:
             pass
-        
+
         instance = Qdrant()
         result = extract_provider(instance, "vector_store")
         self.assertEqual(result, "qdrant")
 
     def test_extract_provider_from_class_name_with_suffix(self):
         """Test inferring provider from class name (with suffix, like QdrantVectorStore)"""
+
         class QdrantVectorStore:
             pass
-        
+
         instance = QdrantVectorStore()
         result = extract_provider(instance, "vector_store")
         self.assertEqual(result, "qdrant")
 
     def test_extract_provider_from_class_name_memorygraph(self):
         """Test inferring provider from class name (MemoryGraph example)"""
+
         class MemoryGraph:
             pass
-        
+
         instance = MemoryGraph()
         result = extract_provider(instance, "graph_store")
         self.assertEqual(result, "memory")
 
     def test_extract_provider_from_type_field(self):
         """Test extracting from instance.type field (fallback)"""
+
         # Use real class to avoid Mock class name interference
         class UnknownVectorStore:
             def __init__(self):
                 self.type = "fallback_type"
-        
+
         instance = UnknownVectorStore()
         result = extract_provider(instance, "vector_store")
         # Class name inference priority: unknownvectorstore → unknown (remove vectorstore suffix)
@@ -460,11 +484,12 @@ class TestExtractProvider(unittest.TestCase):
 
     def test_extract_provider_from_name_field(self):
         """Test extracting from instance.name field (fallback)"""
+
         # Use real class, and class name cannot be inferred as meaningful provider
         class _InternalClass:
             def __init__(self):
                 self.name = "fallback_name"
-        
+
         instance = _InternalClass()
         result = extract_provider(instance, "vector_store")
         # Class name inference: _internalclass → _internalclass (class name priority)
@@ -473,9 +498,9 @@ class TestExtractProvider(unittest.TestCase):
     def test_extract_provider_fallback_to_type_field(self):
         """Test fallback to type field when class name is empty"""
         # Create an anonymous class instance, class name cannot be inferred
-        instance = type('', (), {})()
+        instance = type("", (), {})()
         instance.type = "type_fallback"
-        
+
         result = extract_provider(instance, "vector_store")
         # Class name is empty string, should fallback to type
         self.assertEqual(result, "type_fallback")
@@ -483,9 +508,9 @@ class TestExtractProvider(unittest.TestCase):
     def test_extract_provider_fallback_to_name_field(self):
         """Test fallback to name field when class name is empty and no type"""
         # Create an anonymous class instance, class name cannot be inferred
-        instance = type('', (), {})()
+        instance = type("", (), {})()
         instance.name = "name_fallback"
-        
+
         result = extract_provider(instance, "vector_store")
         # Class name is empty string, should fallback to name
         self.assertEqual(result, "name_fallback")
@@ -498,7 +523,7 @@ class TestExtractProvider(unittest.TestCase):
         instance1.config.provider = "config_only"
         result1 = extract_provider(instance1, "vector_store")
         self.assertEqual(result1, "config_only")
-        
+
         # Test scenario 2: has config.vector_store.provider (should take priority over config.provider)
         instance2 = Mock(spec=["config"])
         instance2.config = Mock(spec=["vector_store", "provider"])
@@ -512,12 +537,10 @@ class TestExtractProvider(unittest.TestCase):
         """Test provider name conversion to lowercase"""
         instance = Mock(spec=["provider"])
         instance.provider = "UPPERCASE_PROVIDER"
-        
+
         result = extract_provider(instance, "vector_store")
         self.assertEqual(result, "uppercase_provider")
 
 
 if __name__ == "__main__":
     unittest.main()
-
-

@@ -59,32 +59,42 @@ def first_present_bool(keys: list[str], default: bool) -> bool:
 @dataclass
 class GenAITelemetryOptions:
     """GenAI telemetry configuration options."""
+
     capture_message_content: Optional[bool] = None
     capture_message_content_max_length: Optional[int] = None
-    
+
     def __post_init__(self):
         if self.capture_message_content is None:
             self.capture_message_content = (
-                os.getenv(OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT, "false").lower() == "true"
+                os.getenv(
+                    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT, "false"
+                ).lower()
+                == "true"
             )
-        
+
         if self.capture_message_content_max_length is None:
             self.capture_message_content_max_length = int(
-                os.getenv(OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT_MAX_LENGTH, "1048576")
+                os.getenv(
+                    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT_MAX_LENGTH,
+                    "1048576",
+                )
             )
-    
+
     def should_capture_content(self) -> bool:
         """Check if content capture is enabled."""
         return self.capture_message_content
-    
+
     def truncate_content(self, content: str) -> str:
         """Truncate content to max length if needed."""
         if not content:
             return content
         if len(content) > self.capture_message_content_max_length:
-            return content[:self.capture_message_content_max_length] + "...[truncated]"
+            return (
+                content[: self.capture_message_content_max_length]
+                + "...[truncated]"
+            )
         return content
-    
+
     @classmethod
     def from_env(cls) -> "GenAITelemetryOptions":
         """Create configuration from environment variables."""
@@ -93,7 +103,7 @@ class GenAITelemetryOptions:
 
 class Mem0InstrumentationConfig:
     """Mem0 instrumentation configuration."""
-    
+
     INTERNAL_PHASES_ENABLED = first_present_bool(
         [
             "OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED",
@@ -129,5 +139,3 @@ def get_slow_threshold_seconds() -> float:
 def get_telemetry_options() -> GenAITelemetryOptions:
     """Get GenAI telemetry configuration options."""
     return GenAITelemetryOptions.from_env()
-
-

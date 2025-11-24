@@ -4,19 +4,17 @@ Tests for Mem0 instrumentation attribute extractors.
 """
 
 import unittest
-from typing import Dict, Any
-try:
-    from unittest.mock import Mock
-except ImportError:
-    from mock import Mock
+from typing import Any, Dict, cast
+from unittest.mock import Mock
+
 from opentelemetry.instrumentation.mem0.internal._extractors import (
-    _extract_output_preview,
-    _set_attributes_from_spec,
-    _normalize_provider_from_class,
-    MemoryOperationAttributeExtractor,
-    VectorOperationAttributeExtractor,
     GraphOperationAttributeExtractor,
+    MemoryOperationAttributeExtractor,
     RerankerAttributeExtractor,
+    VectorOperationAttributeExtractor,
+    _extract_output_preview,
+    _normalize_provider_from_class,
+    _set_attributes_from_spec,
 )
 from opentelemetry.instrumentation.mem0.semconv import SemanticAttributes
 
@@ -38,7 +36,12 @@ class TestOutputPreviewExtraction(unittest.TestCase):
 
     def test_extract_output_preview_dict_with_results(self):
         """Tests dict with results list output preview extraction - Return original content directly"""
-        result = {"results": [{"memory": "First memory"}, {"memory": "Second memory"}]}
+        result = {
+            "results": [
+                {"memory": "First memory"},
+                {"memory": "Second memory"},
+            ]
+        }
         preview = _extract_output_preview(result, 100)
         # Should return original content of container field directly
         self.assertIsNotNone(preview)
@@ -48,7 +51,12 @@ class TestOutputPreviewExtraction(unittest.TestCase):
 
     def test_extract_output_preview_dict_with_results_truncated(self):
         """Tests dict with results list output preview extraction - truncated"""
-        result = {"results": [{"memory": "First memory"}, {"memory": "Second memory"}]}
+        result = {
+            "results": [
+                {"memory": "First memory"},
+                {"memory": "Second memory"},
+            ]
+        }
         preview = _extract_output_preview(result, 25)
         # Original content truncated
         self.assertIsNotNone(preview)
@@ -70,8 +78,16 @@ class TestOutputPreviewExtraction(unittest.TestCase):
         """Tests relations list output preview extraction - Return original content directly"""
         result = {
             "relations": [
-                {"source": "Alice", "relationship": "knows", "destination": "Bob"},
-                {"source": "Bob", "relationship": "likes", "destination": "Python"}
+                {
+                    "source": "Alice",
+                    "relationship": "knows",
+                    "destination": "Bob",
+                },
+                {
+                    "source": "Bob",
+                    "relationship": "likes",
+                    "destination": "Python",
+                },
             ]
         }
         preview = _extract_output_preview(result, 200)
@@ -92,35 +108,55 @@ class TestOutputPreviewExtraction(unittest.TestCase):
         result = {}
         preview = _extract_output_preview(result, 10)
         self.assertIsNone(preview)
-    
+
     def test_extract_output_preview_graph_empty_results_with_relations(self):
         """Tests Graph scenario: results is empty but relations has content (user feedback scenario)"""
-        result = {
-            'results': [],
-            'relations': {
-                'added_entities': [
-                    [{'source': 'A', 'relationship': 'rel', 'target': 'B'}],
-                ]
-            }
-        }
+        result = cast(
+            Dict[str, Any],
+            {
+                "results": [],
+                "relations": {
+                    "added_entities": [
+                        [
+                            {
+                                "source": "A",
+                                "relationship": "rel",
+                                "target": "B",
+                            }
+                        ],
+                    ]
+                },
+            },
+        )
         preview = _extract_output_preview(result, max_len=1024)
 
         # Should extract from relations, not return empty results
-        self.assertIsNotNone(preview, "Should extract from relations when results is empty")
-        self.assertNotEqual(preview, "[]", "Should not return empty list representation")
-        self.assertIn("added_entities", preview, f"Should contain relations content, got: {preview}")
+        self.assertIsNotNone(
+            preview, "Should extract from relations when results is empty"
+        )
+        self.assertNotEqual(
+            preview, "[]", "Should not return empty list representation"
+        )
+        self.assertIsInstance(preview, str)
+        assert isinstance(preview, str)
+        preview_str = preview
+        self.assertIn(
+            "added_entities",
+            preview_str,
+            f"Should contain relations content, got: {preview_str}",
+        )
 
     def test_extract_output_preview_graph_nonempty_results_priority(self):
         """Tests when results is not empty, prioritize extracting from results"""
         result = {
-            'results': [
-                {'id': '123', 'memory': 'some memory'},
+            "results": [
+                {"id": "123", "memory": "some memory"},
             ],
-            'relations': {
-                'added_entities': [
-                    [{'source': 'A', 'relationship': 'rel', 'target': 'B'}],
+            "relations": {
+                "added_entities": [
+                    [{"source": "A", "relationship": "rel", "target": "B"}],
                 ],
-            }
+            },
         }
         preview = _extract_output_preview(result, max_len=1024)
 
@@ -131,80 +167,127 @@ class TestOutputPreviewExtraction(unittest.TestCase):
 
     def test_extract_output_preview_graph_only_relations(self):
         """Tests Graph subphase returns directly (no results field)"""
-        result = {
-            'added_entities': [
-                [{'source': 'A', 'relationship': 'rel1', 'target': 'B'}],
-                [{'source': 'C', 'relationship': 'rel2', 'target': 'D'}],
-            ],
-            'deleted_entities': [[]]
-        }
+        result = cast(
+            Dict[str, Any],
+            {
+                "added_entities": [
+                    [{"source": "A", "relationship": "rel1", "target": "B"}],
+                    [{"source": "C", "relationship": "rel2", "target": "D"}],
+                ],
+                "deleted_entities": [[]],
+            },
+        )
         preview = _extract_output_preview(result, max_len=1024)
 
         # Should extract from added_entities
         self.assertIsNotNone(preview)
 
-
     def test_extract_output_preview_mixed_search_scenario(self):
         """Tests search operation mixed structure (user feedback scenario): both results and relations have content"""
         result = {
-            'results': [
-                {'id': '1', 'memory': 'My name is Wang Wu, I like romantic movies.'},
-                {'id': '2', 'memory': 'Okay, Wang Wu. I have recorded your movie preferences.'}
+            "results": [
+                {
+                    "id": "1",
+                    "memory": "My name is Wang Wu, I like romantic movies.",
+                },
+                {
+                    "id": "2",
+                    "memory": "Okay, Wang Wu. I have recorded your movie preferences.",
+                },
             ],
-            'relations': [
-                {'source': 'Wang Wu', 'relationship': 'likes', 'destination': 'romantic movies'}
-            ]
+            "relations": [
+                {
+                    "source": "Wang Wu",
+                    "relationship": "likes",
+                    "destination": "romantic movies",
+                }
+            ],
         }
         preview = _extract_output_preview(result, max_len=2048)
 
         # Should contain both results and relations content
         self.assertIsNotNone(preview)
         if preview:
-            self.assertIn('Wang Wu', preview, "Should contain content from results")
-            self.assertIn('relationship', preview, "Should contain relations content")
+            self.assertIn(
+                "Wang Wu", preview, "Should contain content from results"
+            )
+            self.assertIn(
+                "relationship", preview, "Should contain relations content"
+            )
 
     def test_extract_output_preview_mixed_add_scenario(self):
         """Tests add operation mixed structure: both results and relations.added_entities have content"""
-        result = {
-            'results': [
-                {'id': '1', 'memory': '我叫Wang Wu', 'event': 'ADD'},
-                {'id': '2', 'memory': '好，Wang Wu', 'event': 'ADD'}
-            ],
-            'relations': {
-                'deleted_entities': [[], []],
-                'added_entities': [
-                    [{'source': 'user', 'relationship': 'called', 'target': 'Wang Wu'}],
-                    [{'source': 'Wang Wu', 'relationship': 'likes', 'target': 'movies'}]
-                ]
-            }
-        }
+        result = cast(
+            Dict[str, Any],
+            {
+                "results": [
+                    {"id": "1", "memory": "我叫Wang Wu", "event": "ADD"},
+                    {"id": "2", "memory": "好，Wang Wu", "event": "ADD"},
+                ],
+                "relations": {
+                    "deleted_entities": [[], []],
+                    "added_entities": [
+                        [
+                            {
+                                "source": "user",
+                                "relationship": "called",
+                                "target": "Wang Wu",
+                            }
+                        ],
+                        [
+                            {
+                                "source": "Wang Wu",
+                                "relationship": "likes",
+                                "target": "movies",
+                            }
+                        ],
+                    ],
+                },
+            },
+        )
         preview = _extract_output_preview(result, max_len=2048)
 
         # Should contain both results and relations content
         self.assertIsNotNone(preview)
         if preview:
-            self.assertIn('Wang Wu', preview, "Should contain content from results")
-            self.assertIn('added_entities', preview, "Should contain relations content")
+            self.assertIn(
+                "Wang Wu", preview, "Should contain content from results"
+            )
+            self.assertIn(
+                "added_entities", preview, "Should contain relations content"
+            )
 
     def test_extract_output_preview_mixed_get_all_scenario(self):
         """Tests get_all operation mixed structure: both results and relations (list) have content"""
         result = {
-            'results': [
-                {'id': '1', 'memory': 'My name is Xiao Wang 5'},
-                {'id': '2', 'memory': 'I like swimming'}
+            "results": [
+                {"id": "1", "memory": "My name is Xiao Wang 5"},
+                {"id": "2", "memory": "I like swimming"},
             ],
-            'relations': [
-                {'source': 'Xiao Wang 5', 'relationship': 'called', 'target': 'user'},
-                {'source': 'Xiao Wang 5', 'relationship': 'likes', 'target': 'swimming'}
-            ]
+            "relations": [
+                {
+                    "source": "Xiao Wang 5",
+                    "relationship": "called",
+                    "target": "user",
+                },
+                {
+                    "source": "Xiao Wang 5",
+                    "relationship": "likes",
+                    "target": "swimming",
+                },
+            ],
         }
         preview = _extract_output_preview(result, max_len=2048)
 
         # Should contain both results and relations content
         self.assertIsNotNone(preview)
         if preview:
-            self.assertIn('Xiao Wang 5', preview, "Should contain content from results")
-            self.assertIn('relationship', preview, "Should contain relations content")
+            self.assertIn(
+                "Xiao Wang 5", preview, "Should contain content from results"
+            )
+            self.assertIn(
+                "relationship", preview, "Should contain relations content"
+            )
 
 
 class TestAttributeSetting(unittest.TestCase):
@@ -314,60 +397,94 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
         kwargs = {
             "user_id": "user123",
             "memory": "Test memory content",
-            "metadata": {"key": "value"}
+            "metadata": {"key": "value"},
         }
         result = {"results": [{"id": "mem_123"}]}
 
-        attributes = self.extractor.extract_attributes_unified("add", Mock(), kwargs, result)
+        attributes = self.extractor.extract_attributes_unified(
+            "add", Mock(), kwargs, result
+        )
 
         # Verify basic attributes (no longer enforce result.count requirement)
         self.assertIn(SemanticAttributes.GEN_AI_MEMORY_USER_ID, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_USER_ID], "user123")
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_USER_ID], "user123"
+        )
 
     def test_input_messages_string(self):
         """Tests extracting input messages from string - directly returns original value"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
         kwargs = {"messages": "Hello world", "user_id": "u1"}
         result = {}
-        attributes = self.extractor.extract_generic_attributes("add", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "add", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES], "Hello world")
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES],
+            "Hello world",
+        )
 
     def test_input_messages_dict_with_content(self):
         """Tests extracting input messages from dict - directly returns original value"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
-        kwargs = {"messages": {"role": "user", "content": "Hello from dict"}, "user_id": "u1"}
+        kwargs = {
+            "messages": {"role": "user", "content": "Hello from dict"},
+            "user_id": "u1",
+        }
         result = {}
-        attributes = self.extractor.extract_generic_attributes("add", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "add", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes)
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes
+        )
         # Return string representation of dict directly
-        self.assertIn("Hello from dict", attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES])
+        self.assertIn(
+            "Hello from dict",
+            attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES],
+        )
 
     def test_input_messages_list_original(self):
         """Tests extracting input messages from list - directly returns original value"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
         kwargs = {
             "messages": [
                 {"role": "system", "content": "System message"},
-                {"role": "user", "content": "User message"}
+                {"role": "user", "content": "User message"},
             ],
-            "user_id": "u1"
+            "user_id": "u1",
         }
         result = {}
-        attributes = self.extractor.extract_generic_attributes("add", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "add", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes)
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes
+        )
         # Return string representation of list directly, contains all messages
         input_msg = attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES]
         self.assertIn("System message", input_msg)
@@ -375,17 +492,32 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_output_messages_original(self):
         """Tests output messages - Return original content directly"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
         kwargs = {"user_id": "u1", "memory_id": "mem_123"}
-        result = {"results": [{"memory": "Memory 1"}, {"memory": "Memory 2"}, {"memory": "Memory 3"}]}
-        attributes = self.extractor.extract_generic_attributes("search", kwargs, result)
+        result = {
+            "results": [
+                {"memory": "Memory 1"},
+                {"memory": "Memory 2"},
+                {"memory": "Memory 3"},
+            ]
+        }
+        attributes = self.extractor.extract_generic_attributes(
+            "search", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES, attributes)
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES, attributes
+        )
         # Return original content of container field directly
-        output_msg = attributes[SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES]
+        output_msg = attributes[
+            SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES
+        ]
         self.assertIn("Memory 1", output_msg)
         self.assertIn("Memory 2", output_msg)
         self.assertIn("Memory 3", output_msg)
@@ -396,109 +528,164 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
             "query": "test query",
             "limit": 5,
             "threshold": 0.7,
-            "rerank": True
+            "rerank": True,
         }
         result = {"memories": [1, 2, 3]}
 
-        attributes = self.extractor.extract_attributes_unified("search", Mock(), kwargs, result)
+        attributes = self.extractor.extract_attributes_unified(
+            "search", Mock(), kwargs, result
+        )
 
         self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_LIMIT], 5)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_THRESHOLD], 0.7)
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_THRESHOLD], 0.7
+        )
         self.assertTrue(attributes[SemanticAttributes.GEN_AI_MEMORY_RERANK])
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT], 3)
-    
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT], 3
+        )
+
     def test_extract_result_count_graph_add_scenario(self):
         """Tests Graph add scenario result_count (user feedback scenario)"""
         kwargs = {"user_id": "u1", "messages": "Hello"}
         # Memory.add returns mixed structure
-        result = {
-            'results': [],
-            'relations': {
-                'added_entities': [
-                    [{'source': 'user', 'relationship': 'called', 'target': 'may'}],
-                    [{'source': 'may', 'relationship': 'likes', 'target': '浪漫movies'}],
-                    [{'source': 'may', 'relationship': 'likes', 'target': 'Shanghai Bund'}]
-                ],
-                'deleted_entities': [[]]
-            }
-        }
+        result = cast(
+            Dict[str, Any],
+            {
+                "results": [],
+                "relations": {
+                    "added_entities": [
+                        [
+                            {
+                                "source": "user",
+                                "relationship": "called",
+                                "target": "may",
+                            }
+                        ],
+                        [
+                            {
+                                "source": "may",
+                                "relationship": "likes",
+                                "target": "浪漫movies",
+                            }
+                        ],
+                        [
+                            {
+                                "source": "may",
+                                "relationship": "likes",
+                                "target": "Shanghai Bund",
+                            }
+                        ],
+                    ],
+                    "deleted_entities": [[]],
+                },
+            },
+        )
 
-        attributes = self.extractor.extract_generic_attributes("add", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "add", kwargs, result
+        )
 
         # result_count should be 3 (0 vector + 3 graph entities)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT], 3,
-                        "Graph add should count added_entities")
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT],
+            3,
+            "Graph add should count added_entities",
+        )
 
     def test_extract_result_count_mixed_vector_and_graph(self):
         """Tests scenario with both vector and graph results"""
         kwargs = {"user_id": "u1", "query": "test"}
         result = {
-            'results': [
-                {'id': '1', 'memory': 'mem1'},
-                {'id': '2', 'memory': 'mem2'},
+            "results": [
+                {"id": "1", "memory": "mem1"},
+                {"id": "2", "memory": "mem2"},
             ],
-            'relations': {
-                'added_entities': [
-                    [{'source': 'A', 'relationship': 'rel', 'target': 'B'}],
+            "relations": {
+                "added_entities": [
+                    [{"source": "A", "relationship": "rel", "target": "B"}],
                 ]
-            }
+            },
         }
 
-        attributes = self.extractor.extract_generic_attributes("search", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "search", kwargs, result
+        )
 
         # result_count should be 3 (2 vector + 1 graph)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT], 3,
-                        "Should count both vector and graph results")
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT],
+            3,
+            "Should count both vector and graph results",
+        )
 
     def test_extract_result_count_vector_only(self):
         """Tests scenario with only vector results"""
         kwargs = {"user_id": "u1"}
-        result = {
-            'results': [
-                {'id': '1'}, {'id': '2'}, {'id': '3'}
-            ]
-        }
+        result = {"results": [{"id": "1"}, {"id": "2"}, {"id": "3"}]}
 
-        attributes = self.extractor.extract_generic_attributes("get_all", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "get_all", kwargs, result
+        )
 
         # result_count should be 3
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT], 3,
-                        "Should count vector results")
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT],
+            3,
+            "Should count vector results",
+        )
 
     def test_extract_result_count_graph_empty_results(self):
         """Tests Graph operation returns empty results"""
         kwargs = {"user_id": "u1"}
-        result = {
-            'results': [],
-            'relations': {
-                'added_entities': [[]],
-                'deleted_entities': [[]]
-            }
-        }
+        result = cast(
+            Dict[str, Any],
+            {
+                "results": [],
+                "relations": {
+                    "added_entities": [[]],
+                    "deleted_entities": [[]],
+                },
+            },
+        )
 
-        attributes = self.extractor.extract_generic_attributes("add", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "add", kwargs, result
+        )
 
         # result_count should be 0
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT], 0,
-                        "Empty graph results should return 0")
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_RESULT_COUNT],
+            0,
+            "Empty graph results should return 0",
+        )
 
     def test_extract_attributes_unified_delete(self):
         """Tests delete operation unified attribute extraction"""
         kwargs = {"memory_id": "mem_123"}
         result = {"affected_count": 1}
 
-        attributes = self.extractor.extract_attributes_unified("delete", Mock(), kwargs, result)
+        attributes = self.extractor.extract_attributes_unified(
+            "delete", Mock(), kwargs, result
+        )
         # delete operation mainly verify no crash, having memory_id is sufficient
         self.assertIn(SemanticAttributes.GEN_AI_MEMORY_ID, attributes)
 
     def test_output_messages_memory_client_add_respects_async_mode(self):
         """MemoryClient.add: only capture output.messages when async_mode=False"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
         # async_mode=True or not set -> don't capture output.messages
-        kwargs_async = {"user_id": "u1", "messages": "Hello", "async_mode": True}
+        kwargs_async = {
+            "user_id": "u1",
+            "messages": "Hello",
+            "async_mode": True,
+        }
         result = {"results": [{"memory": "Memory 1"}, {"memory": "Memory 2"}]}
 
         attrs_async = self.extractor.extract_attributes_unified(
@@ -508,10 +695,16 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
             result,
             is_memory_client=True,
         )
-        self.assertNotIn(SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES, attrs_async)
+        self.assertNotIn(
+            SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES, attrs_async
+        )
 
         # async_mode=False -> capture output.messages
-        kwargs_sync = {"user_id": "u1", "messages": "Hello", "async_mode": False}
+        kwargs_sync = {
+            "user_id": "u1",
+            "messages": "Hello",
+            "async_mode": False,
+        }
         attrs_sync = self.extractor.extract_attributes_unified(
             "add",
             Mock(),
@@ -519,7 +712,9 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
             result,
             is_memory_client=True,
         )
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES, attrs_sync)
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_OUTPUT_MESSAGES, attrs_sync
+        )
 
     def test_extract_generic_attributes(self):
         """Tests generic attribute extraction"""
@@ -528,14 +723,23 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
             "threshold": 0.8,
             "fields": ["field1", "field2"],
             "metadata": {"meta1": "value1"},
-            "filters": {"filter1": "value1"}
+            "filters": {"filter1": "value1"},
         }
 
-        attributes = self.extractor.extract_generic_attributes("search", kwargs)
+        attributes = self.extractor.extract_generic_attributes(
+            "search", kwargs
+        )
 
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_LIMIT], 10)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_THRESHOLD], 0.8)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_FIELDS], ["field1", "field2"])
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_LIMIT], 10
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_THRESHOLD], 0.8
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_FIELDS],
+            ["field1", "field2"],
+        )
         self.assertIn(SemanticAttributes.GEN_AI_MEMORY_METADATA, attributes)
         self.assertIn(SemanticAttributes.GEN_AI_MEMORY_FILTER_KEYS, attributes)
 
@@ -547,41 +751,70 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
         attributes = self.extractor.extract_common_attributes(instance, kwargs)
 
         self.assertIn(SemanticAttributes.GEN_AI_MEMORY_USER_ID, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_USER_ID], "user123")
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_USER_ID], "user123"
+        )
 
     def test_update_input_messages_with_data(self):
         """Tests update operation extracting data as input content"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
         # Memory.update(memory_id, data)
         kwargs = {"memory_id": "mem_123", "data": "Updated memory content"}
         result = {"message": "Memory updated successfully!"}
-        attributes = self.extractor.extract_generic_attributes("update", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "update", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES], "Updated memory content")
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_ID], "mem_123")
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES],
+            "Updated memory content",
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_ID], "mem_123"
+        )
 
     def test_update_input_messages_with_text(self):
         """Tests update operation extracting text as input content (MemoryClient)"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
         # MemoryClient.update(memory_id, text=...)
         kwargs = {"memory_id": "mem_456", "text": "New text content"}
         result = {"message": "Memory updated successfully!"}
-        attributes = self.extractor.extract_generic_attributes("update", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "update", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES], "New text content")
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_ID], "mem_456")
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES],
+            "New text content",
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_ID], "mem_456"
+        )
 
     def test_batch_update_input_messages(self):
         """Tests batch_update operation extracting memories list as input content"""
-        from opentelemetry.instrumentation.mem0.config import should_capture_content
+        from opentelemetry.instrumentation.mem0.config import (
+            should_capture_content,
+        )
+
         if not should_capture_content():
             self.skipTest("Content capture is disabled")
 
@@ -590,20 +823,26 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
             "memories": [
                 {"id": "mem_1", "text": "First updated memory"},
                 {"id": "mem_2", "text": "Second updated memory"},
-                {"id": "mem_3", "text": "Third updated memory"}
+                {"id": "mem_3", "text": "Third updated memory"},
             ]
         }
         result = {"updated_count": 3}
-        attributes = self.extractor.extract_generic_attributes("batch_update", kwargs, result)
+        attributes = self.extractor.extract_generic_attributes(
+            "batch_update", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes)
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES, attributes
+        )
         input_msg = attributes[SemanticAttributes.GEN_AI_MEMORY_INPUT_MESSAGES]
         # Verify contains all text content
         self.assertIn("First updated memory", input_msg)
         self.assertIn("Second updated memory", input_msg)
         self.assertIn("Third updated memory", input_msg)
         # Verify batch_size
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_BATCH_SIZE], 3)
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_BATCH_SIZE], 3
+        )
 
 
 class TestVectorOperationAttributeExtractor(unittest.TestCase):
@@ -618,18 +857,33 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "test query", "limit": 5}
         result = {"results": [1, 2, 3]}
 
-        attributes = self.extractor.extract_vector_attributes(Mock(), "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            Mock(), "search", kwargs, result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_VECTOR_METHOD, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_METHOD], "search")
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_VECTOR_LIMIT, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_LIMIT], 5)
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_VECTOR_METHOD, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_METHOD],
+            "search",
+        )
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_VECTOR_LIMIT, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_LIMIT], 5
+        )
 
     def test_vector_config_milvus_provider(self):
         """Milvus vector store config extraction based on config (provider = milvus)"""
         # Only expose vector config related attributes, avoid Mock extra attributes interference
-        instance = Mock(spec=["config", "embedding_model_dims", "metric_type", "client"])
-        instance.config = Mock(spec=["provider", "embedding_model_dims", "metric_type", "db_name"])
+        instance = Mock(
+            spec=["config", "embedding_model_dims", "metric_type", "client"]
+        )
+        instance.config = Mock(
+            spec=["provider", "embedding_model_dims", "metric_type", "db_name"]
+        )
         instance.config.provider = "milvus"
         instance.config.embedding_model_dims = 1536
         instance.config.metric_type = "COSINE"
@@ -644,7 +898,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "q", "limit": 10}
         result = {"results": [1, 2]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # provider extracted by _get_vector_provider
         self.assertEqual(
@@ -682,7 +938,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "q", "limit": 3}
         result = {"results": [1]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER],
@@ -715,7 +973,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "q", "limit": 2}
         result = {"results": [1, 2, 3, 4]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER],
@@ -726,28 +986,36 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_EMBEDDING_DIMS],
             512,
         )
-    
+
     def test_vector_result_count_from_results(self):
         """Tests Vector subphase extracting result_count from results"""
         instance = Mock()
         kwargs = {"query": "test", "limit": 5}
         result = {"results": [1, 2, 3, 4]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract to 4 results
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_RESULT_COUNT], 4)
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_RESULT_COUNT], 4
+        )
 
     def test_vector_result_count_from_list(self):
         """Tests Vector subphase extracting result_count from list"""
         instance = Mock()
         kwargs = {"query": "test"}
-        result = [{'item': 1}, {'item': 2}, {'item': 3}]
+        result = [{"item": 1}, {"item": 2}, {"item": 3}]
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract to 3 results
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_RESULT_COUNT], 3)
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_RESULT_COUNT], 3
+        )
 
     def test_vector_result_count_insert_from_params(self):
         """Tests Vector insert operation inferring result_count from parameters"""
@@ -755,11 +1023,15 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"vectors": [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]}
         result = None  # insert usually returns no value
 
-        attributes = self.extractor.extract_vector_attributes(instance, "insert", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "insert", kwargs, result
+        )
 
         # Should infer 3 from vectors parameter
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_RESULT_COUNT], 3)
-    
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_RESULT_COUNT], 3
+        )
+
     def test_vector_provider_from_config_vector_store(self):
         """Tests extracting provider from config.vector_store.provider (fallback path)"""
         # Simulate possible structure changes
@@ -771,15 +1043,17 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "test"}
         result = {"results": [1, 2]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract "milvus" from config.vector_store.provider
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER],
             "milvus",
-            "Should extract provider from config.vector_store.provider"
+            "Should extract provider from config.vector_store.provider",
         )
-    
+
     def test_vector_url_from_qdrant_config(self):
         """Tests extracting URL from Qdrant config.url"""
         instance = Mock(spec=["config"])
@@ -790,13 +1064,15 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "test"}
         result = {"results": [1]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract URL
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
             "http://localhost:6333",
-            "Should extract URL from config.url"
+            "Should extract URL from config.url",
         )
 
     def test_vector_url_from_chroma_host(self):
@@ -809,13 +1085,15 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "test"}
         result = {"results": [1]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract host as URL
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
             "localhost:8000",
-            "Should extract URL from config.host"
+            "Should extract URL from config.host",
         )
 
     def test_vector_url_from_redis_url(self):
@@ -828,13 +1106,15 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "test"}
         result = {"results": [1]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract redis_url
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
             "redis://localhost:6379",
-            "Should extract URL from config.redis_url"
+            "Should extract URL from config.redis_url",
         )
 
     def test_vector_url_from_mongodb_uri(self):
@@ -847,13 +1127,15 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "test"}
         result = {"results": [1]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract mongo_uri
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
             "mongodb://localhost:27017",
-            "Should extract URL from config.mongo_uri"
+            "Should extract URL from config.mongo_uri",
         )
 
     def test_vector_url_from_memory_instance_nested_path(self):
@@ -869,15 +1151,17 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         kwargs = {"query": "test"}
         result = {"results": [1]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # Should extract URL from config.vector_store.config.url
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
             "http://qdrant-server:6333",
-            "Should extract URL from nested path config.vector_store.config.url"
+            "Should extract URL from nested path config.vector_store.config.url",
         )
-    
+
     def test_vector_url_from_otel_original_config(self):
         """Tests extracting config from probe-injected __otel_mem0_original_config__ (universal solution)
 
@@ -891,7 +1175,14 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         By injecting the original config, the probe can access the complete configuration.
         """
         # simulate any VectorStore instance (like MilvusDB)
-        instance = Mock(spec=["collection_name", "embedding_model_dims", "metric_type", "__otel_mem0_original_config__"])
+        instance = Mock(
+            spec=[
+                "collection_name",
+                "embedding_model_dims",
+                "metric_type",
+                "__otel_mem0_original_config__",
+            ]
+        )
         instance.collection_name = "mem0_test"
         instance.embedding_model_dims = 128
         instance.metric_type = "COSINE"
@@ -903,25 +1194,27 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             "db_name": "default",
             "collection_name": "mem0_test",
             "embedding_model_dims": 128,
-            "metric_type": "COSINE"
+            "metric_type": "COSINE",
         }
 
         kwargs = {"query": "test", "limit": 5}
         result = {"results": [1, 2]}
 
-        attributes = self.extractor.extract_vector_attributes(instance, "search", kwargs, result)
+        attributes = self.extractor.extract_vector_attributes(
+            instance, "search", kwargs, result
+        )
 
         # ✅ should extract URL from __otel_mem0_original_config__
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
             "http://localhost:19530",
-            "Should extract URL from __otel_mem0_original_config__ (universal solution)"
+            "Should extract URL from __otel_mem0_original_config__ (universal solution)",
         )
         # ✅ should also be able to extract db_name
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_DB_NAME],
             "default",
-            "Should extract db_name from __otel_mem0_original_config__ (universal solution)"
+            "Should extract db_name from __otel_mem0_original_config__ (universal solution)",
         )
 
 
@@ -936,10 +1229,16 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
         """Tests graph operation attribute extraction"""
         result = {"nodes": [1, 2, 3]}
 
-        attributes = self.extractor.extract_graph_attributes(Mock(), "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            Mock(), "search", result
+        )
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_GRAPH_METHOD, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_METHOD], "search")
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_GRAPH_METHOD, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_METHOD], "search"
+        )
 
     def test_graph_config_neo4j_provider(self):
         """Graph store config extraction based on config (provider = neo4j)"""
@@ -957,7 +1256,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         result = {"nodes": [1, 2]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
@@ -990,7 +1291,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         result = {"nodes": [1, 2, 3, 4]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
@@ -1021,7 +1324,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         result = {"nodes": [1]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
@@ -1031,58 +1336,77 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_THRESHOLD],
             0.9,
         )
-    
+
     def test_graph_result_count_from_added_entities(self):
         """Tests Graph subphase extracting result_count from added_entities (user feedback scenario)"""
         instance = Mock()
-        result = {
-            'added_entities': [
-                [{'source': 'A', 'relationship': 'rel1', 'target': 'B'}],
-                [{'source': 'C', 'relationship': 'rel2', 'target': 'D'}],
-                [{'source': 'E', 'relationship': 'rel3', 'target': 'F'}],
-            ],
-            'deleted_entities': [[]]
-        }
+        result = cast(
+            Dict[str, Any],
+            {
+                "added_entities": [
+                    [{"source": "A", "relationship": "rel1", "target": "B"}],
+                    [{"source": "C", "relationship": "rel2", "target": "D"}],
+                    [{"source": "E", "relationship": "rel3", "target": "F"}],
+                ],
+                "deleted_entities": [[]],
+            },
+        )
 
-        attributes = self.extractor.extract_graph_attributes(instance, "add", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "add", result
+        )
 
         # Should extract to 3 added_entities
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 3)
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 3
+        )
 
     def test_graph_result_count_from_nodes(self):
         """Tests Graph subphase extracting result_count from nodes"""
         instance = Mock()
-        result = {"nodes": [{'id': '1'}, {'id': '2'}]}
+        result = {"nodes": [{"id": "1"}, {"id": "2"}]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         # Should extract to 2 nodes
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 2)
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 2
+        )
 
     def test_graph_result_count_from_list(self):
         """Tests Graph search returns list format result_count"""
         instance = Mock()
         # Graph.search may return nested list
-        result = [[{'node': 'A'}, {'node': 'B'}], [{'node': 'C'}]]
+        result = [[{"node": "A"}, {"node": "B"}], [{"node": "C"}]]
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         # Should count all nodes: 2 + 1 = 3
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 3)
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 3
+        )
 
     def test_graph_result_count_empty(self):
         """Tests Graph operation returns empty results"""
         instance = Mock()
-        result = {
-            'added_entities': [[]],
-            'deleted_entities': [[]]
-        }
+        result = cast(
+            Dict[str, Any],
+            {"added_entities": [[]], "deleted_entities": [[]]},
+        )
 
-        attributes = self.extractor.extract_graph_attributes(instance, "add", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "add", result
+        )
 
         # Should return 0
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 0)
-    
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_RESULT_COUNT], 0
+        )
+
     def test_graph_provider_from_config_graph_store(self):
         """Tests extracting provider from config.graph_store.provider (Mem0 MemoryGraph actual structure)"""
         # simulate Mem0 MemoryGraph actual structure
@@ -1093,13 +1417,15 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         result = {"nodes": [1, 2]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         # Should extract "neo4j" from config.graph_store.provider
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
             "neo4j",
-            "Should extract provider from config.graph_store.provider"
+            "Should extract provider from config.graph_store.provider",
         )
 
     def test_graph_provider_extraction_priority(self):
@@ -1112,7 +1438,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
         instance1.config.graph_store.provider = "neo4j"
 
         attrs1 = self.extractor.extract_graph_attributes(instance1, "add", {})
-        self.assertEqual(attrs1[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER], "memgraph")
+        self.assertEqual(
+            attrs1[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER], "memgraph"
+        )
 
         # Scenario 2: no instance.provider, extract from config.graph_store.provider
         instance2 = Mock(spec=["config"])
@@ -1121,8 +1449,10 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
         instance2.config.graph_store.provider = "neo4j"
 
         attrs2 = self.extractor.extract_graph_attributes(instance2, "add", {})
-        self.assertEqual(attrs2[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER], "neo4j")
-    
+        self.assertEqual(
+            attrs2[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER], "neo4j"
+        )
+
     def test_graph_url_from_neo4j_config(self):
         """Tests extracting URL from Neo4j config.url"""
         instance = Mock(spec=["config"])
@@ -1135,13 +1465,15 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         result = {"nodes": [1, 2]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         # Should extract URL
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
             "bolt://localhost:7687",
-            "Should extract URL from config.config.url for Neo4j"
+            "Should extract URL from config.config.url for Neo4j",
         )
 
     def test_graph_url_from_neptune_endpoint(self):
@@ -1152,17 +1484,21 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
         instance.config.graph_store.provider = "neptune"
         # simulate Neptune config structure
         instance.config.config = Mock(spec=["endpoint"])
-        instance.config.config.endpoint = "neptune-db://my-cluster.us-east-1.neptune.amazonaws.com:8182"
+        instance.config.config.endpoint = (
+            "neptune-db://my-cluster.us-east-1.neptune.amazonaws.com:8182"
+        )
 
         result = {"nodes": [1]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         # Should extract endpoint as URL
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
             "neptune-db://my-cluster.us-east-1.neptune.amazonaws.com:8182",
-            "Should extract URL from config.config.endpoint for Neptune"
+            "Should extract URL from config.config.endpoint for Neptune",
         )
 
     def test_graph_url_from_memory_instance_nested_path(self):
@@ -1177,13 +1513,15 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         result = {"nodes": [1, 2]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         # Should extract URL from config.graph_store.config.url
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
             "bolt://neo4j-server:7687",
-            "Should extract URL from nested path config.graph_store.config.url"
+            "Should extract URL from nested path config.graph_store.config.url",
         )
 
     def test_graph_url_from_memgraph_config(self):
@@ -1198,13 +1536,15 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         result = {"nodes": [1]}
 
-        attributes = self.extractor.extract_graph_attributes(instance, "search", result)
+        attributes = self.extractor.extract_graph_attributes(
+            instance, "search", result
+        )
 
         # Should extract URL
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
             "bolt://localhost:7688",
-            "Should extract URL from config.config.url for Memgraph"
+            "Should extract URL from config.config.url for Memgraph",
         )
 
 
@@ -1221,10 +1561,19 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
 
         attributes = self.extractor.extract_reranker_attributes(Mock(), kwargs)
 
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_RERANKER_METHOD, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_METHOD], "rerank")
-        self.assertIn(SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K, attributes)
-        self.assertEqual(attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K], 3)
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_RERANKER_METHOD, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_METHOD],
+            "rerank",
+        )
+        self.assertIn(
+            SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K, attributes
+        )
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K], 3
+        )
 
     def test_reranker_config_llm_reranker_provider(self):
         """LLM reranker config extraction based on config (provider = llm_reranker)"""
@@ -1242,7 +1591,9 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
         # documents only for calculating input_count, don't pass top_k to ensure from config
         kwargs = {"query": "rerank query", "documents": [{"id": 1}, {"id": 2}]}
 
-        attributes = self.extractor.extract_reranker_attributes(instance, kwargs)
+        attributes = self.extractor.extract_reranker_attributes(
+            instance, kwargs
+        )
 
         # provider from config.provider
         self.assertEqual(
@@ -1267,7 +1618,9 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
             60,
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_CUSTOM_PROMPT],
+            attributes[
+                SemanticAttributes.GEN_AI_MEMORY_RERANKER_CUSTOM_PROMPT
+            ],
             "custom scoring prompt",
         )
 
@@ -1284,7 +1637,9 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
 
         kwargs = {"query": "rerank query", "documents": [{"id": 1}]}
 
-        attributes = self.extractor.extract_reranker_attributes(instance, kwargs)
+        attributes = self.extractor.extract_reranker_attributes(
+            instance, kwargs
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER],
@@ -1300,10 +1655,14 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
             7,
         )
         self.assertTrue(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_RETURN_DOCUMENTS]
+            attributes[
+                SemanticAttributes.GEN_AI_MEMORY_RERANKER_RETURN_DOCUMENTS
+            ]
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_CHUNKS_PER_DOC],
+            attributes[
+                SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_CHUNKS_PER_DOC
+            ],
             8,
         )
 
@@ -1320,9 +1679,14 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
         instance.config.max_length = 256
         instance.config.normalize = True
 
-        kwargs = {"query": "rerank query", "documents": [{"id": 1}, {"id": 2}, {"id": 3}]}
+        kwargs = {
+            "query": "rerank query",
+            "documents": [{"id": 1}, {"id": 2}, {"id": 3}],
+        }
 
-        attributes = self.extractor.extract_reranker_attributes(instance, kwargs)
+        attributes = self.extractor.extract_reranker_attributes(
+            instance, kwargs
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER],
@@ -1363,7 +1727,9 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
 
         kwargs = {"query": "rerank query", "documents": [{"id": 1}, {"id": 2}]}
 
-        attributes = self.extractor.extract_reranker_attributes(instance, kwargs)
+        attributes = self.extractor.extract_reranker_attributes(
+            instance, kwargs
+        )
 
         self.assertEqual(
             attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER],
@@ -1381,5 +1747,3 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
