@@ -19,5 +19,4 @@ mock>=4.0.0
 
 # Note: Use relative path for internal dependencies
 -e opentelemetry-instrumentation
--e instrumentation-genai/opentelemetry-instrumentation-mem0
-
+-e instrumentation-loongsuite/loongsuite-instrumentation-mem0
