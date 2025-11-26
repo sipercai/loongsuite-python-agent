@@ -130,7 +130,7 @@ class Mem0Instrumentor(BaseInstrumentor):
             "opentelemetry.instrumentation.mem0",
             __version__,
             tracer_provider=tracer_provider,
-            schema_url="https://opentelemetry.io/schemas/1.28.0",
+            schema_url=Schemas.V1_28_0.value,
         )
 
         # Get meter provider and create meter
