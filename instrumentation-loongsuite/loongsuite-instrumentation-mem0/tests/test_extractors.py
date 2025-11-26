@@ -62,7 +62,7 @@ class TestOutputPreviewExtraction(unittest.TestCase):
         self.assertIsNotNone(preview)
         if preview:
             self.assertTrue(preview.endswith("..."))
-            self.assertTrue(len(preview) <= 28)  # 25 + "..."
+            self.assertLessEqual(len(preview), 28)  # 25 + "..."
 
     def test_extract_output_preview_list(self):
         """Tests list output preview extraction - Return original content directly"""

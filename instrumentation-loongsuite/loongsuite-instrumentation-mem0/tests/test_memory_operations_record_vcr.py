@@ -11,10 +11,6 @@ import pytest
 
 
 def _build_demo_config_from_env() -> Dict[str, Any]:
-    # LLM/Embedding uses OpenAI compatible (Tongyi DashScope)
-    _openai_base_url = os.environ.get(
-        "OPENAI_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    )
     # Allow overriding model and dimensions via environment variables
     llm_model = os.environ.get("OPENAI_LLM_MODEL", "qwen-plus")
     embed_model = os.environ.get("OPENAI_EMBED_MODEL", "text-embedding-v3")
@@ -76,7 +72,6 @@ def test_record_memory_full_flow_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory full flow test: covers all operations"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     # Import needed mock modules
@@ -199,7 +194,7 @@ def test_record_memory_full_flow_vcr(
             if op in ops_needed:
                 ops_seen.add(op)
     missing = ops_needed - ops_seen
-    assert not missing, f"缺少操作 span attributes: {missing}"
+    assert not missing, f"should contain span attributes: {missing}"
 
 
 @pytest.mark.vcr()
@@ -207,7 +202,6 @@ def test_record_memory_add_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory add operation test: verify add memory attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -282,7 +276,6 @@ def test_record_memory_get_all_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory get_all operation test: verify get all memory attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -353,7 +346,6 @@ def test_record_memory_get_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory get operation test: verify get single memory attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -426,7 +418,6 @@ def test_record_memory_search_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory search operation test: verify search memory attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -466,7 +457,7 @@ def test_record_memory_search_vcr(
         for s in spans
         if s.attributes.get("gen_ai.memory.operation") == "search"
     ]
-    assert search_spans, "shouldhas search 操作 span"
+    assert search_spans, "shouldhas search operation span"
 
     search_span = search_spans[0]
     # Required attributes
@@ -497,7 +488,6 @@ def test_record_memory_update_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory update operation test: verify update memory attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -551,7 +541,7 @@ def test_record_memory_update_vcr(
         for s in spans
         if s.attributes.get("gen_ai.memory.operation") == "update"
     ]
-    assert update_spans, "shouldhas update 操作 span"
+    assert update_spans, "shouldhas update operation span"
 
     update_span = update_spans[0]
     # Required attributes
@@ -575,7 +565,6 @@ def test_record_memory_delete_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory delete operation test: verify delete memory attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -628,7 +617,7 @@ def test_record_memory_delete_vcr(
         for s in spans
         if s.attributes.get("gen_ai.memory.operation") == "delete"
     ]
-    assert delete_spans, "shouldhas delete 操作 span"
+    assert delete_spans, "shouldhas delete operation span"
 
     delete_span = delete_spans[0]
     # Required attributes
@@ -646,7 +635,6 @@ def test_record_memory_history_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory history operation test: verify get memory history attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -724,7 +712,6 @@ def test_record_memory_delete_all_vcr(
     span_exporter: Any, instrument_with_content: Any, monkeypatch: Any
 ) -> None:
     """Memory delete_all operation test: verify delete all memory attributes"""
-    _mem0 = pytest.importorskip("mem0")
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     import sys
@@ -767,7 +754,7 @@ def test_record_memory_delete_all_vcr(
         for s in spans
         if s.attributes.get("gen_ai.memory.operation") == "delete_all"
     ]
-    assert deleteall_spans, "shouldhas delete_all 操作 span"
+    assert deleteall_spans, "shouldhas delete_all operation span"
 
     deleteall_span = deleteall_spans[0]
     # Required attributes

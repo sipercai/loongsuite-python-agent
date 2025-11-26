@@ -30,6 +30,7 @@ from opentelemetry.instrumentation.mem0.package import _instruments
 from opentelemetry.instrumentation.mem0.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.metrics import get_meter
+from opentelemetry.semconv.schemas import Schemas
 
 # Module-level logger
 logger = logging.getLogger(__name__)
@@ -139,7 +140,7 @@ class Mem0Instrumentor(BaseInstrumentor):
             "opentelemetry.instrumentation.mem0",
             __version__,
             meter_provider=meter_provider,
-            schema_url="https://opentelemetry.io/schemas/1.28.0",
+            schema_url=Schemas.V1_28_0.value,
         )
 
         # Create lightweight metrics container

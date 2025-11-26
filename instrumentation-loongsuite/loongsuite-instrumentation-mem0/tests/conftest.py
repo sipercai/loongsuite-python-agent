@@ -33,7 +33,8 @@ try:
 
     if not hasattr(_wrapt, "unwrap"):  # type: ignore
         setattr(_wrapt, "unwrap", _otel_unwrap)  # type: ignore
-except Exception:
+except ImportError:
+    # ignore import error
     pass
 
 from typing import Any, Dict, List, cast
@@ -384,6 +385,7 @@ def vcr_config(request):
         # Compatible with pytest-recording/pytest-vcr option names
         record_mode = request.config.getoption("--record-mode") or "none"  # type: ignore
     except Exception:
+        # ignore exception
         pass
 
     # Flatten cassette files to tests/cassettes directory without subdirectories

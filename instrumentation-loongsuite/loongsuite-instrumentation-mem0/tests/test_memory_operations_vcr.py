@@ -157,6 +157,7 @@ def _patch_factories(monkeypatch: Any) -> None:
             if fac and hasattr(fac, "create"):
                 monkeypatch.setattr(fac, "create", create_fn)
         except Exception:
+            # ignore exception
             pass
 
     # VectorStore
@@ -251,6 +252,7 @@ def test_memory_search_full_flow(
     try:
         setattr(m, "reranker", _FakeReranker())
     except Exception:
+        # ignore exception
         pass
     test_query = "川菜推荐"
     assert m.search(test_query, user_id="u_123", limit=2) is not None
@@ -409,7 +411,7 @@ def test_vector_operations_detailed_attributes(
         s for s in spans if "gen_ai.memory.vector.method" in s.attributes
     ]
 
-    assert vec_spans, "应采集to vector span"
+    assert vec_spans, "should contain to vector span"
 
     # Verify required attributes
     assert any(
@@ -484,7 +486,7 @@ def test_graph_operations_detailed_attributes(
         s for s in spans if "gen_ai.memory.graph.method" in s.attributes
     ]
 
-    assert graph_spans, "应采集to graph span"
+    assert graph_spans, "should containto graph span"
 
     # Verify required attributes
     assert any(

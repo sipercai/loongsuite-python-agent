@@ -37,6 +37,7 @@ class TestMem0Instrumentor(unittest.TestCase):
         try:
             self.instrumentor.uninstrument()
         except Exception:
+            # ignore uninstrument exception
             pass
         self.exporter.clear()
 

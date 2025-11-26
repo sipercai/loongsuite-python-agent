@@ -111,23 +111,6 @@ class TestExtractUtils(unittest.TestCase):
         result = extract_result_count(data)
         self.assertEqual(result, 2)
 
-    # Note: The following test cases are already deleted because the business code has commented out the count field extraction logic
-    # Reason: Avoid mistakenly extracting list fields like categories (see comments in _util.py lines 159-160)
-    # First strategy: Prioritize using explicit list fields (results, points, memories, etc.),
-    # If the dictionary has no these fields, return None
-    #
-    # def test_extract_result_count_dict_with_count_key(self):
-    #     """Test extracting result count from dict count key"""
-    #     data = {"count": 5}
-    #     result = extract_result_count(data)
-    #     self.assertEqual(result, 5)
-    #
-    # def test_extract_result_count_dict_with_total_count_key(self):
-    #     """Test extracting result count from dict total_count key"""
-    #     data = {"total_count": 10, "page": 1}
-    #     result = extract_result_count(data)
-    #     self.assertEqual(result, 10)
-
     def test_extract_result_count_none(self):
         result = extract_result_count(None)
         self.assertIsNone(result)

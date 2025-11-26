@@ -156,6 +156,7 @@ class TestThreadPoolHandlerIntegration(unittest.TestCase):
         try:
             self.instrumentor.uninstrument()
         except Exception:
+            # ignore uninstrument exception
             pass
         self.span_exporter.clear()
 

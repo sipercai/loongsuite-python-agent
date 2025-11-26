@@ -137,6 +137,7 @@ def test_client_http_401_vcr(
         try:
             server.shutdown()
         except Exception:
+            # ignore shutdown exception
             pass
 
 
@@ -172,4 +173,5 @@ def test_client_http_500_vcr(
         try:
             server.shutdown()
         except Exception:
+            # ignore shutdown exception
             pass
