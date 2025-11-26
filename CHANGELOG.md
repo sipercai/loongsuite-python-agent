@@ -1,4 +1,4 @@
-# Changelog of LoongSuite
+# Changelog for LoongSuite
 
 All notable changes to loongsuite components will be documented in this file.
 
