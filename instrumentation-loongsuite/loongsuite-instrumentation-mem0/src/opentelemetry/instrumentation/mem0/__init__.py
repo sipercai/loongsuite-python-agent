@@ -3,7 +3,7 @@ OpenTelemetry Mem0 Instrumentation
 """
 
 import logging
-from typing import Any, Collection, List
+from typing import Any, Collection, List, Optional
 
 from wrapt import wrap_function_wrapper
 
@@ -172,12 +172,23 @@ class Mem0Instrumentor(BaseInstrumentor):
         if not self._is_instrumented:
             return
 
-        # Clear record sets first to prevent state leakage
-        self._instrumented_vector_classes.clear()
-        self._instrumented_graph_classes.clear()
-        self._instrumented_reranker_classes.clear()
+        # Unwrap ThreadPoolExecutor.submit
+        self._uninstrument_threadpool()
 
-        # Unwrap ThreadPoolExecutor.submit using wrapt's standard mechanism
+        # Uninstrument Memory and MemoryClient operations (symmetric to _instrument)
+        self._uninstrument_memory_operations()
+        self._uninstrument_memory_client_operations()
+
+        # Uninstrument internal phases (Vector/Graph/Reranker)
+        self._uninstrument_vector_operations()
+        self._uninstrument_graph_operations()
+        self._uninstrument_reranker_operations()
+
+        # Reset instrumentation state
+        self._is_instrumented = False
+
+    def _uninstrument_threadpool(self) -> None:
+        """Unwrap ThreadPoolExecutor.submit."""
         try:
             import concurrent.futures
 
@@ -186,193 +197,154 @@ class Mem0Instrumentor(BaseInstrumentor):
         except Exception as e:
             logger.debug(f"Failed to unwrap ThreadPoolExecutor.submit: {e}")
 
-        # Uninstrument Memory / AsyncMemory (reflect public methods)
+    def _uninstrument_memory_operations(self) -> None:
+        """Uninstrument Memory and AsyncMemory operations."""
+        if not _MEM0_CORE_AVAILABLE or Memory is None or AsyncMemory is None:
+            return
+
+        self._unwrap_class_methods(Memory, "Memory")
+        self._unwrap_class_methods(AsyncMemory, "AsyncMemory")
+
+    def _uninstrument_memory_client_operations(self) -> None:
+        """Uninstrument MemoryClient and AsyncMemoryClient operations."""
         if (
-            _MEM0_CORE_AVAILABLE
-            and Memory is not None
-            and AsyncMemory is not None
+            not _MEM0_CORE_AVAILABLE
+            or MemoryClient is None
+            or AsyncMemoryClient is None
         ):
-            try:
-                for method_name in self._public_methods_of_cls(Memory):
-                    try:
-                        unwrap(Memory, method_name)
-                    except Exception as e:
-                        logger.debug(
-                            f"Failed to unwrap Memory.{method_name}: {e}"
-                        )
-                for method_name in self._public_methods_of_cls(AsyncMemory):
-                    try:
-                        unwrap(AsyncMemory, method_name)
-                    except Exception as e:
-                        logger.debug(
-                            f"Failed to unwrap AsyncMemory.{method_name}: {e}"
-                        )
-            except Exception as e:
-                logger.debug(f"Mem0: no Memory/AsyncMemory to unwrap: {e}")
+            return
 
-        # Uninstrument MemoryClient / AsyncMemoryClient (reflect public methods)
-        if (
-            _MEM0_CORE_AVAILABLE
-            and MemoryClient is not None
-            and AsyncMemoryClient is not None
-        ):
-            try:
-                for method_name in self._public_methods_of_cls(MemoryClient):
-                    try:
-                        unwrap(MemoryClient, method_name)
-                    except Exception as e:
-                        logger.debug(
-                            f"Failed to unwrap MemoryClient.{method_name}: {e}"
-                        )
-                for method_name in self._public_methods_of_cls(
-                    AsyncMemoryClient
-                ):
-                    try:
-                        unwrap(AsyncMemoryClient, method_name)
-                    except Exception as e:
-                        logger.debug(
-                            f"Failed to unwrap AsyncMemoryClient.{method_name}: {e}"
-                        )
-            except Exception as e:
-                logger.debug(
-                    f"Mem0: no MemoryClient/AsyncMemoryClient to unwrap: {e}"
-                )
+        self._unwrap_class_methods(MemoryClient, "MemoryClient")
+        self._unwrap_class_methods(AsyncMemoryClient, "AsyncMemoryClient")
 
-        # Unwrap factory create methods to stop further dynamic instrumentation
-        if _FACTORIES_AVAILABLE:
-            factories = [
-                (VectorStoreFactory, "VectorStoreFactory"),
-                (GraphStoreFactory, "GraphStoreFactory"),
-                (RerankerFactory, "RerankerFactory"),
-            ]
-            for factory_class, factory_name in factories:
-                if factory_class is not None:
-                    try:
-                        unwrap(factory_class, "create")
-                    except Exception as e:
-                        logger.debug(
-                            f"Failed to unwrap {factory_name}.create: {e}"
-                        )
+    def _uninstrument_vector_operations(self) -> None:
+        """Uninstrument VectorStore operations."""
+        # Unwrap factory create method
+        self._unwrap_factory(VectorStoreFactory, "VectorStoreFactory")
 
-        # Uninstrument VectorStores (unwrap by recorded class names)
+        # Get vector base methods
+        vector_base_methods = self._get_base_methods(
+            VectorStoreBase if _MEM0_CORE_AVAILABLE else None,
+            "VectorStoreBase",
+            ["search", "insert", "update", "delete", "list", "get", "reset"],
+        )
+
+        # Unwrap dynamically instrumented classes
+        self._unwrap_dynamic_classes(
+            self._instrumented_vector_classes, vector_base_methods
+        )
+
+        # Ensure complete cleanup to prevent state leakage
+        self._instrumented_vector_classes.clear()
+
+    def _uninstrument_graph_operations(self) -> None:
+        """Uninstrument GraphStore operations."""
+        # Unwrap factory create method
+        self._unwrap_factory(GraphStoreFactory, "GraphStoreFactory")
+
+        # Get graph base methods
+        graph_base_methods = self._get_base_methods(
+            MemoryGraph if _MEMORY_GRAPH_AVAILABLE else None,
+            "MemoryGraph",
+            ["add", "get_all", "search", "delete_all", "reset"],
+        )
+
+        # Unwrap dynamically instrumented classes
+        self._unwrap_dynamic_classes(
+            self._instrumented_graph_classes, graph_base_methods
+        )
+
+        # Ensure complete cleanup to prevent state leakage
+        self._instrumented_graph_classes.clear()
+
+    def _uninstrument_reranker_operations(self) -> None:
+        """Uninstrument Reranker operations."""
+        # Unwrap factory create method
+        self._unwrap_factory(RerankerFactory, "RerankerFactory")
+
+        # Unwrap dynamically instrumented classes
+        self._unwrap_dynamic_classes(
+            self._instrumented_reranker_classes, ["rerank"]
+        )
+
+        # Ensure complete cleanup to prevent state leakage
+        self._instrumented_reranker_classes.clear()
+
+    # ---- Helper methods for uninstrumentation --------------------------------
+
+    def _unwrap_class_methods(self, cls: type, class_name: str) -> None:
+        """Unwrap only allowed top-level methods of a class (symmetric to instrument)."""
+        allowed_methods = self._allowed_top_level_methods()
         try:
-            if _MEM0_CORE_AVAILABLE and VectorStoreBase is not None:
-                vector_base_methods = [
-                    name
-                    for name, value in VectorStoreBase.__dict__.items()
-                    if callable(value) and not name.startswith("_")
-                ]
-            else:
-                raise RuntimeError("VectorStoreBase not available")
+            for method_name in self._public_methods_of_cls(cls):
+                if method_name not in allowed_methods:
+                    continue
+                try:
+                    unwrap(cls, method_name)
+                except Exception as e:
+                    logger.debug(
+                        f"Failed to unwrap {class_name}.{method_name}: {e}"
+                    )
+        except Exception as e:
+            logger.debug(f"Failed to unwrap {class_name}: {e}")
+
+    def _unwrap_factory(
+        self, factory_class: Optional[type], factory_name: str
+    ) -> None:
+        """Unwrap factory create method."""
+        if not _FACTORIES_AVAILABLE or factory_class is None:
+            return
+
+        try:
+            unwrap(factory_class, "create")
+        except Exception as e:
+            logger.debug(f"Failed to unwrap {factory_name}.create: {e}")
+
+    def _get_base_methods(
+        self, base_class: Optional[type], class_name: str, defaults: List[str]
+    ) -> List[str]:
+        """Get public methods from base class, or return defaults if unavailable."""
+        if base_class is None:
+            return defaults
+
+        try:
+            return [
+                name
+                for name, value in base_class.__dict__.items()
+                if callable(value) and not name.startswith("_")
+            ]
         except Exception as e:
             logger.debug(
-                f"Failed to get VectorStoreBase methods, using defaults: {e}"
+                f"Failed to get {class_name} methods, using defaults: {e}"
             )
-            vector_base_methods = [
-                "search",
-                "insert",
-                "update",
-                "delete",
-                "list",
-                "get",
-                "reset",
-            ]
-        for fqcn in list(self._instrumented_vector_classes):
+            return defaults
+
+    def _unwrap_dynamic_classes(
+        self, instrumented_classes: set[str], methods: List[str]
+    ) -> None:
+        """Unwrap dynamically instrumented classes by their recorded FQCNs."""
+        for fqcn in list(instrumented_classes):
             try:
                 module_name, class_name = fqcn.rsplit(".", 1)
-                mod = __import__(module_name, fromlist=[class_name])  # type: ignore
+                mod = __import__(module_name, fromlist=[class_name])
                 cls = getattr(mod, class_name, None)
-                if not cls:
-                    self._instrumented_vector_classes.discard(fqcn)
+                if cls is None:
                     continue
-                for method_name in vector_base_methods:
+
+                for method_name in methods:
                     if hasattr(cls, method_name):
                         try:
                             unwrap(cls, method_name)
                         except Exception as e:
                             logger.debug(
-                                f"Failed to unwrap {cls.__name__}.{method_name}: {e}"
+                                f"Failed to unwrap {class_name}.{method_name}: {e}"
                             )
             except Exception as e:
-                logger.debug(
-                    f"Failed to uninstrument vector class {fqcn}: {e}"
-                )
+                logger.debug(f"Failed to uninstrument class {fqcn}: {e}")
             finally:
-                self._instrumented_vector_classes.discard(fqcn)
+                instrumented_classes.discard(fqcn)
 
-        # Uninstrument GraphStores (unwrap by recorded class names)
-        if _MEMORY_GRAPH_AVAILABLE and MemoryGraph:
-            try:
-                graph_base_methods = [
-                    name
-                    for name, value in MemoryGraph.__dict__.items()
-                    if callable(value) and not name.startswith("_")
-                ]
-            except Exception as e:
-                logger.debug(
-                    f"Failed to get MemoryGraph methods, using defaults: {e}"
-                )
-                graph_base_methods = [
-                    "add",
-                    "get_all",
-                    "search",
-                    "delete_all",
-                    "reset",
-                ]
-        else:
-            graph_base_methods = [
-                "add",
-                "get_all",
-                "search",
-                "delete_all",
-                "reset",
-            ]
-        for fqcn in list(self._instrumented_graph_classes):
-            try:
-                module_name, class_name = fqcn.rsplit(".", 1)
-                mod = __import__(module_name, fromlist=[class_name])  # type: ignore
-                cls = getattr(mod, class_name, None)
-                if not cls:
-                    self._instrumented_graph_classes.discard(fqcn)
-                    continue
-                for method_name in graph_base_methods:
-                    if hasattr(cls, method_name):
-                        try:
-                            unwrap(cls, method_name)
-                        except Exception as e:
-                            logger.debug(
-                                f"Failed to unwrap {cls.__name__}.{method_name}: {e}"
-                            )
-            except Exception as e:
-                logger.debug(f"Failed to uninstrument graph class {fqcn}: {e}")
-            finally:
-                self._instrumented_graph_classes.discard(fqcn)
-
-        # Uninstrument Reranker (unwrap by recorded class names)
-        for fqcn in list(self._instrumented_reranker_classes):
-            try:
-                module_name, class_name = fqcn.rsplit(".", 1)
-                mod = __import__(module_name, fromlist=[class_name])  # type: ignore
-                cls = getattr(mod, class_name, None)
-                if not cls:
-                    self._instrumented_reranker_classes.discard(fqcn)
-                    continue
-                if hasattr(cls, "rerank"):
-                    try:
-                        unwrap(cls, "rerank")
-                    except Exception as e:
-                        logger.debug(
-                            f"Failed to unwrap {cls.__name__}.rerank: {e}"
-                        )
-            except Exception as e:
-                logger.debug(
-                    f"Failed to uninstrument reranker class {fqcn}: {e}"
-                )
-            finally:
-                self._instrumented_reranker_classes.discard(fqcn)
-
-        # Reset instrumentation state
-        self._is_instrumented = False
+    # ---- Public method introspection -----------------------------------------
 
     def _public_methods_of_cls(self, cls: type) -> List[str]:
         """Get all public methods of a class."""

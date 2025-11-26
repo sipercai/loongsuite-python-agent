@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "LoongSuite Mem0 Instrumentation"
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9"
 authors = [
     { name = "LoongSuite Python Agent Authors", email = "loongsuite-dev@example.com" },
 ]
@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "opentelemetry-api >= 1.20.0",
