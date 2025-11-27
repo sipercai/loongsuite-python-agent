@@ -50,101 +50,45 @@ class SemanticAttributes:
     GEN_AI_MEMORY_FILTER_KEYS = "gen_ai.memory.filter_keys"
     GEN_AI_MEMORY_BATCH_SIZE = "gen_ai.memory.batch_size"
 
+    # ========== Data Source Attributes (Vector/Graph common) ==========
+    GEN_AI_MEMORY_DATA_SOURCE_TYPE = "gen_ai.memory.data_source.type"
+    GEN_AI_MEMORY_DATA_SOURCE_URL = "gen_ai.memory.data_source.url"
+
     # ========== Vector Operation Attributes ==========
-    GEN_AI_MEMORY_VECTOR_PROVIDER = "gen_ai.memory.vector.provider"
     GEN_AI_MEMORY_VECTOR_COLLECTION = "gen_ai.memory.vector.collection"
     GEN_AI_MEMORY_VECTOR_METHOD = "gen_ai.memory.vector.method"
     GEN_AI_MEMORY_VECTOR_LIMIT = "gen_ai.memory.vector.limit"
     GEN_AI_MEMORY_VECTOR_FILTERS_KEYS = "gen_ai.memory.vector.filter_keys"
+    GEN_AI_MEMORY_VECTOR_FILTERS_OPERATORS = (
+        "gen_ai.memory.vector.filters_operators"
+    )
     GEN_AI_MEMORY_VECTOR_RESULT_COUNT = "gen_ai.memory.vector.result_count"
     GEN_AI_MEMORY_VECTOR_METRIC_TYPE = "gen_ai.memory.vector.metric_type"
     GEN_AI_MEMORY_VECTOR_EMBEDDING_DIMS = "gen_ai.memory.vector.embedding_dims"
     GEN_AI_MEMORY_VECTOR_NAMESPACE = "gen_ai.memory.vector.namespace"
     GEN_AI_MEMORY_VECTOR_DB_NAME = "gen_ai.memory.vector.db_name"
-    GEN_AI_MEMORY_VECTOR_URL = "gen_ai.memory.vector.url"
 
     # ========== Graph Operation Attributes ==========
-    GEN_AI_MEMORY_GRAPH_PROVIDER = "gen_ai.memory.graph.provider"
     GEN_AI_MEMORY_GRAPH_METHOD = "gen_ai.memory.graph.method"
     GEN_AI_MEMORY_GRAPH_RESULT_COUNT = "gen_ai.memory.graph.result_count"
     GEN_AI_MEMORY_GRAPH_THRESHOLD = "gen_ai.memory.graph.threshold"
     GEN_AI_MEMORY_GRAPH_LLM_PROVIDER = "gen_ai.memory.graph.llm_provider"
     GEN_AI_MEMORY_GRAPH_LLM_MODEL = "gen_ai.memory.graph.llm_model"
-    GEN_AI_MEMORY_GRAPH_URL = "gen_ai.memory.graph.url"
 
-    # ========== Reranker Operation Attributes ==========
-    GEN_AI_MEMORY_RERANKER_PROVIDER = "gen_ai.memory.reranker.provider"
-    GEN_AI_MEMORY_RERANKER_MODEL = "gen_ai.memory.reranker.model"
-    GEN_AI_MEMORY_RERANKER_TOP_K = "gen_ai.memory.reranker.top_k"
-    GEN_AI_MEMORY_RERANKER_INPUT_COUNT = "gen_ai.memory.reranker.input_count"
-    GEN_AI_MEMORY_RERANKER_TEMPERATURE = "gen_ai.memory.reranker.temperature"
-    GEN_AI_MEMORY_RERANKER_MAX_TOKENS = "gen_ai.memory.reranker.max_tokens"
-    GEN_AI_MEMORY_RERANKER_CUSTOM_PROMPT = (
-        "gen_ai.memory.reranker.custom_prompt"
-    )
-    GEN_AI_MEMORY_RERANKER_RETURN_DOCUMENTS = (
-        "gen_ai.memory.reranker.return_documents"
-    )
-    GEN_AI_MEMORY_RERANKER_MAX_CHUNKS_PER_DOC = (
-        "gen_ai.memory.reranker.max_chunks_per_doc"
-    )
-    GEN_AI_MEMORY_RERANKER_DEVICE = "gen_ai.memory.reranker.device"
-    GEN_AI_MEMORY_RERANKER_BATCH_SIZE = "gen_ai.memory.reranker.batch_size"
-    GEN_AI_MEMORY_RERANKER_MAX_LENGTH = "gen_ai.memory.reranker.max_length"
-    GEN_AI_MEMORY_RERANKER_NORMALIZE = "gen_ai.memory.reranker.normalize"
-    GEN_AI_MEMORY_RERANKER_METHOD = "gen_ai.memory.reranker.method"
-
-    # ========== Metric Names ==========
-    METRIC_OPERATION_DURATION = "gen_ai_memory_operation_duration"
-    METRIC_OPERATION_COUNT = "gen_ai_memory_operation_count"
-    METRIC_OPERATION_ERROR_COUNT = "gen_ai_memory_operation_error_count"
-    METRIC_OPERATION_SLOW_COUNT = "gen_ai_memory_operation_slow_count"
-
-    METRIC_VECTOR_OPERATION_DURATION = (
-        "gen_ai_memory_vector_operation_duration"
-    )
-    METRIC_VECTOR_OPERATION_COUNT = "gen_ai_memory_vector_operation_count"
-    METRIC_VECTOR_OPERATION_ERROR_COUNT = (
-        "gen_ai_memory_vector_operation_error_count"
-    )
-    METRIC_VECTOR_OPERATION_SLOW_COUNT = (
-        "gen_ai_memory_vector_operation_slow_count"
-    )
-
-    METRIC_GRAPH_OPERATION_DURATION = "gen_ai_memory_graph_operation_duration"
-    METRIC_GRAPH_OPERATION_COUNT = "gen_ai_memory_graph_operation_count"
-    METRIC_GRAPH_OPERATION_ERROR_COUNT = (
-        "gen_ai_memory_graph_operation_error_count"
-    )
-    METRIC_GRAPH_OPERATION_SLOW_COUNT = (
-        "gen_ai_memory_graph_operation_slow_count"
-    )
-
-    METRIC_RERANKER_OPERATION_DURATION = (
-        "gen_ai_memory_reranker_operation_duration"
-    )
-    METRIC_RERANKER_OPERATION_COUNT = "gen_ai_memory_reranker_operation_count"
-    METRIC_RERANKER_OPERATION_ERROR_COUNT = (
-        "gen_ai_memory_reranker_operation_error_count"
-    )
-    METRIC_RERANKER_OPERATION_SLOW_COUNT = (
-        "gen_ai_memory_reranker_operation_slow_count"
-    )
-
-    # ========== Metric Dimension Attributes ==========
-    METRIC_GEN_AI_OPERATION_NAME = "gen_ai_operation_name"
-    METRIC_GEN_AI_MEMORY_OPERATION = "gen_ai_memory_operation"
-    METRIC_GEN_AI_MEMORY_VECTOR_METHOD = "gen_ai_memory_vector_method"
-    METRIC_GEN_AI_MEMORY_VECTOR_PROVIDER = "gen_ai_memory_vector_provider"
-    METRIC_GEN_AI_MEMORY_VECTOR_URL = "gen_ai_memory_vector_url"
-    METRIC_GEN_AI_MEMORY_GRAPH_METHOD = "gen_ai_memory_graph_method"
-    METRIC_GEN_AI_MEMORY_GRAPH_PROVIDER = "gen_ai_memory_graph_provider"
-    METRIC_GEN_AI_MEMORY_GRAPH_URL = "gen_ai_memory_graph_url"
-    METRIC_GEN_AI_MEMORY_RERANKER_METHOD = "gen_ai_memory_reranker_method"
-    METRIC_GEN_AI_MEMORY_RERANKER_PROVIDER = "gen_ai_memory_reranker_provider"
-    METRIC_ERROR_TYPE = "error_type"
-    METRIC_SERVER_ADDRESS = "server_address"
-    METRIC_SERVER_PORT = "server_port"
+    # ========== Reranker Operation Attributes (Updated) ==========
+    GEN_AI_PROVIDER_NAME = "gen_ai.provider.name"
+    GEN_AI_REQUEST_MODEL_NAME = "gen_ai.request.model_name"
+    GEN_AI_REQUEST_TOP_K = "gen_ai.request.top_k"
+    GEN_AI_RERANK_DOCUMENTS_COUNT = "gen_ai.rerank.documents_count"
+    GEN_AI_REQUEST_TEMPERATURE = "gen_ai.request.temperature"
+    GEN_AI_REQUEST_MAX_TOKENS = "gen_ai.request.max_tokens"
+    GEN_AI_RERANK_SCORING_PROMPT = "gen_ai.rerank.scoring_prompt"
+    GEN_AI_RERANK_RETURN_DOCUMENTS = "gen_ai.rerank.return_documents"
+    GEN_AI_RERANK_MAX_CHUNKS_PER_DOC = "gen_ai.rerank.max_chunks_per_doc"
+    GEN_AI_RERANK_DEVICE = "gen_ai.rerank.device"
+    GEN_AI_RERANK_BATCH_SIZE = "gen_ai.rerank.batch_size"
+    GEN_AI_RERANK_MAX_LENGTH = "gen_ai.rerank.max_length"
+    GEN_AI_RERANK_NORMALIZE = "gen_ai.rerank.normalize"
 
 
 class SpanName:

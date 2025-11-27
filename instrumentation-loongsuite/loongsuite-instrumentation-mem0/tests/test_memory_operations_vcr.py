@@ -343,17 +343,17 @@ def test_internal_subphases_attributes(
         s.attributes.get("gen_ai.memory.vector.method") in valid_vec_methods
         for s in vec_spans
     ), f"Vector method should be one of valid values, actual: {[s.attributes.get('gen_ai.memory.vector.method') for s in vec_spans]}"
-    # Verify provider
+    # Verify provider (now uses data_source.type)
     assert any(
-        s.attributes.get("gen_ai.memory.vector.provider") is not None
+        s.attributes.get("gen_ai.memory.data_source.type") is not None
         for s in vec_spans
-    ), "Vector span should contain provider"
+    ), "Vector span should contain data_source.type"
 
     # 2. Reranker stage: if reranker created via factory, should generate span
     reranker_spans = [
         s
         for s in spans
-        if s.attributes.get("gen_ai.memory.reranker.provider") is not None
+        if s.attributes.get("gen_ai.provider.name") is not None
     ]
     if m.reranker is not None:
         # If Memory instance has reranker, should be able to collect reranker span
@@ -363,9 +363,9 @@ def test_internal_subphases_attributes(
         ), "When reranker exists, should collect reranker stage spans"
         # Verify attributes
         assert any(
-            s.attributes.get("gen_ai.memory.reranker.provider") is not None
+            s.attributes.get("gen_ai.provider.name") is not None
             for s in reranker_spans
-        ), "Reranker span should contain provider"
+        ), "Reranker span should contain provider.name"
 
     # 3. Graph stage: if graph is enabled, should generate span
     graph_spans = [
@@ -413,11 +413,11 @@ def test_vector_operations_detailed_attributes(
 
     assert vec_spans, "should contain to vector span"
 
-    # Verify required attributes
+    # Verify required attributes (now uses data_source.type)
     assert any(
-        s.attributes.get("gen_ai.memory.vector.provider") == "fake"
+        s.attributes.get("gen_ai.memory.data_source.type") == "fake"
         for s in vec_spans
-    ), "should contain provider"
+    ), "should contain data_source.type"
     assert any(
         s.attributes.get("gen_ai.memory.vector.method")
         in {"insert", "search", "get", "list_cols", "create_col"}
@@ -488,11 +488,11 @@ def test_graph_operations_detailed_attributes(
 
     assert graph_spans, "should containto graph span"
 
-    # Verify required attributes
+    # Verify required attributes (now uses data_source.type)
     assert any(
-        s.attributes.get("gen_ai.memory.graph.provider") == "fake"
+        s.attributes.get("gen_ai.memory.data_source.type") == "fake"
         for s in graph_spans
-    ), "should contain provider"
+    ), "should contain data_source.type"
     assert any(
         s.attributes.get("gen_ai.memory.graph.method")
         in {"add", "search", "get_all", "delete_all"}
@@ -544,19 +544,20 @@ def test_reranker_operations_detailed_attributes(
     m.search("测试", user_id="u_rerank_test", limit=5, rerank=True)
 
     spans = span_exporter.get_finished_spans()
+    # Now uses gen_ai.provider.name instead of gen_ai.memory.reranker.provider
     reranker_spans = [
-        s for s in spans if "gen_ai.memory.reranker.provider" in s.attributes
+        s for s in spans if "gen_ai.provider.name" in s.attributes
     ]
 
     assert reranker_spans, "should collect reranker spans"
 
     reranker_span = reranker_spans[0]
     assert (
-        reranker_span.attributes.get("gen_ai.memory.reranker.provider")
-        == "fake"
-    ), "should contain correct provider"
-    if "gen_ai.memory.reranker.input_count" in reranker_span.attributes:
-        input_count = reranker_span.attributes.get(
-            "gen_ai.memory.reranker.input_count"
+        reranker_span.attributes.get("gen_ai.provider.name") == "fake"
+    ), "should contain correct provider.name"
+    # Now uses gen_ai.rerank.documents_count instead of gen_ai.memory.reranker.input_count
+    if "gen_ai.rerank.documents_count" in reranker_span.attributes:
+        documents_count = reranker_span.attributes.get(
+            "gen_ai.rerank.documents_count"
         )
-        assert input_count > 0, "input_count should be greater than 0"
+        assert documents_count > 0, "documents_count should be greater than 0"

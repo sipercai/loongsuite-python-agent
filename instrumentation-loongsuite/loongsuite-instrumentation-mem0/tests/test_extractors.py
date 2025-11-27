@@ -902,9 +902,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # provider extracted by _get_vector_provider
+        # provider extracted by _get_vector_provider -> data_source.type
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "milvus",
         )
         # Config type parameters from config / instance
@@ -943,7 +943,7 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         )
 
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "pinecone",
         )
         # embedding_dims extracted from config.embedding_model_dims
@@ -978,7 +978,7 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
         )
 
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "redis",
         )
         # Only verify embedding_dims is captured, other vector-specific config fields can be empty
@@ -1047,9 +1047,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # Should extract "milvus" from config.vector_store.provider
+        # Should extract "milvus" from config.vector_store.provider -> data_source.type
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "milvus",
             "Should extract provider from config.vector_store.provider",
         )
@@ -1068,9 +1068,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # Should extract URL
+        # Should extract URL -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "http://localhost:6333",
             "Should extract URL from config.url",
         )
@@ -1089,9 +1089,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # Should extract host as URL
+        # Should extract host as URL -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "localhost:8000",
             "Should extract URL from config.host",
         )
@@ -1110,9 +1110,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # Should extract redis_url
+        # Should extract redis_url -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "redis://localhost:6379",
             "Should extract URL from config.redis_url",
         )
@@ -1131,9 +1131,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # Should extract mongo_uri
+        # Should extract mongo_uri -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "mongodb://localhost:27017",
             "Should extract URL from config.mongo_uri",
         )
@@ -1155,9 +1155,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # Should extract URL from config.vector_store.config.url
+        # Should extract URL from config.vector_store.config.url -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "http://qdrant-server:6333",
             "Should extract URL from nested path config.vector_store.config.url",
         )
@@ -1204,9 +1204,9 @@ class TestVectorOperationAttributeExtractor(unittest.TestCase):
             instance, "search", kwargs, result
         )
 
-        # ✅ should extract URL from __otel_mem0_original_config__
+        # ✅ should extract URL from __otel_mem0_original_config__ -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "http://localhost:19530",
             "Should extract URL from __otel_mem0_original_config__ (universal solution)",
         )
@@ -1260,8 +1260,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
             instance, "search", result
         )
 
+        # provider -> data_source.type
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "neo4j",
         )
         self.assertEqual(
@@ -1296,7 +1297,7 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
         )
 
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "memgraph",
         )
         self.assertEqual(
@@ -1329,7 +1330,7 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
         )
 
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "neptune",
         )
         self.assertEqual(
@@ -1421,9 +1422,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
             instance, "search", result
         )
 
-        # Should extract "neo4j" from config.graph_store.provider
+        # Should extract "neo4j" from config.graph_store.provider -> data_source.type
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
             "neo4j",
             "Should extract provider from config.graph_store.provider",
         )
@@ -1439,7 +1440,8 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         attrs1 = self.extractor.extract_graph_attributes(instance1, "add", {})
         self.assertEqual(
-            attrs1[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER], "memgraph"
+            attrs1[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE],
+            "memgraph",
         )
 
         # Scenario 2: no instance.provider, extract from config.graph_store.provider
@@ -1450,7 +1452,7 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
 
         attrs2 = self.extractor.extract_graph_attributes(instance2, "add", {})
         self.assertEqual(
-            attrs2[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER], "neo4j"
+            attrs2[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE], "neo4j"
         )
 
     def test_graph_url_from_neo4j_config(self):
@@ -1469,9 +1471,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
             instance, "search", result
         )
 
-        # Should extract URL
+        # Should extract URL -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "bolt://localhost:7687",
             "Should extract URL from config.config.url for Neo4j",
         )
@@ -1494,9 +1496,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
             instance, "search", result
         )
 
-        # Should extract endpoint as URL
+        # Should extract endpoint as URL -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "neptune-db://my-cluster.us-east-1.neptune.amazonaws.com:8182",
             "Should extract URL from config.config.endpoint for Neptune",
         )
@@ -1517,9 +1519,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
             instance, "search", result
         )
 
-        # Should extract URL from config.graph_store.config.url
+        # Should extract URL from config.graph_store.config.url -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "bolt://neo4j-server:7687",
             "Should extract URL from nested path config.graph_store.config.url",
         )
@@ -1540,9 +1542,9 @@ class TestGraphOperationAttributeExtractor(unittest.TestCase):
             instance, "search", result
         )
 
-        # Should extract URL
+        # Should extract URL -> data_source.url
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL],
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL],
             "bolt://localhost:7688",
             "Should extract URL from config.config.url for Memgraph",
         )
@@ -1561,18 +1563,11 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
 
         attributes = self.extractor.extract_reranker_attributes(Mock(), kwargs)
 
-        self.assertIn(
-            SemanticAttributes.GEN_AI_MEMORY_RERANKER_METHOD, attributes
-        )
+        # provider -> gen_ai.provider.name (may be None if not configured)
+        # top_k -> gen_ai.request.top_k
+        self.assertIn(SemanticAttributes.GEN_AI_REQUEST_TOP_K, attributes)
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_METHOD],
-            "rerank",
-        )
-        self.assertIn(
-            SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K, attributes
-        )
-        self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K], 3
+            attributes[SemanticAttributes.GEN_AI_REQUEST_TOP_K], 3
         )
 
     def test_reranker_config_llm_reranker_provider(self):
@@ -1588,40 +1583,43 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
         instance.config.max_tokens = 60
         instance.config.scoring_prompt = "custom scoring prompt"
 
-        # documents only for calculating input_count, don't pass top_k to ensure from config
+        # documents only for calculating documents_count, don't pass top_k to ensure from config
         kwargs = {"query": "rerank query", "documents": [{"id": 1}, {"id": 2}]}
 
         attributes = self.extractor.extract_reranker_attributes(
             instance, kwargs
         )
 
-        # provider from config.provider
+        # provider -> gen_ai.provider.name
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_PROVIDER_NAME],
             "llm_reranker",
         )
         # Config attributes from instance.config
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_MODEL],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_MODEL_NAME],
             "qwen-plus",
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_TOP_K],
             5,
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TEMPERATURE],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_TEMPERATURE],
             0.0,
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_TOKENS],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_MAX_TOKENS],
             60,
         )
         self.assertEqual(
-            attributes[
-                SemanticAttributes.GEN_AI_MEMORY_RERANKER_CUSTOM_PROMPT
-            ],
+            attributes[SemanticAttributes.GEN_AI_RERANK_SCORING_PROMPT],
             "custom scoring prompt",
+        )
+        # documents_count from documents length
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_RERANK_DOCUMENTS_COUNT],
+            2,
         )
 
     def test_reranker_config_cohere_provider(self):
@@ -1642,28 +1640,29 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
         )
 
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_PROVIDER_NAME],
             "cohere",
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_MODEL],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_MODEL_NAME],
             "rerank-english-v3.0",
         )
         # top_k prioritizes from config.top_k (not passed in kwargs)
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_TOP_K],
             7,
         )
         self.assertTrue(
-            attributes[
-                SemanticAttributes.GEN_AI_MEMORY_RERANKER_RETURN_DOCUMENTS
-            ]
+            attributes[SemanticAttributes.GEN_AI_RERANK_RETURN_DOCUMENTS]
         )
         self.assertEqual(
-            attributes[
-                SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_CHUNKS_PER_DOC
-            ],
+            attributes[SemanticAttributes.GEN_AI_RERANK_MAX_CHUNKS_PER_DOC],
             8,
+        )
+        # documents_count
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_RERANK_DOCUMENTS_COUNT],
+            1,
         )
 
     def test_reranker_config_huggingface_provider(self):
@@ -1689,31 +1688,34 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
         )
 
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_PROVIDER_NAME],
             "huggingface",
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_MODEL],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_MODEL_NAME],
             "BAAI/bge-reranker-base",
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_TOP_K],
             10,
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_DEVICE],
+            attributes[SemanticAttributes.GEN_AI_RERANK_DEVICE],
             "cuda",
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_BATCH_SIZE],
+            attributes[SemanticAttributes.GEN_AI_RERANK_BATCH_SIZE],
             16,
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_LENGTH],
+            attributes[SemanticAttributes.GEN_AI_RERANK_MAX_LENGTH],
             256,
         )
-        self.assertTrue(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_NORMALIZE]
+        self.assertTrue(attributes[SemanticAttributes.GEN_AI_RERANK_NORMALIZE])
+        # documents_count
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_RERANK_DOCUMENTS_COUNT],
+            3,
         )
 
     def test_reranker_config_sentence_transformer_provider(self):
@@ -1732,16 +1734,21 @@ class TestRerankerAttributeExtractor(unittest.TestCase):
         )
 
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER],
+            attributes[SemanticAttributes.GEN_AI_PROVIDER_NAME],
             "sentence_transformer",
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_MODEL],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_MODEL_NAME],
             "cross-encoder/ms-marco-MiniLM-L-6-v2",
         )
         self.assertEqual(
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K],
+            attributes[SemanticAttributes.GEN_AI_REQUEST_TOP_K],
             4,
+        )
+        # documents_count
+        self.assertEqual(
+            attributes[SemanticAttributes.GEN_AI_RERANK_DOCUMENTS_COUNT],
+            2,
         )
 
 

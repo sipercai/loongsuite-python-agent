@@ -16,7 +16,6 @@ from opentelemetry.instrumentation.mem0.config import (
 from opentelemetry.instrumentation.mem0.internal._extractors import (
     METHOD_EXTRACTION_RULES,
 )
-from opentelemetry.instrumentation.mem0.internal._metrics import Mem0Metrics
 from opentelemetry.instrumentation.mem0.internal._thread_pool_handler import (
     ThreadPoolContextPropagationHandler,
 )
@@ -29,7 +28,6 @@ from opentelemetry.instrumentation.mem0.internal._wrapper import (
 from opentelemetry.instrumentation.mem0.package import _instruments
 from opentelemetry.instrumentation.mem0.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
-from opentelemetry.metrics import get_meter
 from opentelemetry.semconv.schemas import Schemas
 
 # Module-level logger
@@ -134,18 +132,6 @@ class Mem0Instrumentor(BaseInstrumentor):
             schema_url=Schemas.V1_28_0.value,
         )
 
-        # Get meter provider and create meter
-        meter_provider = kwargs.get("meter_provider")
-        meter = get_meter(
-            "opentelemetry.instrumentation.mem0",
-            __version__,
-            meter_provider=meter_provider,
-            schema_url=Schemas.V1_28_0.value,
-        )
-
-        # Create lightweight metrics container
-        metrics = Mem0Metrics(meter)
-
         # Wrap ThreadPoolExecutor.submit to support context propagation
         # Some mem0 methods (add, get_all, search) use ThreadPoolExecutor,
         # causing OpenTelemetry context to not auto-propagate to child threads.
@@ -158,14 +144,14 @@ class Mem0Instrumentor(BaseInstrumentor):
             wrapper=self._threadpool_handler,
         )
 
-        # Execute instrumentation
-        self._instrument_memory_operations(tracer, metrics)
-        self._instrument_memory_client_operations(tracer, metrics)
+        # Execute instrumentation (traces only, metrics removed)
+        self._instrument_memory_operations(tracer)
+        self._instrument_memory_client_operations(tracer)
         # Sub-phases controlled by toggle, avoid binding wrapper when disabled to reduce overhead
         if mem0_config.is_internal_phases_enabled():
-            self._instrument_vector_operations(tracer, metrics)
-            self._instrument_graph_operations(tracer, metrics)
-            self._instrument_reranker_operations(tracer, metrics)
+            self._instrument_vector_operations(tracer)
+            self._instrument_graph_operations(tracer)
+            self._instrument_reranker_operations(tracer)
 
     def _uninstrument(self, **kwargs: Any) -> None:
         """Remove instrumentation."""
@@ -420,7 +406,7 @@ class Mem0Instrumentor(BaseInstrumentor):
 
         return _wrapper
 
-    def _instrument_memory_operations(self, tracer, metrics):
+    def _instrument_memory_operations(self, tracer):
         """Instrument Memory and AsyncMemory operations."""
         try:
             if (
@@ -434,7 +420,7 @@ class Mem0Instrumentor(BaseInstrumentor):
                 )
                 return
 
-            wrapper = MemoryOperationWrapper(tracer, metrics)
+            wrapper = MemoryOperationWrapper(tracer)
 
             # Instrument Memory (sync)
             for method in self._public_methods_of(
@@ -472,7 +458,7 @@ class Mem0Instrumentor(BaseInstrumentor):
         except Exception as e:
             logger.debug(f"Failed to instrument Memory operations: {e}")
 
-    def _instrument_memory_client_operations(self, tracer, metrics):
+    def _instrument_memory_client_operations(self, tracer):
         """Instrument MemoryClient and AsyncMemoryClient operations."""
         try:
             if (
@@ -486,7 +472,7 @@ class Mem0Instrumentor(BaseInstrumentor):
                 )
                 return
 
-            wrapper = MemoryOperationWrapper(tracer, metrics)
+            wrapper = MemoryOperationWrapper(tracer)
 
             # Instrument MemoryClient (sync)
             for method in self._public_methods_of(
@@ -622,7 +608,7 @@ class Mem0Instrumentor(BaseInstrumentor):
         except Exception as e:
             logger.debug(f"Failed to wrap {factory_class}.create: {e}")
 
-    def _instrument_vector_operations(self, tracer, metrics):
+    def _instrument_vector_operations(self, tracer):
         """Instrument VectorStore operations."""
         try:
             # Require both VectorStoreBase and VectorStoreFactory to be available
@@ -659,8 +645,8 @@ class Mem0Instrumentor(BaseInstrumentor):
                     "reset",
                 ]
 
-            # Create VectorStoreWrapper instance
-            vector_wrapper = VectorStoreWrapper(tracer, metrics)
+            # Create VectorStoreWrapper instance (trace-only)
+            vector_wrapper = VectorStoreWrapper(tracer)
 
             # Use generic factory wrapping method
             self._wrap_factory_for_phase(
@@ -675,7 +661,7 @@ class Mem0Instrumentor(BaseInstrumentor):
         except Exception as e:
             logger.debug(f"Failed to instrument vector store operations: {e}")
 
-    def _instrument_graph_operations(self, tracer, metrics):
+    def _instrument_graph_operations(self, tracer):
         """Instrument GraphStore operations."""
         try:
             # If factories are unavailable, graph subphase instrumentation cannot be enabled
@@ -714,8 +700,8 @@ class Mem0Instrumentor(BaseInstrumentor):
                     "reset",
                 ]
 
-            # Create GraphStoreWrapper instance
-            graph_wrapper = GraphStoreWrapper(tracer, metrics)
+            # Create GraphStoreWrapper instance (trace-only)
+            graph_wrapper = GraphStoreWrapper(tracer)
 
             # Use generic factory wrapping method
             self._wrap_factory_for_phase(
@@ -730,7 +716,7 @@ class Mem0Instrumentor(BaseInstrumentor):
         except Exception as e:
             logger.debug(f"Failed to instrument graph store operations: {e}")
 
-    def _instrument_reranker_operations(self, tracer, metrics):
+    def _instrument_reranker_operations(self, tracer):
         """Instrument Reranker operations."""
         try:
             if not _FACTORIES_AVAILABLE or RerankerFactory is None:
@@ -740,8 +726,8 @@ class Mem0Instrumentor(BaseInstrumentor):
                 )
                 return
 
-            # Create RerankerWrapper instance
-            reranker_wrapper = RerankerWrapper(tracer, metrics)
+            # Create RerankerWrapper instance (trace-only)
+            reranker_wrapper = RerankerWrapper(tracer)
 
             # Use generic factory wrapping method
             self._wrap_factory_for_phase(

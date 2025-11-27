@@ -290,7 +290,7 @@ CONFIG_ATTRIBUTE_MAPPINGS = {
             ["namespace"],
             safe_str,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL: (
+        SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL: (
             # Universal: instrumentation saves original config to __otel_mem0_original_config__
             # Supports various providers: Milvus, Qdrant, Chroma, MongoDB, Redis, etc.
             [
@@ -338,7 +338,7 @@ CONFIG_ATTRIBUTE_MAPPINGS = {
             ["llm.model", "config.llm.model"],
             safe_str,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL: (
+        SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_URL: (
             # Neo4j/Memgraph: config.url, Neptune: config.endpoint, Kuzu: no url (local)
             [
                 "config.graph_store.config.url",
@@ -354,47 +354,47 @@ CONFIG_ATTRIBUTE_MAPPINGS = {
         ),
     },
     "reranker": {
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_MODEL: (
+        SemanticAttributes.GEN_AI_REQUEST_MODEL_NAME: (
             ["model_name", "config.model"],
             safe_str,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K: (
+        SemanticAttributes.GEN_AI_REQUEST_TOP_K: (
             ["top_k", "config.top_k"],
             safe_int,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_TEMPERATURE: (
+        SemanticAttributes.GEN_AI_REQUEST_TEMPERATURE: (
             ["config.temperature"],
             safe_float,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_TOKENS: (
+        SemanticAttributes.GEN_AI_REQUEST_MAX_TOKENS: (
             ["config.max_tokens"],
             safe_int,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_CUSTOM_PROMPT: (
+        SemanticAttributes.GEN_AI_RERANK_SCORING_PROMPT: (
             ["config.scoring_prompt"],
             safe_str,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_RETURN_DOCUMENTS: (
+        SemanticAttributes.GEN_AI_RERANK_RETURN_DOCUMENTS: (
             ["config.return_documents"],
             bool,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_CHUNKS_PER_DOC: (
+        SemanticAttributes.GEN_AI_RERANK_MAX_CHUNKS_PER_DOC: (
             ["config.max_chunks_per_doc"],
             safe_int,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_DEVICE: (
+        SemanticAttributes.GEN_AI_RERANK_DEVICE: (
             ["config.device"],
             safe_str,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_BATCH_SIZE: (
+        SemanticAttributes.GEN_AI_RERANK_BATCH_SIZE: (
             ["config.batch_size"],
             safe_int,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_MAX_LENGTH: (
+        SemanticAttributes.GEN_AI_RERANK_MAX_LENGTH: (
             ["config.max_length"],
             safe_int,
         ),
-        SemanticAttributes.GEN_AI_MEMORY_RERANKER_NORMALIZE: (
+        SemanticAttributes.GEN_AI_RERANK_NORMALIZE: (
             ["config.normalize"],
             bool,
         ),
@@ -776,12 +776,12 @@ class VectorOperationAttributeExtractor:
         """Extracts attributes for Vector operations."""
         attributes: Dict[str, Any] = {}
 
-        # provider (prioritize instance/config fields, then class name inference)
+        # provider -> data_source.type
         provider = VectorOperationAttributeExtractor._get_vector_provider(
             instance
         )
         if provider:
-            attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER] = (
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE] = (
                 provider
             )
 
@@ -797,7 +797,7 @@ class VectorOperationAttributeExtractor:
         # method
         attributes[SemanticAttributes.GEN_AI_MEMORY_VECTOR_METHOD] = method
 
-        # Extract config attributes (embedding_dims, metric_type, db_name, etc.)
+        # Extract config attributes (embedding_dims, metric_type, db_name, data_source.url, etc.)
         config_attrs = extract_config_attributes(instance, "vector")
         attributes.update(config_attrs)
 
@@ -901,19 +901,19 @@ class GraphOperationAttributeExtractor:
         """Extracts attributes for Graph operations."""
         attributes: Dict[str, Any] = {}
 
-        # provider
+        # provider -> data_source.type
         provider = GraphOperationAttributeExtractor._get_graph_provider(
             instance
         )
         if provider:
-            attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER] = (
+            attributes[SemanticAttributes.GEN_AI_MEMORY_DATA_SOURCE_TYPE] = (
                 provider
             )
 
         # method
         attributes[SemanticAttributes.GEN_AI_MEMORY_GRAPH_METHOD] = method
 
-        # Extract config attributes (threshold, llm_provider, llm_model, etc.)
+        # Extract config attributes (threshold, llm_provider, llm_model, data_source.url, etc.)
         config_attrs = extract_config_attributes(instance, "graph")
         attributes.update(config_attrs)
 
@@ -962,38 +962,33 @@ class RerankerAttributeExtractor:
         """Extracts attributes for Reranker operations."""
         attributes: Dict[str, Any] = {}
 
-        # provider
+        # provider -> gen_ai.provider.name
         provider = RerankerAttributeExtractor._get_reranker_provider(instance)
         if provider:
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER] = (
-                provider
-            )
-
-        # method (reranker has only one method)
-        attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_METHOD] = "rerank"
+            attributes[SemanticAttributes.GEN_AI_PROVIDER_NAME] = provider
 
         # Extract config attributes (model, top_k, temperature, etc.)
         config_attrs = extract_config_attributes(instance, "reranker")
         attributes.update(config_attrs)
 
         # Extract dynamic attributes from request parameters
-        # input_count: prioritize documents count, fallback to query list
+        # documents_count: prioritize documents count, fallback to query list
         if documents := kwargs.get("documents"):
             if isinstance(documents, list):
                 attributes[
-                    SemanticAttributes.GEN_AI_MEMORY_RERANKER_INPUT_COUNT
+                    SemanticAttributes.GEN_AI_RERANK_DOCUMENTS_COUNT
                 ] = len(documents)
         elif query := kwargs.get("query"):
             if isinstance(query, list):
                 q_list: List[Any] = cast(List[Any], query)
                 attributes[
-                    SemanticAttributes.GEN_AI_MEMORY_RERANKER_INPUT_COUNT
+                    SemanticAttributes.GEN_AI_RERANK_DOCUMENTS_COUNT
                 ] = len(q_list)
 
         # top_k may be passed dynamically at call time, prioritize kwargs
         if top_k := kwargs.get("top_k"):
-            attributes[SemanticAttributes.GEN_AI_MEMORY_RERANKER_TOP_K] = (
-                safe_int(top_k)
+            attributes[SemanticAttributes.GEN_AI_REQUEST_TOP_K] = safe_int(
+                top_k
             )
 
         return attributes

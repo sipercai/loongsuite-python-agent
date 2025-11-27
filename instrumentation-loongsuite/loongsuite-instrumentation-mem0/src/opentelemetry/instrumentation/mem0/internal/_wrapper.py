@@ -1,16 +1,16 @@
 """
 Core wrappers for Mem0 instrumentation.
 Implements wrapping logic for top-level Memory operations and sub-phase operations.
+
+Note: Metrics recording has been removed; this module only records traces.
 """
 
 import inspect
 import logging
-import time
 from functools import wraps
 from typing import Any, Callable, Optional
 
 from opentelemetry.instrumentation.mem0.config import (
-    SLOW_REQUEST_THRESHOLD_SECONDS,
     is_internal_phases_enabled,
 )
 from opentelemetry.instrumentation.mem0.internal._extractors import (
@@ -19,7 +19,6 @@ from opentelemetry.instrumentation.mem0.internal._extractors import (
     RerankerAttributeExtractor,
     VectorOperationAttributeExtractor,
 )
-from opentelemetry.instrumentation.mem0.internal._metrics import Mem0Metrics
 from opentelemetry.instrumentation.mem0.internal._util import (
     get_exception_type,
 )
@@ -165,16 +164,14 @@ def _apply_operation_attributes(
 class MemoryOperationWrapper:
     """Memory top-level operation wrapper."""
 
-    def __init__(self, tracer: Tracer, metrics: Mem0Metrics):
+    def __init__(self, tracer: Tracer):
         """
         Initialize wrapper.
 
         Args:
             tracer: OpenTelemetry Tracer
-            metrics: Metrics recorder
         """
         self.tracer = tracer
-        self.metrics = metrics
         self.extractor = MemoryOperationAttributeExtractor()
 
     def wrap_operation(
@@ -259,58 +256,6 @@ class MemoryOperationWrapper:
 
         return common_attrs
 
-    def _record_metrics(
-        self,
-        operation_name: str,
-        common_attrs: dict,
-        start_time: float,
-        error: Optional[Exception],
-    ) -> None:
-        """
-        Record metrics (shared by sync/async) - directly call OpenTelemetry API.
-
-        Uses whitelist approach: only records low-cardinality dimensions.
-        Excludes high-cardinality attributes like user_id/agent_id/run_id/app_id to avoid metric explosion.
-        """
-        duration = time.time() - start_time
-
-        # Whitelist: only record fixed low-cardinality dimensions
-        # Memory operation records: operation_name + server info (if available)
-        metric_attrs = {
-            SemanticAttributes.METRIC_GEN_AI_OPERATION_NAME: SemanticAttributes.MEMORY_OPERATION,
-            SemanticAttributes.METRIC_GEN_AI_MEMORY_OPERATION: operation_name,
-        }
-
-        # Extract server.address and server.port from common_attrs (low-cardinality, suitable as dimensions)
-        # Note: only valid for MemoryClient (uses remote server), Memory instance doesn't have these attributes
-        if SemanticAttributes.SERVER_ADDRESS in common_attrs:
-            metric_attrs[SemanticAttributes.METRIC_SERVER_ADDRESS] = (
-                common_attrs[SemanticAttributes.SERVER_ADDRESS]
-            )
-        if SemanticAttributes.SERVER_PORT in common_attrs:
-            metric_attrs[SemanticAttributes.METRIC_SERVER_PORT] = common_attrs[
-                SemanticAttributes.SERVER_PORT
-            ]
-
-        # Record metrics via OpenTelemetry API
-        # 1. Record duration
-        self.metrics.memory_duration.record(duration, metric_attrs)
-
-        # 2. Record request count
-        self.metrics.memory_count.add(1, metric_attrs)
-
-        # 3. Record error count if error occurred
-        if error:
-            error_attrs = metric_attrs.copy()
-            error_attrs[SemanticAttributes.ERROR_TYPE] = get_exception_type(
-                error
-            )
-            self.metrics.memory_error_count.add(1, error_attrs)
-
-        # 4. Record slow request count if exceeded threshold
-        if duration >= SLOW_REQUEST_THRESHOLD_SECONDS:
-            self.metrics.memory_slow_count.add(1, metric_attrs)
-
     def _execute_with_span(
         self,
         func: Callable,
@@ -328,14 +273,11 @@ class MemoryOperationWrapper:
             span_name,
             kind=SpanKind.CLIENT,
         ) as span:
-            start_time = time.time()
             result = None
-            error = None
-            common_attrs = {}
 
             try:
                 # Setup basic and common attributes
-                common_attrs = self._setup_span_and_attributes(
+                self._setup_span_and_attributes(
                     span, instance, kwargs, operation_name
                 )
 
@@ -360,7 +302,6 @@ class MemoryOperationWrapper:
                 return result
 
             except Exception as e:
-                error = e
                 logger.debug(f"Operation failed with exception: {e}")
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 span.record_exception(e)
@@ -368,12 +309,6 @@ class MemoryOperationWrapper:
                     SemanticAttributes.ERROR_TYPE, get_exception_type(e)
                 )
                 raise
-
-            finally:
-                # Record metrics
-                self._record_metrics(
-                    operation_name, common_attrs, start_time, error
-                )
 
     async def _execute_with_span_async(
         self,
@@ -392,14 +327,11 @@ class MemoryOperationWrapper:
             span_name,
             kind=SpanKind.CLIENT,
         ) as span:
-            start_time = time.time()
             result = None
-            error = None
-            common_attrs = {}
 
             try:
                 # Setup basic and common attributes
-                common_attrs = self._setup_span_and_attributes(
+                self._setup_span_and_attributes(
                     span, instance, kwargs, operation_name
                 )
 
@@ -424,7 +356,6 @@ class MemoryOperationWrapper:
                 return result
 
             except Exception as e:
-                error = e
                 logger.debug(f"Operation failed with exception: {e}")
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 span.record_exception(e)
@@ -433,26 +364,18 @@ class MemoryOperationWrapper:
                 )
                 raise
 
-            finally:
-                # Record metrics
-                self._record_metrics(
-                    operation_name, common_attrs, start_time, error
-                )
-
 
 class VectorStoreWrapper:
     """Vector store subphase wrapper."""
 
-    def __init__(self, tracer: Tracer, metrics: Mem0Metrics):
+    def __init__(self, tracer: Tracer):
         """
         Initialize wrapper.
 
         Args:
             tracer: OpenTelemetry Tracer
-            metrics: Metrics recorder
         """
         self.tracer = tracer
-        self.metrics = metrics
         self.extractor = VectorOperationAttributeExtractor()
 
     def wrap_vector_operation(self, method_name: str) -> Callable:
@@ -484,9 +407,7 @@ class VectorStoreWrapper:
                 span_name,
                 kind=SpanKind.CLIENT,
             ) as span:
-                start_time = time.time()
                 result = None
-                error = None
 
                 # Store extracted attributes (defined outside try for finally access)
                 span_attrs = {}
@@ -506,58 +427,12 @@ class VectorStoreWrapper:
                     return result
 
                 except Exception as e:
-                    error = e
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.record_exception(e)
                     span.set_attribute(
                         SemanticAttributes.ERROR_TYPE, get_exception_type(e)
                     )
                     raise
-
-                finally:
-                    # Record vector metrics via OpenTelemetry API
-                    duration = time.time() - start_time
-                    metric_attrs = {
-                        SemanticAttributes.METRIC_GEN_AI_MEMORY_VECTOR_METHOD: method_name,
-                    }
-
-                    # Read provider and url from extracted attributes (not from span)
-                    if (
-                        SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER
-                        in span_attrs
-                    ):
-                        metric_attrs[
-                            SemanticAttributes.METRIC_GEN_AI_MEMORY_VECTOR_PROVIDER
-                        ] = span_attrs[
-                            SemanticAttributes.GEN_AI_MEMORY_VECTOR_PROVIDER
-                        ]
-                    if (
-                        SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL
-                        in span_attrs
-                    ):
-                        metric_attrs[
-                            SemanticAttributes.METRIC_GEN_AI_MEMORY_VECTOR_URL
-                        ] = span_attrs[
-                            SemanticAttributes.GEN_AI_MEMORY_VECTOR_URL
-                        ]
-
-                    # 1. Record duration
-                    self.metrics.vector_duration.record(duration, metric_attrs)
-
-                    # 2. Record request count
-                    self.metrics.vector_count.add(1, metric_attrs)
-
-                    # 3. Record error count if error occurred
-                    if error:
-                        error_attrs = metric_attrs.copy()
-                        error_attrs[SemanticAttributes.METRIC_ERROR_TYPE] = (
-                            get_exception_type(error)
-                        )
-                        self.metrics.vector_error_count.add(1, error_attrs)
-
-                    # 4. Record slow request count if exceeded threshold
-                    if duration >= SLOW_REQUEST_THRESHOLD_SECONDS:
-                        self.metrics.vector_slow_count.add(1, metric_attrs)
 
         return wrapper
 
@@ -569,16 +444,14 @@ class VectorStoreWrapper:
 class GraphStoreWrapper:
     """Graph store subphase wrapper."""
 
-    def __init__(self, tracer: Tracer, metrics: Mem0Metrics):
+    def __init__(self, tracer: Tracer):
         """
         Initialize wrapper.
 
         Args:
             tracer: OpenTelemetry Tracer
-            metrics: Metrics recorder
         """
         self.tracer = tracer
-        self.metrics = metrics
         self.extractor = GraphOperationAttributeExtractor()
 
     def wrap_graph_operation(self, method_name: str) -> Callable:
@@ -606,9 +479,7 @@ class GraphStoreWrapper:
                 span_name,
                 kind=SpanKind.CLIENT,
             ) as span:
-                start_time = time.time()
                 result = None
-                error = None
 
                 # Store extracted attributes (defined outside try for finally access)
                 span_attrs = {}
@@ -628,58 +499,12 @@ class GraphStoreWrapper:
                     return result
 
                 except Exception as e:
-                    error = e
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.record_exception(e)
                     span.set_attribute(
                         SemanticAttributes.ERROR_TYPE, get_exception_type(e)
                     )
                     raise
-
-                finally:
-                    # Record graph metrics via OpenTelemetry API
-                    duration = time.time() - start_time
-                    metric_attrs = {
-                        SemanticAttributes.METRIC_GEN_AI_MEMORY_GRAPH_METHOD: method_name,
-                    }
-
-                    # Read provider and url from extracted attributes (not from span)
-                    if (
-                        SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER
-                        in span_attrs
-                    ):
-                        metric_attrs[
-                            SemanticAttributes.METRIC_GEN_AI_MEMORY_GRAPH_PROVIDER
-                        ] = span_attrs[
-                            SemanticAttributes.GEN_AI_MEMORY_GRAPH_PROVIDER
-                        ]
-                    if (
-                        SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL
-                        in span_attrs
-                    ):
-                        metric_attrs[
-                            SemanticAttributes.METRIC_GEN_AI_MEMORY_GRAPH_URL
-                        ] = span_attrs[
-                            SemanticAttributes.GEN_AI_MEMORY_GRAPH_URL
-                        ]
-
-                    # 1. Record duration
-                    self.metrics.graph_duration.record(duration, metric_attrs)
-
-                    # 2. Record request count
-                    self.metrics.graph_count.add(1, metric_attrs)
-
-                    # 3. Record error count if error occurred
-                    if error:
-                        error_attrs = metric_attrs.copy()
-                        error_attrs[SemanticAttributes.METRIC_ERROR_TYPE] = (
-                            get_exception_type(error)
-                        )
-                        self.metrics.graph_error_count.add(1, error_attrs)
-
-                    # 4. Record slow request count if exceeded threshold
-                    if duration >= SLOW_REQUEST_THRESHOLD_SECONDS:
-                        self.metrics.graph_slow_count.add(1, metric_attrs)
 
         return wrapper
 
@@ -691,16 +516,14 @@ class GraphStoreWrapper:
 class RerankerWrapper:
     """Reranker subphase wrapper."""
 
-    def __init__(self, tracer: Tracer, metrics: Mem0Metrics):
+    def __init__(self, tracer: Tracer):
         """
         Initialize wrapper.
 
         Args:
             tracer: OpenTelemetry Tracer
-            metrics: Metrics recorder
         """
         self.tracer = tracer
-        self.metrics = metrics
         self.extractor = RerankerAttributeExtractor()
 
     def wrap_rerank(self) -> Callable:
@@ -732,9 +555,6 @@ class RerankerWrapper:
                 SpanName.get_subphase_span_name("reranker", "rerank"),
                 kind=SpanKind.CLIENT,
             ) as span:
-                start_time = time.time()
-                error = None
-
                 # Store extracted attributes (defined outside try for finally access)
                 span_attrs = {}
 
@@ -753,50 +573,11 @@ class RerankerWrapper:
                     return result
 
                 except Exception as e:
-                    error = e
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.record_exception(e)
                     span.set_attribute(
                         SemanticAttributes.ERROR_TYPE, get_exception_type(e)
                     )
                     raise
-
-                finally:
-                    # Record reranker metrics via OpenTelemetry API
-                    duration = time.time() - start_time
-                    metric_attrs = {
-                        SemanticAttributes.METRIC_GEN_AI_MEMORY_RERANKER_METHOD: "rerank",
-                    }
-
-                    # Read provider from extracted attributes (not from span)
-                    if (
-                        SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER
-                        in span_attrs
-                    ):
-                        metric_attrs[
-                            SemanticAttributes.METRIC_GEN_AI_MEMORY_RERANKER_PROVIDER
-                        ] = span_attrs[
-                            SemanticAttributes.GEN_AI_MEMORY_RERANKER_PROVIDER
-                        ]
-
-                    # 1. Record duration
-                    self.metrics.reranker_duration.record(
-                        duration, metric_attrs
-                    )
-
-                    # 2. Record request count
-                    self.metrics.reranker_count.add(1, metric_attrs)
-
-                    # 3. Record error count if error occurred
-                    if error:
-                        error_attrs = metric_attrs.copy()
-                        error_attrs[SemanticAttributes.METRIC_ERROR_TYPE] = (
-                            get_exception_type(error)
-                        )
-                        self.metrics.reranker_error_count.add(1, error_attrs)
-
-                    # 4. Record slow request count if exceeded threshold
-                    if duration >= SLOW_REQUEST_THRESHOLD_SECONDS:
-                        self.metrics.reranker_slow_count.add(1, metric_attrs)
 
         return wrapper
