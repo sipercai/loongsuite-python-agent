@@ -25,21 +25,14 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "opentelemetry-api >= 1.20.0",
-    "opentelemetry-instrumentation >= 0.41b0",
-    "opentelemetry-semantic-conventions >= 0.41b0",
-    "wrapt >= 1.14.0",
+    "wrapt",
+    "opentelemetry-api",
+    "opentelemetry-instrumentation",
+    "opentelemetry-semantic-conventions",
 ]
 
 [project.optional-dependencies]
 instruments = [
-    "mem0ai >= 1.0.0",
-]
-test = [
-    "pytest >= 7.0.0",
-    "pytest-asyncio >= 0.21.0",
-    "opentelemetry-sdk >= 1.20.0",
-    "opentelemetry-test-utils >= 0.41b0",
     "mem0ai >= 1.0.0",
 ]
 

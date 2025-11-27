@@ -49,7 +49,7 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -c tox-loongsuite.ini -e py39-test-loongsuite-instrumentation-mem0-0 -- -ra
+        run: tox -c tox-loongsuite.ini -e py39-test-loongsuite-instrumentation-mem0-1 -- -ra
 
   py310-test-loongsuite-instrumentation-mem0_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0 3.10 Ubuntu
@@ -68,7 +68,7 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -c tox-loongsuite.ini -e py310-test-loongsuite-instrumentation-mem0-0 -- -ra
+        run: tox -c tox-loongsuite.ini -e py310-test-loongsuite-instrumentation-mem0-1 -- -ra
 
   py311-test-loongsuite-instrumentation-mem0_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0 3.11 Ubuntu
@@ -87,7 +87,7 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -c tox-loongsuite.ini -e py311-test-loongsuite-instrumentation-mem0-0 -- -ra
+        run: tox -c tox-loongsuite.ini -e py311-test-loongsuite-instrumentation-mem0-1 -- -ra
 
   py312-test-loongsuite-instrumentation-mem0_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0 3.12 Ubuntu
@@ -106,5 +106,5 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -c tox-loongsuite.ini -e py312-test-loongsuite-instrumentation-mem0-0 -- -ra
+        run: tox -c tox-loongsuite.ini -e py312-test-loongsuite-instrumentation-mem0-1 -- -ra
 
