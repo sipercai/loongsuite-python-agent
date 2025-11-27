@@ -9,10 +9,9 @@ pyyaml>=6.0.0
 mem0ai>=1.0.0
 wrapt==1.17.3
 # OpenTelemetry SDK and testing utilities (pinned to stable versions)
-opentelemetry-api==1.28
-opentelemetry-sdk==1.28
-opentelemetry-semantic-conventions==0.49b0
-opentelemetry-test-utils>=0.41b0
+opentelemetry-api==1.37
+opentelemetry-sdk==1.37
+opentelemetry-semantic-conventions==0.58b0
 
 # Mock and utilities
 mock>=4.0.0
