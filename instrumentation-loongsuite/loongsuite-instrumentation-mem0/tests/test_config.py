@@ -98,7 +98,7 @@ class TestMem0InstrumentationConfig(unittest.TestCase):
 
     def test_internal_phases_enabled_config(self):
         """Tests internal phases enabled configuration."""
-        self.assertTrue(Mem0InstrumentationConfig.INTERNAL_PHASES_ENABLED)
+        self.assertFalse(Mem0InstrumentationConfig.INTERNAL_PHASES_ENABLED)
 
 
 class TestConfigFunctions(unittest.TestCase):

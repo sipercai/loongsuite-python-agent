@@ -366,7 +366,7 @@ def instrument_with_factories_patched(
 
     # Then instrument (enable internal phase capture)
     os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "True"
-    os.environ["OTEL_INSTRUMENTATION_MEM0_CAPTURE_INTERNAL_PHASES"] = "True"
+    os.environ["OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED"] = "True"
     instrumentor = Mem0Instrumentor()
     instrumentor.instrument(
         tracer_provider=tracer_provider, meter_provider=meter_provider
@@ -374,7 +374,7 @@ def instrument_with_factories_patched(
     yield instrumentor
     instrumentor.uninstrument()
     os.environ.pop("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", None)
-    os.environ.pop("OTEL_INSTRUMENTATION_MEM0_CAPTURE_INTERNAL_PHASES", None)
+    os.environ.pop("OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED", None)
 
 
 @pytest.fixture(scope="module")

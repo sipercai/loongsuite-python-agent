@@ -104,24 +104,20 @@ class GenAITelemetryOptions:
 class Mem0InstrumentationConfig:
     """Mem0 instrumentation configuration."""
 
-    INTERNAL_PHASES_ENABLED = first_present_bool(
-        [
-            "OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED",
-            "otel.instrumentation.mem0.inner.enabled",
-        ],
-        True,
-    )
+    _INTERNAL_PHASE_KEYS: list[str] = [
+        "OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED",
+        "otel.instrumentation.mem0.inner.enabled",
+    ]
+
+    INTERNAL_PHASES_ENABLED: bool = False
 
 
 def is_internal_phases_enabled() -> bool:
     """
-    Check if internal phase spans (vector/graph/reranker) are enabled.
+    Check if internal phase spans (vector/graph/rerank) are enabled.
     """
     return first_present_bool(
-        [
-            "OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED",
-            "otel.instrumentation.mem0.inner.enabled",
-        ],
+        Mem0InstrumentationConfig._INTERNAL_PHASE_KEYS,
         Mem0InstrumentationConfig.INTERNAL_PHASES_ENABLED,
     )
 
