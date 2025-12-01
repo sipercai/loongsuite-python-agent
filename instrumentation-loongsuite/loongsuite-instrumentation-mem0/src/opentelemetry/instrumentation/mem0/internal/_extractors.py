@@ -88,6 +88,41 @@ METHOD_EXTRACTION_RULES: Dict[str, MethodExtractionRule] = {
 }
 
 
+GENERIC_MEMORY_ID_PAGINATION_SEARCH_SPEC: List[Tuple[str, str, Any]] = [
+    ("infer", SemanticAttributes.GEN_AI_MEMORY_INFER, bool),
+    (
+        "memory_type",
+        SemanticAttributes.GEN_AI_MEMORY_MEMORY_TYPE,
+        safe_str,
+    ),
+    ("memory_id", SemanticAttributes.GEN_AI_MEMORY_ID, safe_str),
+    ("limit", SemanticAttributes.GEN_AI_MEMORY_LIMIT, safe_int),
+    ("page", SemanticAttributes.GEN_AI_MEMORY_PAGE, safe_int),
+    (
+        "page_size",
+        SemanticAttributes.GEN_AI_MEMORY_PAGE_SIZE,
+        safe_int,
+    ),
+    ("top_k", SemanticAttributes.GEN_AI_MEMORY_TOP_K, safe_int),
+    (
+        "threshold",
+        SemanticAttributes.GEN_AI_MEMORY_THRESHOLD,
+        safe_float,
+    ),
+    ("rerank", SemanticAttributes.GEN_AI_MEMORY_RERANK, bool),
+    (
+        "only_metadata_based_search",
+        SemanticAttributes.GEN_AI_MEMORY_ONLY_METADATA_BASED_SEARCH,
+        bool,
+    ),
+    (
+        "keyword_search",
+        SemanticAttributes.GEN_AI_MEMORY_KEYWORD_SEARCH,
+        bool,
+    ),
+]
+
+
 def _extract_input_content(
     operation_name: str, kwargs: Dict[str, Any]
 ) -> Optional[str]:
@@ -583,39 +618,7 @@ class MemoryOperationAttributeExtractor:
             attributes,
             instance=None,
             kwargs=kwargs,
-            spec=[
-                ("infer", SemanticAttributes.GEN_AI_MEMORY_INFER, bool),
-                (
-                    "memory_type",
-                    SemanticAttributes.GEN_AI_MEMORY_MEMORY_TYPE,
-                    safe_str,
-                ),
-                ("memory_id", SemanticAttributes.GEN_AI_MEMORY_ID, safe_str),
-                ("limit", SemanticAttributes.GEN_AI_MEMORY_LIMIT, safe_int),
-                ("page", SemanticAttributes.GEN_AI_MEMORY_PAGE, safe_int),
-                (
-                    "page_size",
-                    SemanticAttributes.GEN_AI_MEMORY_PAGE_SIZE,
-                    safe_int,
-                ),
-                ("top_k", SemanticAttributes.GEN_AI_MEMORY_TOP_K, safe_int),
-                (
-                    "threshold",
-                    SemanticAttributes.GEN_AI_MEMORY_THRESHOLD,
-                    safe_float,
-                ),
-                ("rerank", SemanticAttributes.GEN_AI_MEMORY_RERANK, bool),
-                (
-                    "only_metadata_based_search",
-                    SemanticAttributes.GEN_AI_MEMORY_ONLY_METADATA_BASED_SEARCH,
-                    bool,
-                ),
-                (
-                    "keyword_search",
-                    SemanticAttributes.GEN_AI_MEMORY_KEYWORD_SEARCH,
-                    bool,
-                ),
-            ],
+            spec=GENERIC_MEMORY_ID_PAGINATION_SEARCH_SPEC,
         )
 
         # List parameters: fields / categories

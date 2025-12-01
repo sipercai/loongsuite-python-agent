@@ -16,9 +16,6 @@ from opentelemetry.instrumentation.mem0.config import (
 from opentelemetry.instrumentation.mem0.internal._extractors import (
     METHOD_EXTRACTION_RULES,
 )
-from opentelemetry.instrumentation.mem0.internal._thread_pool_handler import (
-    ThreadPoolContextPropagationHandler,
-)
 from opentelemetry.instrumentation.mem0.internal._wrapper import (
     GraphStoreWrapper,
     MemoryOperationWrapper,
@@ -133,17 +130,6 @@ class Mem0Instrumentor(BaseInstrumentor):
         )
 
         # Wrap ThreadPoolExecutor.submit to support context propagation
-        # Some mem0 methods (add, get_all, search) use ThreadPoolExecutor,
-        # causing OpenTelemetry context to not auto-propagate to child threads.
-        # We use wrapt's standard wrapping mechanism for proper cleanup support.
-
-        self._threadpool_handler = ThreadPoolContextPropagationHandler()
-        wrap_function_wrapper(
-            module="concurrent.futures",
-            name="ThreadPoolExecutor.submit",
-            wrapper=self._threadpool_handler,
-        )
-
         # Execute instrumentation (traces only, metrics removed)
         self._instrument_memory_operations(tracer)
         self._instrument_memory_client_operations(tracer)
@@ -159,9 +145,6 @@ class Mem0Instrumentor(BaseInstrumentor):
         if not self._is_instrumented:
             return
 
-        # Unwrap ThreadPoolExecutor.submit
-        self._uninstrument_threadpool()
-
         # Uninstrument Memory and MemoryClient operations (symmetric to _instrument)
         self._uninstrument_memory_operations()
         self._uninstrument_memory_client_operations()
@@ -173,16 +156,6 @@ class Mem0Instrumentor(BaseInstrumentor):
 
         # Reset instrumentation state
         self._is_instrumented = False
-
-    def _uninstrument_threadpool(self) -> None:
-        """Unwrap ThreadPoolExecutor.submit."""
-        try:
-            import concurrent.futures
-
-            unwrap(concurrent.futures.ThreadPoolExecutor, "submit")
-            logger.debug("Successfully unwrapped ThreadPoolExecutor.submit")
-        except Exception as e:
-            logger.debug(f"Failed to unwrap ThreadPoolExecutor.submit: {e}")
 
     def _uninstrument_memory_operations(self) -> None:
         """Uninstrument Memory and AsyncMemory operations."""

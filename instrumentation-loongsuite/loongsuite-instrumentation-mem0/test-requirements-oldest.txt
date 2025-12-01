@@ -12,6 +12,7 @@ wrapt==1.17.3
 opentelemetry-api==1.37
 opentelemetry-sdk==1.37
 opentelemetry-semantic-conventions==0.58b0
+opentelemetry-instrumentation-threading==0.58b0
 
 # Mock and utilities
 mock>=4.0.0
