@@ -10,7 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.9"
 authors = [
-    { name = "LoongSuite Python Agent Authors", email = "loongsuite-dev@example.com" },
+    { name = "LoongSuite Python Agent Authors", email = "sunyumei1991@gmail.com" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

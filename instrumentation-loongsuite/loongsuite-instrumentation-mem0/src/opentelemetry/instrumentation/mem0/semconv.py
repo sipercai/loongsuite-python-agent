@@ -1,6 +1,9 @@
 """
 Semantic Conventions for Mem0 instrumentation.
-Based on Gen-AI semantic conventions for memory operations.
+
+These attribute names and span naming helpers are **experimental** and are
+currently **not** part of the official OpenTelemetry semantic‑conventions
+package.
 """
 
 

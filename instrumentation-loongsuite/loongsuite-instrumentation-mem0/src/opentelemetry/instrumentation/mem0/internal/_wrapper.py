@@ -1,8 +1,6 @@
 """
 Core wrappers for Mem0 instrumentation.
 Implements wrapping logic for top-level Memory operations and sub-phase operations.
-
-Note: Metrics recording has been removed; this module only records traces.
 """
 
 import inspect

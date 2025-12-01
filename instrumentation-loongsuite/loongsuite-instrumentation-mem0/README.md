@@ -55,7 +55,6 @@ Mem0 instrumentation is automatically enabled via the standard OpenTelemetry aut
 ```bash
 opentelemetry-instrument \
     --traces_exporter console \
-    --metrics_exporter console \
     python demo.py
 ```
 
@@ -93,15 +92,25 @@ You can control the Mem0 instrumentation using environment variables.
 | Environment Variable                                      | Default | Description                                                                 |
 |-----------------------------------------------------------|---------|-----------------------------------------------------------------------------|
 | `OTEL_INSTRUMENTATION_MEM0_ENABLED`                       | `true`  | Enable or disable the Mem0 instrumentation entirely.                       |
-| `OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED`                 | `true`  | Enable internal phases (Vector Store, Graph Store, Reranker).              |
+| `OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED`                 | `false` | Enable internal phases (Vector Store, Graph Store, Rerank).              |
 | `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT`      | `false` | Capture input/output message content (may contain PII or sensitive data).  |
 
 ### Configuration Examples
 
 ```bash
+# Enable internal phases (Vector/Graph/Reranker)
+export OTEL_INSTRUMENTATION_MEM0_INNER_ENABLED=true
+
 # Enable content capture (be careful with sensitive data)
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
 ```
+
+## Semantic Conventions Status
+
+Mem0 instrumentation ships a set of semantic attributes and span names in
+`semconv.py` that are tailored for Memory / Vector / Graph / Rerank operations.
+These conventions are **not yet part of the upstream OpenTelemetry semantic
+conventions** and should be treated as experimental.
 
 ## Compatibility
 
