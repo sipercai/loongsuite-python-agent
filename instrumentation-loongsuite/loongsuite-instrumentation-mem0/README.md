@@ -11,6 +11,7 @@ For details on usage and installation of LoongSuite and Jaeger, please refer to
 
 ```bash
 pip install loongsuite-instrumentation-mem0
+pip install opentelemetry-instrumentation-threading
 ```
 
 If you have not installed OpenTelemetry yet, you can install a minimal setup with:
