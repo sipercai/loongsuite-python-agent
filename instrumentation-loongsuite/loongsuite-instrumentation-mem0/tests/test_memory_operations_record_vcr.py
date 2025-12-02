@@ -75,10 +75,10 @@ def test_record_memory_full_flow_vcr(
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
     # Import needed mock modules
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import patch_factories
+    from conftest import patch_factories  # noqa: PLC0415
 
     # Patch factories before creating Memory instance
     patch_factories(monkeypatch)
@@ -88,7 +88,7 @@ def test_record_memory_full_flow_vcr(
 
     # patch_factories already provides fake vector storage, no additional mock needed
     # but need to set FakeLLM and FakeEmbedder (these are not created via factory)
-    from conftest import FakeEmbedder, FakeLLM
+    from conftest import FakeEmbedder, FakeLLM  # noqa: PLC0415
 
     m.llm = FakeLLM()
     m.embedding_model = FakeEmbedder()
@@ -132,10 +132,10 @@ def test_record_memory_full_flow_vcr(
         mem_id = results_list[0].get("id")
     else:
         # When no memory is generated, insert seed data into FakeVectorStore and get its id
-        import sys
+        import sys  # noqa: PLC0415
 
         sys.path.insert(0, os.path.dirname(__file__))
-        from conftest import get_fake_vector_store  # type: ignore
+        from conftest import get_fake_vector_store  # noqa: PLC0415
 
         store = get_fake_vector_store()
         store.insert(payloads=[{"data": "seed memory for tests"}])
@@ -204,10 +204,14 @@ def test_record_memory_add_vcr(
     """Memory add operation test: verify add memory attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM, patch_factories
+    from conftest import (  # noqa: PLC0415
+        FakeEmbedder,
+        FakeLLM,
+        patch_factories,
+    )
 
     patch_factories(monkeypatch)
     config = _build_demo_config_from_env()
@@ -278,10 +282,14 @@ def test_record_memory_get_all_vcr(
     """Memory get_all operation test: verify get all memory attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM, patch_factories
+    from conftest import (  # noqa: PLC0415
+        FakeEmbedder,
+        FakeLLM,
+        patch_factories,
+    )
 
     patch_factories(monkeypatch)
     config = _build_demo_config_from_env()
@@ -348,10 +356,10 @@ def test_record_memory_get_vcr(
     """Memory get operation test: verify get single memory attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import (
+    from conftest import (  # noqa: PLC0415
         FakeEmbedder,
         FakeLLM,
         get_fake_vector_store,
@@ -420,10 +428,14 @@ def test_record_memory_search_vcr(
     """Memory search operation test: verify search memory attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM, patch_factories
+    from conftest import (  # noqa: PLC0415
+        FakeEmbedder,
+        FakeLLM,
+        patch_factories,
+    )
 
     patch_factories(monkeypatch)
     config = _build_demo_config_from_env()
@@ -490,10 +502,10 @@ def test_record_memory_update_vcr(
     """Memory update operation test: verify update memory attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import (
+    from conftest import (  # noqa: PLC0415
         FakeEmbedder,
         FakeLLM,
         get_fake_vector_store,
@@ -567,10 +579,10 @@ def test_record_memory_delete_vcr(
     """Memory delete operation test: verify delete memory attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import (
+    from conftest import (  # noqa: PLC0415
         FakeEmbedder,
         FakeLLM,
         get_fake_vector_store,
@@ -637,10 +649,10 @@ def test_record_memory_history_vcr(
     """Memory history operation test: verify get memory history attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import (
+    from conftest import (  # noqa: PLC0415
         FakeEmbedder,
         FakeLLM,
         get_fake_vector_store,
@@ -714,10 +726,14 @@ def test_record_memory_delete_all_vcr(
     """Memory delete_all operation test: verify delete all memory attributes"""
     Memory = pytest.importorskip("mem0.memory.main").Memory
 
-    import sys
+    import sys  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM, patch_factories
+    from conftest import (  # noqa: PLC0415
+        FakeEmbedder,
+        FakeLLM,
+        patch_factories,
+    )
 
     patch_factories(monkeypatch)
     config = _build_demo_config_from_env()

@@ -393,9 +393,9 @@ def _input_messages(
     assert hasattr(inputs, "get"), f"expected Mapping, found {type(inputs)}"
     # There may be more than one set of messages. We'll use just the first set.
     if multiple_messages := inputs.get("messages"):
-        assert isinstance(
-            multiple_messages, Iterable
-        ), f"expected Iterable, found {type(multiple_messages)}"
+        assert isinstance(multiple_messages, Iterable), (
+            f"expected Iterable, found {type(multiple_messages)}"
+        )
         # This will only get the first set of messages.
         if not (first_messages := next(iter(multiple_messages), None)):
             return
@@ -442,14 +442,14 @@ def _input_messages(
         if parsed_messages:
             yield LLM_INPUT_MESSAGES, parsed_messages
     elif multiple_prompts := inputs.get("prompts"):
-        assert isinstance(
-            multiple_prompts, Iterable
-        ), f"expected Iterable, found {type(multiple_prompts)}"
+        assert isinstance(multiple_prompts, Iterable), (
+            f"expected Iterable, found {type(multiple_prompts)}"
+        )
         parsed_prompts = []
         for prompt_data in multiple_prompts:
-            assert isinstance(
-                prompt_data, str
-            ), f"expected str, found {type(prompt_data)}"
+            assert isinstance(prompt_data, str), (
+                f"expected str, found {type(prompt_data)}"
+            )
             parsed_prompts.append(dict(_parse_prompt_data(prompt_data)))
         if parsed_prompts:
             yield LLM_INPUT_MESSAGES, parsed_prompts
@@ -466,20 +466,20 @@ def _output_messages(
     # There may be more than one set of generations. We'll use just the first set.
     if not (multiple_generations := outputs.get("generations")):
         return
-    assert isinstance(
-        multiple_generations, Iterable
-    ), f"expected Iterable, found {type(multiple_generations)}"
+    assert isinstance(multiple_generations, Iterable), (
+        f"expected Iterable, found {type(multiple_generations)}"
+    )
     # This will only get the first set of generations.
     if not (first_generations := next(iter(multiple_generations), None)):
         return
-    assert isinstance(
-        first_generations, Iterable
-    ), f"expected Iterable, found {type(first_generations)}"
+    assert isinstance(first_generations, Iterable), (
+        f"expected Iterable, found {type(first_generations)}"
+    )
     parsed_messages = []
     for generation in first_generations:
-        assert hasattr(
-            generation, "get"
-        ), f"expected Mapping, found {type(generation)}"
+        assert hasattr(generation, "get"), (
+            f"expected Mapping, found {type(generation)}"
+        )
         if message_data := generation.get("message"):
             if isinstance(message_data, BaseMessage):
                 parsed_messages.append(
@@ -494,15 +494,15 @@ def _output_messages(
         elif text := generation.get("text"):
             parsed_messages.append(text)
         if generation_info := generation.get("generation_info"):
-            assert hasattr(
-                generation_info, "get"
-            ), f"expected Mapping, found {type(generation_info)}"
+            assert hasattr(generation_info, "get"), (
+                f"expected Mapping, found {type(generation_info)}"
+            )
             if finish_reason := generation_info.get("finish_reason"):
                 yield LLM_RESPONSE_FINISH_REASON, finish_reason
             if token_usage := generation_info.get("token_usage"):
-                assert hasattr(
-                    token_usage, "get"
-                ), f"expected Mapping, found {type(token_usage)}"
+                assert hasattr(token_usage, "get"), (
+                    f"expected Mapping, found {type(token_usage)}"
+                )
                 for attribute_name, key in [
                     (LLM_USAGE_PROMPT_TOKENS, "input_tokens"),
                     (LLM_USAGE_COMPLETION_TOKENS, "output_tokens"),
@@ -514,9 +514,9 @@ def _output_messages(
         yield LLM_OUTPUT_MESSAGES, parsed_messages
     if not (llm_output := outputs.get("llm_output")):
         return
-    assert hasattr(
-        llm_output, "get"
-    ), f"expected Mapping, found {type(llm_output)}"
+    assert hasattr(llm_output, "get"), (
+        f"expected Mapping, found {type(llm_output)}"
+    )
     if model_name := llm_output.get("model_name"):
         yield LLM_RESPONSE_MODEL_NAME, model_name
 
@@ -527,9 +527,9 @@ def _parse_prompt_data(
 ) -> Iterator[Tuple[str, Any]]:
     if not prompt_data:
         return
-    assert isinstance(
-        prompt_data, str
-    ), f"expected str, found {type(prompt_data)}"
+    assert isinstance(prompt_data, str), (
+        f"expected str, found {type(prompt_data)}"
+    )
     yield CONTENT, process_content(prompt_data)
 
 
@@ -581,9 +581,9 @@ def _parse_message_data(
         raise ValueError(f"Cannot parse message of type: {message_class_name}")
     yield MESSAGE_ROLE, role
     if kwargs := message_data.get("kwargs"):
-        assert hasattr(
-            kwargs, "get"
-        ), f"expected Mapping, found {type(kwargs)}"
+        assert hasattr(kwargs, "get"), (
+            f"expected Mapping, found {type(kwargs)}"
+        )
         if content := kwargs.get("content"):
             if isinstance(content, str):
                 yield MESSAGE_CONTENT, process_content(content)
@@ -610,27 +610,27 @@ def _parse_message_data(
             else:
                 logger.warning(f"Expected str for name, found {type(name)}")
         if additional_kwargs := kwargs.get("additional_kwargs"):
-            assert hasattr(
-                additional_kwargs, "get"
-            ), f"expected Mapping, found {type(additional_kwargs)}"
+            assert hasattr(additional_kwargs, "get"), (
+                f"expected Mapping, found {type(additional_kwargs)}"
+            )
             if function_call := additional_kwargs.get("function_call"):
-                assert hasattr(
-                    function_call, "get"
-                ), f"expected Mapping, found {type(function_call)}"
+                assert hasattr(function_call, "get"), (
+                    f"expected Mapping, found {type(function_call)}"
+                )
                 if name := function_call.get("name"):
-                    assert isinstance(
-                        name, str
-                    ), f"expected str, found {type(name)}"
+                    assert isinstance(name, str), (
+                        f"expected str, found {type(name)}"
+                    )
                     yield MESSAGE_FUNCTION_CALL_NAME, name
                 if arguments := function_call.get("arguments"):
-                    assert isinstance(
-                        arguments, str
-                    ), f"expected str, found {type(arguments)}"
+                    assert isinstance(arguments, str), (
+                        f"expected str, found {type(arguments)}"
+                    )
                     yield MESSAGE_FUNCTION_CALL_ARGUMENTS_JSON, arguments
             if tool_calls := additional_kwargs.get("tool_calls"):
-                assert isinstance(
-                    tool_calls, Iterable
-                ), f"expected Iterable, found {type(tool_calls)}"
+                assert isinstance(tool_calls, Iterable), (
+                    f"expected Iterable, found {type(tool_calls)}"
+                )
                 message_tool_calls = []
                 for tool_call in tool_calls:
                     if message_tool_call := dict(_get_tool_call(tool_call)):
@@ -645,20 +645,20 @@ def _get_tool_call(
 ) -> Iterator[Tuple[str, Any]]:
     if not tool_call:
         return
-    assert hasattr(
-        tool_call, "get"
-    ), f"expected Mapping, found {type(tool_call)}"
+    assert hasattr(tool_call, "get"), (
+        f"expected Mapping, found {type(tool_call)}"
+    )
     if function := tool_call.get("function"):
-        assert hasattr(
-            function, "get"
-        ), f"expected Mapping, found {type(function)}"
+        assert hasattr(function, "get"), (
+            f"expected Mapping, found {type(function)}"
+        )
         if name := function.get("name"):
             assert isinstance(name, str), f"expected str, found {type(name)}"
             yield TOOL_CALL_FUNCTION_NAME, name
         if arguments := function.get("arguments"):
-            assert isinstance(
-                arguments, str
-            ), f"expected str, found {type(arguments)}"
+            assert isinstance(arguments, str), (
+                f"expected str, found {type(arguments)}"
+            )
             yield TOOL_CALL_FUNCTION_ARGUMENTS_JSON, arguments
 
 
@@ -671,9 +671,9 @@ def _prompt_template(run: Run) -> Iterator[Tuple[str, Any]]:
     serialized: Optional[Mapping[str, Any]] = run.serialized
     if not serialized:
         return
-    assert hasattr(
-        serialized, "get"
-    ), f"expected Mapping, found {type(serialized)}"
+    assert hasattr(serialized, "get"), (
+        f"expected Mapping, found {type(serialized)}"
+    )
     if not (kwargs := serialized.get("kwargs")):
         return
     assert isinstance(kwargs, dict), f"expected dict, found {type(kwargs)}"
@@ -688,16 +688,16 @@ def _prompt_template(run: Run) -> Iterator[Tuple[str, Any]]:
         if id_[-1].endswith("PromptTemplate"):
             if not (kwargs := obj.get("kwargs")):
                 continue
-            assert hasattr(
-                kwargs, "get"
-            ), f"expected Mapping, found {type(kwargs)}"
+            assert hasattr(kwargs, "get"), (
+                f"expected Mapping, found {type(kwargs)}"
+            )
             if not (template := kwargs.get("template", "")):
                 continue
             yield LLM_PROMPT_TEMPLATE, template
             if input_variables := kwargs.get("input_variables"):
-                assert isinstance(
-                    input_variables, list
-                ), f"expected list, found {type(input_variables)}"
+                assert isinstance(input_variables, list), (
+                    f"expected list, found {type(input_variables)}"
+                )
                 template_variables = {}
                 for variable in input_variables:
                     if (value := run.inputs.get(variable)) is not None:
@@ -810,9 +810,9 @@ def _tools(run: Run) -> Iterator[Tuple[str, str]]:
         return
     if not (serialized := run.serialized):
         return
-    assert hasattr(
-        serialized, "get"
-    ), f"expected Mapping, found {type(serialized)}"
+    assert hasattr(serialized, "get"), (
+        f"expected Mapping, found {type(serialized)}"
+    )
     if name := serialized.get("name"):
         yield TOOL_NAME, name
     if description := serialized.get("description"):
@@ -829,9 +829,9 @@ def _retrieval_documents(
         return
     assert hasattr(outputs, "get"), f"expected Mapping, found {type(outputs)}"
     documents = outputs.get("documents")
-    assert isinstance(
-        documents, Iterable
-    ), f"expected Iterable, found {type(documents)}"
+    assert isinstance(documents, Iterable), (
+        f"expected Iterable, found {type(documents)}"
+    )
     yield (
         RETRIEVAL_DOCUMENTS,
         [dict(_as_document(document)) for document in documents],
@@ -869,14 +869,14 @@ def _metadata(run: Run) -> Iterator[Tuple[str, str]]:
 @stop_on_exception
 def _as_document(document: Any) -> Iterator[Tuple[str, Any]]:
     if page_content := getattr(document, "page_content", None):
-        assert isinstance(
-            page_content, str
-        ), f"expected str, found {type(page_content)}"
+        assert isinstance(page_content, str), (
+            f"expected str, found {type(page_content)}"
+        )
         yield DOCUMENT_CONTENT, process_content(page_content)
     if metadata := getattr(document, "metadata", None):
-        assert isinstance(
-            metadata, Mapping
-        ), f"expected Mapping, found {type(metadata)}"
+        assert isinstance(metadata, Mapping), (
+            f"expected Mapping, found {type(metadata)}"
+        )
         yield DOCUMENT_METADATA, json.dumps(metadata, cls=_SafeJSONEncoder)
 
 

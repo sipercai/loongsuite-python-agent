@@ -197,9 +197,9 @@ class TestMessageParsing:
         for key, expected_value in test_case["expected"].items():
             if key == MessageAttributes.MESSAGE_TOOL_CALLS:
                 tool_calls = result.get(key)
-                assert (
-                    tool_calls is not None
-                ), f"Expected tool_calls for {test_case['name']}"
+                assert tool_calls is not None, (
+                    f"Expected tool_calls for {test_case['name']}"
+                )
                 # 检查tool_calls列表中是否包含期望的函数名
                 found = False
                 for tool_call in tool_calls:
@@ -211,12 +211,14 @@ class TestMessageParsing:
                     ):
                         found = True
                         break
-                assert found, f"Expected calculator function in tool_calls for {test_case['name']}"
+                assert found, (
+                    f"Expected calculator function in tool_calls for {test_case['name']}"
+                )
             else:
                 actual_value = result.get(key)
-                assert (
-                    actual_value == expected_value
-                ), f"Expected {expected_value}, got {actual_value} for {test_case['name']}"
+                assert actual_value == expected_value, (
+                    f"Expected {expected_value}, got {actual_value} for {test_case['name']}"
+                )
 
 
 class TestInputMessagesParsing:
@@ -264,6 +266,6 @@ class TestInputMessagesParsing:
     def test_input_messages_parsing(self, test_case):
         """测试输入消息解析"""
         result = list(_input_messages(test_case["input"]))
-        assert (
-            len(result) == test_case["expected_count"]
-        ), f"Expected {test_case['expected_count']} results for {test_case['name']}"
+        assert len(result) == test_case["expected_count"], (
+            f"Expected {test_case['expected_count']} results for {test_case['name']}"
+        )

@@ -49,7 +49,7 @@ def _get_max_attribute_length() -> int:
 def _is_ws_installed() -> bool:
     try:
         # test the import of websockets, skip the warning
-        import websockets  # noqa: F401
+        import websockets  # noqa: F401, PLC0415
 
         return True
     except ImportError:

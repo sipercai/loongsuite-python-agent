@@ -26,10 +26,10 @@ async def mock_client(params):
 
 @pytest.mark.asyncio
 async def test_client_invalid(tracer_provider):
-    import mcp.client.sse
-    import mcp.client.stdio
-    import mcp.client.streamable_http
-    import mcp.client.websocket
+    import mcp.client.sse  # noqa: PLC0415
+    import mcp.client.stdio  # noqa: PLC0415
+    import mcp.client.streamable_http  # noqa: PLC0415
+    import mcp.client.websocket  # noqa: PLC0415
 
     stdio_client_backup = mcp.client.stdio.stdio_client
     websocket_client_backup = mcp.client.websocket.websocket_client
@@ -45,10 +45,12 @@ async def test_client_invalid(tracer_provider):
 
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
-    from mcp.client.sse import sse_client
-    from mcp.client.stdio import stdio_client
-    from mcp.client.streamable_http import streamablehttp_client
-    from mcp.client.websocket import websocket_client
+    from mcp.client.sse import sse_client  # noqa: PLC0415
+    from mcp.client.stdio import stdio_client  # noqa: PLC0415
+    from mcp.client.streamable_http import (  # noqa: PLC0415
+        streamablehttp_client,
+    )
+    from mcp.client.websocket import websocket_client  # noqa: PLC0415
 
     assert isinstance(stdio_client, FunctionWrapper)
     assert isinstance(websocket_client, FunctionWrapper)
@@ -98,9 +100,12 @@ class MockStream:
 async def test_send_wrapper(tracer_provider):
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
-    from mcp.client.stdio import StdioServerParameters, stdio_client
+    from mcp.client.stdio import (  # noqa: PLC0415
+        StdioServerParameters,
+        stdio_client,
+    )
 
-    from opentelemetry.instrumentation.mcp.session_handler import (
+    from opentelemetry.instrumentation.mcp.session_handler import (  # noqa: PLC0415
         _writer_send_wrapper,
     )
 
@@ -160,8 +165,8 @@ async def test_send_wrapper(tracer_provider):
 async def test_server_handle_request_wrapper(tracer_provider):
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
-    from mcp.shared.session import RequestResponder
-    from mcp.types import (
+    from mcp.shared.session import RequestResponder  # noqa: PLC0415
+    from mcp.types import (  # noqa: PLC0415
         CallToolRequest,
         CallToolRequestParams,
         ClientRequest,
@@ -174,7 +179,9 @@ async def test_server_handle_request_wrapper(tracer_provider):
         SubscribeRequestParams,
     )
 
-    from opentelemetry.instrumentation.mcp.semconv import MCPAttributes
+    from opentelemetry.instrumentation.mcp.semconv import (  # noqa: PLC0415
+        MCPAttributes,
+    )
 
     wrapper = _create_server_wrapper(mcp_instrumentor, tracer_provider)
 
@@ -276,7 +283,7 @@ async def test_server_handle_request_wrapper(tracer_provider):
 
 
 def _create_server_wrapper(mcp_instrumentor, tracer_provider):
-    from opentelemetry.instrumentation.mcp.session_handler import (
+    from opentelemetry.instrumentation.mcp.session_handler import (  # noqa: PLC0415
         ServerHandleRequestWrapper,
     )
 
@@ -298,8 +305,12 @@ def _create_server_wrapper(mcp_instrumentor, tracer_provider):
 async def test_server_extract_parent_context(tracer_provider):
     mcp_instrumentor = MCPInstrumentor()
     mcp_instrumentor._instrument(tracer_provider=tracer_provider)
-    from mcp.shared.session import RequestResponder
-    from mcp.types import ClientRequest, ListToolsRequest, RequestParams
+    from mcp.shared.session import RequestResponder  # noqa: PLC0415
+    from mcp.types import (  # noqa: PLC0415
+        ClientRequest,
+        ListToolsRequest,
+        RequestParams,
+    )
 
     wrapper = _create_server_wrapper(mcp_instrumentor, tracer_provider)
 

@@ -10,6 +10,7 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.message import Msg
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit, execute_shell_command
+from tests.shared.version_utils import skip_if_not_v1
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.agentscope import AgentScopeInstrumentor
@@ -21,7 +22,6 @@ from opentelemetry.sdk.trace.export import (
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
-from tests.shared.version_utils import skip_if_not_v1
 
 
 @pytest.fixture(scope="module")
@@ -84,7 +84,7 @@ def test_agentscope_v1_basic(
     msg_task = Msg("user", "compute 1615114134*4343434343 for me", "user")
 
     # 使用 asyncio 来运行异步函数
-    import asyncio
+    import asyncio  # noqa: PLC0415
 
     async def run_agent():
         response = await agent(msg_task)
@@ -114,7 +114,9 @@ def test_agentscope_v1_basic(
             check_tool = True  # noqa: F841
 
     # 先检查是否至少有模型调用 span
-    assert check_model, f"Model call span not found. Available spans: {[span.name for span in spans]}"
+    assert check_model, (
+        f"Model call span not found. Available spans: {[span.name for span in spans]}"
+    )
 
 
 @skip_if_not_v1()
@@ -142,7 +144,7 @@ def test_agentscope_v1_simple_chat(
 
     msg_task = Msg("user", "Hello, how are you?", "user")
 
-    import asyncio
+    import asyncio  # noqa: PLC0415
 
     async def run_agent():
         response = await agent(msg_task)
@@ -162,9 +164,9 @@ def test_agentscope_v1_simple_chat(
     spans = in_memory_span_exporter.get_finished_spans()
     print(f"Simple chat spans: {[span.name for span in spans]}")
     model_spans = [span for span in spans if span.name.startswith("chat ")]
-    assert (
-        len(model_spans) > 0
-    ), f"No model call span found. Available spans: {[span.name for span in spans]}"
+    assert len(model_spans) > 0, (
+        f"No model call span found. Available spans: {[span.name for span in spans]}"
+    )
 
 
 @skip_if_not_v1()
@@ -185,7 +187,7 @@ def test_agentscope_v1_model_direct(
     # 直接调用模型（使用字典格式避免 Msg 对象问题）
     messages = [{"role": "user", "content": "Hello, what is 1+1?"}]
 
-    import asyncio
+    import asyncio  # noqa: PLC0415
 
     async def call_model():
         response = await model(messages)
@@ -205,9 +207,9 @@ def test_agentscope_v1_model_direct(
     spans = in_memory_span_exporter.get_finished_spans()
     print(f"Direct model spans: {[span.name for span in spans]}")
     model_spans = [span for span in spans if span.name.startswith("chat ")]
-    assert (
-        len(model_spans) > 0
-    ), f"No model call span found. Available spans: {[span.name for span in spans]}"
+    assert len(model_spans) > 0, (
+        f"No model call span found. Available spans: {[span.name for span in spans]}"
+    )
 
 
 @skip_if_not_v1()
@@ -228,7 +230,7 @@ def test_agentscope_v1_span_attributes(
     # 直接调用模型（使用字典格式）
     messages = [{"role": "user", "content": "Simple test message"}]
 
-    import asyncio
+    import asyncio  # noqa: PLC0415
 
     async def call_model():
         response = await model(messages)
@@ -245,9 +247,9 @@ def test_agentscope_v1_span_attributes(
     print(f"Attributes test spans: {[span.name for span in spans]}")
     model_spans = [span for span in spans if span.name.startswith("chat ")]
 
-    assert (
-        len(model_spans) > 0
-    ), f"No model call span found. Available spans: {[span.name for span in spans]}"
+    assert len(model_spans) > 0, (
+        f"No model call span found. Available spans: {[span.name for span in spans]}"
+    )
 
     # 验证第一个ModelCall span的基本属性
     model_span = model_spans[0]

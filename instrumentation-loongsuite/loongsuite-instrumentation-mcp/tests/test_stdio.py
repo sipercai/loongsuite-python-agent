@@ -36,7 +36,7 @@ async def test_call_tool(memory_exporter):
         command="python",
         args=[FASTMCP_SERVER_SCRIPT],
     )
-    from mcp.client.stdio import stdio_client
+    from mcp.client.stdio import stdio_client  # noqa: PLC0415
 
     async with stdio_client(server_params) as (stdio, write):
         async with ClientSession(stdio, write) as session:
@@ -67,7 +67,7 @@ async def test_subscribe_resource(memory_exporter):
         command="python",
         args=[MCP_SERVER_SCRIPT],
     )
-    from mcp.client.stdio import stdio_client
+    from mcp.client.stdio import stdio_client  # noqa: PLC0415
 
     async with stdio_client(server_params) as (stdio, write):
         async with ClientSession(stdio, write) as session:

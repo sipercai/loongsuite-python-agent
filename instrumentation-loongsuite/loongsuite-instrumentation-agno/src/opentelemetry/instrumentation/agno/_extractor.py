@@ -31,8 +31,8 @@ class AgentRunRequestExtractor(object):
 
         if agent.tools:
             tool_names = []
-            from agno.tools.function import Function
-            from agno.tools.toolkit import Toolkit
+            from agno.tools.function import Function  # noqa: PLC0415
+            from agno.tools.toolkit import Toolkit  # noqa: PLC0415
 
             for tool in agent.tools:
                 if isinstance(tool, Function):
@@ -45,14 +45,15 @@ class AgentRunRequestExtractor(object):
                     tool_names.append(str(tool))
             yield GenAIAttributes.GEN_AI_TOOL_NAME, ", ".join(tool_names)
 
-        for key in arguments.keys():
+        for item in arguments.items():
+            key, entry_value = item
             if key == "run_response":
                 yield (
                     GenAIAttributes.GEN_AI_RESPONSE_ID,
-                    f"{arguments[key].run_id}",
+                    f"{entry_value.run_id}",
                 )
             elif key == "run_messages":
-                messages = arguments[key].messages
+                messages = entry_value.messages
                 for idx in range(len(messages)):
                     message = messages[idx]
                     yield (
@@ -62,7 +63,7 @@ class AgentRunRequestExtractor(object):
             elif key == "response_format":
                 yield (
                     GenAIAttributes.GEN_AI_OPENAI_REQUEST_RESPONSE_FORMAT,
-                    f"{arguments[key]}",
+                    f"{entry_value}",
                 )
 
 
@@ -131,14 +132,15 @@ class ModelRequestExtractor(object):
                 f"{json.dumps(request_kwargs, indent=2)}",
             )
 
-        for key in arguments.keys():
+        for item in arguments.items():
+            key, entry_value = item
             if key == "response_format":
                 yield (
                     GenAIAttributes.GEN_AI_OPENAI_REQUEST_RESPONSE_FORMAT,
-                    f"{arguments[key]}",
+                    f"{entry_value}",
                 )
             elif key == "messages":
-                messages = arguments["messages"]
+                messages = entry_value
                 for idx in range(len(messages)):
                     message = messages[idx]
                     yield (
@@ -146,7 +148,7 @@ class ModelRequestExtractor(object):
                         f"{json.dumps(message.to_dict(), indent=2)}",
                     )
             elif key == "tools":
-                tools = arguments["tools"]
+                tools = entry_value
                 for idx in range(len(tools)):
                     yield (
                         f"{GenAIAttributes.GEN_AI_TOOL_DESCRIPTION}.{idx}",

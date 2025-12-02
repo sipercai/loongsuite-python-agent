@@ -64,7 +64,7 @@ def server_url(server_port: int) -> str:
 
 # Test server implementation
 def create_server():
-    from mcp.server import Server
+    from mcp.server import Server  # noqa: PLC0415
 
     server = Server(SERVER_NAME)
 
@@ -115,7 +115,7 @@ def create_server():
 def make_server_app() -> Starlette:
     """Create test Starlette app with WebSocket transport"""
     server = create_server()
-    from mcp.server.websocket import websocket_server
+    from mcp.server.websocket import websocket_server  # noqa: PLC0415
 
     async def handle_ws(websocket):
         async with websocket_server(
@@ -205,10 +205,10 @@ def server(server_port) -> Generator[None, None, None]:
 @pytest.mark.asyncio
 async def test_ws_client_basic_connection(server, server_url: str) -> None:
     """Test the WebSocket connection establishment"""
-    from mcp.client.websocket import websocket_client
+    from mcp.client.websocket import websocket_client  # noqa: PLC0415
 
     async with websocket_client(server_url + "/ws") as streams:
-        from mcp.client.session import ClientSession
+        from mcp.client.session import ClientSession  # noqa: PLC0415
 
         async with ClientSession(*streams) as session:
             # Test initialization
@@ -226,10 +226,10 @@ async def test_ws_client_happy_request_and_response(
     server: None, server_url: str, memory_exporter, tracer_provider, find_span
 ) -> None:
     """Test a successful request and response via WebSocket"""
-    from mcp.client.websocket import websocket_client
+    from mcp.client.websocket import websocket_client  # noqa: PLC0415
 
     async with websocket_client(server_url + "/ws") as streams:
-        from mcp.client.session import ClientSession
+        from mcp.client.session import ClientSession  # noqa: PLC0415
 
         async with ClientSession(*streams) as session:
             result = await session.initialize()

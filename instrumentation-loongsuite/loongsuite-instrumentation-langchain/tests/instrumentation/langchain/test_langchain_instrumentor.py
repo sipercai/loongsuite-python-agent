@@ -459,7 +459,7 @@ def test_callback_llm_exception_event(
     spans = in_memory_span_exporter.get_finished_spans()
     for span in spans:
         if span.name == "RunnableSequence":
-            from opentelemetry import trace as trace_api
+            from opentelemetry import trace as trace_api  # noqa: PLC0415
 
             assert span.status.status_code == trace_api.StatusCode.ERROR
             assert span.events[0].name == "exception"

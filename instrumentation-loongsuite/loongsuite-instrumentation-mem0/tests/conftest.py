@@ -390,7 +390,7 @@ def vcr_config(request):
 
     # Flatten cassette files to tests/cassettes directory without subdirectories
     def _flatten_path(path: str) -> str:
-        import os as _os
+        import os as _os  # noqa: PLC0415
 
         base = _os.path.basename(path)
         if not base.endswith(".yaml"):

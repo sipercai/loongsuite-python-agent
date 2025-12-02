@@ -98,7 +98,7 @@ class TestSingletonTracer:
         parent_run_id = uuid.uuid4()
         child_run_id = uuid.uuid4()
 
-        from datetime import datetime
+        from datetime import datetime  # noqa: PLC0415
 
         parent_run = Run(
             id=parent_run_id,
@@ -140,9 +140,9 @@ class TestSingletonTracer:
             first_handler._start_trace(parent_run)
 
             # 验证parent run被保存
-            assert (
-                parent_run_id in first_handler._runs
-            ), "parent run应该被保存到第一个handler的_runs"
+            assert parent_run_id in first_handler._runs, (
+                "parent run应该被保存到第一个handler的_runs"
+            )
 
         # 第二次调用：关键测试点 - 验证单例行为
         second_manager = BaseCallbackManager(handlers=[])
@@ -159,9 +159,9 @@ class TestSingletonTracer:
 
         # 关键验证：第二个handler能否看到parent run
         parent_in_second_handler = second_handler._runs.get(parent_run_id)
-        assert (
-            parent_in_second_handler is not None
-        ), "第二个handler应该能看到parent run（链路连续）"
+        assert parent_in_second_handler is not None, (
+            "第二个handler应该能看到parent run（链路连续）"
+        )
 
         # 模拟第二个handler处理child run
         with patch.object(second_handler, "_tracer") as mock_tracer:
@@ -177,9 +177,9 @@ class TestSingletonTracer:
                     else None
                 )
 
-            assert (
-                parent_context_found is not None
-            ), "child run应该能找到parent context（链路连续）"
+            assert parent_context_found is not None, (
+                "child run应该能找到parent context（链路连续）"
+            )
 
             # 处理child run
             second_handler._start_trace(child_run)

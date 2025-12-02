@@ -176,19 +176,19 @@ class TestPrompts:
         result = list(_prompts(test_case["inputs"]))
 
         # 验证结果数量
-        assert (
-            len(result) == len(test_case["expected"])
-        ), f"Expected {len(test_case['expected'])} results, got {len(result)} for {test_case['name']}"
+        assert len(result) == len(test_case["expected"]), (
+            f"Expected {len(test_case['expected'])} results, got {len(result)} for {test_case['name']}"
+        )
 
         # 验证每个结果
         for i, (actual_key, actual_value) in enumerate(result):
             expected_key, expected_value = test_case["expected"][i]
-            assert (
-                actual_key == expected_key
-            ), f"Expected key {expected_key}, got {actual_key} for {test_case['name']}"
-            assert (
-                actual_value == expected_value
-            ), f"Expected value {expected_value}, got {actual_value} for {test_case['name']}"
+            assert actual_key == expected_key, (
+                f"Expected key {expected_key}, got {actual_key} for {test_case['name']}"
+            )
+            assert actual_value == expected_value, (
+                f"Expected value {expected_value}, got {actual_value} for {test_case['name']}"
+            )
 
     def test_prompts_with_invalid_prompt_types(self):
         """测试包含无效prompt类型的情况"""
