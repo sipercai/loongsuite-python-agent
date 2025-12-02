@@ -30,12 +30,17 @@ from opentelemetry.trace import (
 )
 from opentelemetry.trace.propagation import set_span_in_context
 from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.util.genai._extended_semconv import (
+    gen_ai_extended_attributs as GenAIExtended,  # LoongSuite Extension
+)
 from opentelemetry.util.genai.types import (
     Error,
+    FunctionToolDefinition,
     InputMessage,
     LLMInvocation,
     MessagePart,
     OutputMessage,
+    ToolDefinition,
 )
 from opentelemetry.util.genai.utils import (
     ContentCapturingMode,
@@ -129,6 +134,75 @@ def _get_llm_messages_attributes_for_event(
     return attributes
 
 
+# LoongSuite Extension
+
+
+def _get_tool_definitions_for_span(
+    tool_definitions: list[ToolDefinition] | None = None,
+) -> dict[str, Any]:
+    """Get tool definitions formatted for span (JSON string format).
+
+    Returns empty dict if not in experimental mode or content capturing is disabled.
+    """
+    attributes: dict[str, Any] = {}
+    if not is_experimental_mode():
+        return attributes
+
+    if not tool_definitions:
+        return attributes
+
+    tool_defs_dicts: list[dict[str, Any]] = []
+    # Even not in SPAN_ONLY or SPAN_AND_EVENT mode, we still record the tool definitions with required properties.
+    should_record_full = get_content_capturing_mode() in (
+        ContentCapturingMode.SPAN_ONLY,
+        ContentCapturingMode.SPAN_AND_EVENT,
+    )
+
+    for tool_def in tool_definitions:
+        if isinstance(tool_def, FunctionToolDefinition):
+            if should_record_full:
+                tool_defs_dicts.append(asdict(tool_def))
+            else:
+                tool_defs_dicts.append(
+                    {
+                        "name": tool_def.name,
+                        "type": tool_def.type,
+                    }
+                )
+        else:
+            # Fallback: record full tool definition
+            tool_defs_dicts.append(asdict(tool_def))
+
+    if tool_defs_dicts:
+        attributes[GenAIExtended.GEN_AI_TOOL_DEFINITIONS] = gen_ai_json_dumps(
+            tool_defs_dicts
+        )
+    return attributes
+
+
+def _get_tool_definitions_for_event(
+    tool_definitions: list[ToolDefinition] | None = None,
+) -> dict[str, Any]:
+    """Get tool definitions formatted for event (structured format).
+
+    Returns empty dict if not in experimental mode or content capturing is disabled.
+    """
+    attributes: dict[str, Any] = {}
+    if not is_experimental_mode() or get_content_capturing_mode() not in (
+        ContentCapturingMode.EVENT_ONLY,
+        ContentCapturingMode.SPAN_AND_EVENT,
+    ):
+        return attributes
+
+    if not tool_definitions:
+        return attributes
+
+    attributes[GenAIExtended.GEN_AI_TOOL_DEFINITIONS] = [
+        asdict(tool_def) for tool_def in tool_definitions
+    ]
+    return attributes
+
+
 def _maybe_emit_llm_event(
     logger: Logger | None,
     span: Span,
@@ -162,6 +236,9 @@ def _maybe_emit_llm_event(
             invocation.system_instruction,
         )
     )
+    attributes.update(
+        _get_tool_definitions_for_event(invocation.tool_definitions)
+    )  # LoongSuite Extension
 
     # Add error.type if operation ended in error
     if error is not None:
@@ -196,6 +273,9 @@ def _apply_llm_finish_attributes(
             invocation.system_instruction,
         )
     )
+    attributes.update(
+        _get_tool_definitions_for_span(invocation.tool_definitions)
+    )  # LoongSuite Extension
     attributes.update(invocation.attributes)
 
     # Set all attributes on the span

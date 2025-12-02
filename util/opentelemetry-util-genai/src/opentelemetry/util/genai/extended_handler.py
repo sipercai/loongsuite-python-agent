@@ -1,0 +1,491 @@
+# Copyright The OpenTelemetry Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Extended Telemetry Handler for GenAI invocations.
+
+This module extends the base `TelemetryHandler` to support additional GenAI (Generative AI)
+invocations such as embedding, execute_tool, invoke_agent and rerank, which are not supported by the base handler.
+
+This is an extension module that does not modify the original `handler.py`,
+allowing for easy upstream synchronization without conflicts.
+
+Classes:
+    - ExtendedTelemetryHandler: Extended Telemetry Handler that supports additional GenAI invocations.
+
+Functions:
+    - get_extended_telemetry_handler: Returns a singleton `ExtendedTelemetryHandler` instance.
+
+Usage:
+    handler = get_extended_telemetry_handler()
+
+    # Create an invocation object with your request data
+    # The span and context_token attributes are set by the TelemetryHandler, and
+    # managed by the TelemetryHandler during the lifecycle of the span.
+
+    # Use the context manager to manage the lifecycle of an LLM invocation.
+    with handler.llm(invocation) as invocation:
+        # Populate outputs and any additional attributes
+        invocation.output_messages = [...]
+        invocation.attributes.update({"more": "attrs"})
+
+    # Or, if you prefer to manage the lifecycle manually
+    invocation = LLMInvocation(
+        request_model="my-model",
+        input_messages=[...],
+        provider="my-provider",
+        attributes={"custom": "attr"},
+    )
+
+    # Start the invocation (opens a span)
+    handler.start_llm(invocation)
+
+    # Populate outputs and any additional attributes, then stop (closes the span)
+    invocation.output_messages = [...]
+    invocation.attributes.update({"more": "attrs"})
+    handler.stop_llm(invocation)
+
+    # Or, in case of error
+    handler.fail_llm(invocation, Error(type="...", message="..."))
+"""
+
+from __future__ import annotations
+
+from contextlib import contextmanager
+from typing import Iterator, Optional
+
+from opentelemetry import context as otel_context
+from opentelemetry._logs import LoggerProvider
+from opentelemetry.semconv._incubating.attributes import (
+    gen_ai_attributes as GenAI,
+)
+from opentelemetry.trace import (
+    SpanKind,
+    TracerProvider,
+    set_span_in_context,
+)
+from opentelemetry.util.genai.extended_span_utils import (
+    _apply_create_agent_finish_attributes,
+    _apply_embedding_finish_attributes,
+    _apply_execute_tool_finish_attributes,
+    _apply_invoke_agent_finish_attributes,
+    _apply_rerank_finish_attributes,
+    _apply_retrieve_finish_attributes,
+    _maybe_emit_invoke_agent_event,
+)
+from opentelemetry.util.genai.extended_types import (
+    CreateAgentInvocation,
+    EmbeddingInvocation,
+    ExecuteToolInvocation,
+    InvokeAgentInvocation,
+    RerankInvocation,
+    RetrieveInvocation,
+)
+from opentelemetry.util.genai.handler import TelemetryHandler
+from opentelemetry.util.genai.span_utils import _apply_error_attributes
+from opentelemetry.util.genai.types import Error
+
+
+class ExtendedTelemetryHandler(TelemetryHandler):
+    """
+    Extended Telemetry Handler that supports additional GenAI operations.
+    This class extends the base TelemetryHandler to support:
+    - Create agent operations
+    - Embedding operations
+    - Execute tool operations
+    - Invoke agent operations
+    - Retrieve documents operations
+    - Rerank documents operations
+    - All operations supported by the base TelemetryHandler (LLM/chat)
+    """
+
+    # ==================== Create Agent Operations ====================
+
+    def start_create_agent(
+        self, invocation: CreateAgentInvocation
+    ) -> CreateAgentInvocation:
+        """Start an agent creation invocation and create a pending span entry."""
+        if invocation.agent_name:
+            span_name = f"{GenAI.GenAiOperationNameValues.CREATE_AGENT.value} {invocation.agent_name}"
+        else:
+            span_name = GenAI.GenAiOperationNameValues.CREATE_AGENT.value
+
+        # Create agent is typically a CLIENT operation to remote services
+        span = self._tracer.start_span(
+            name=span_name,
+            kind=SpanKind.CLIENT,
+        )
+        invocation.span = span
+        invocation.context_token = otel_context.attach(
+            set_span_in_context(span)
+        )
+        return invocation
+
+    def stop_create_agent(
+        self, invocation: CreateAgentInvocation
+    ) -> CreateAgentInvocation:  # pylint: disable=no-self-use
+        """Finalize an agent creation invocation successfully and end its span."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_create_agent_finish_attributes(invocation.span, invocation)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    def fail_create_agent(  # pylint: disable=no-self-use
+        self, invocation: CreateAgentInvocation, error: Error
+    ) -> CreateAgentInvocation:
+        """Fail an agent creation invocation and end its span with error status."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_create_agent_finish_attributes(invocation.span, invocation)
+        _apply_error_attributes(invocation.span, error)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    @contextmanager
+    def create_agent(
+        self, invocation: CreateAgentInvocation | None = None
+    ) -> Iterator[CreateAgentInvocation]:
+        """Context manager for agent creation invocations."""
+        if invocation is None:
+            invocation = CreateAgentInvocation(provider="")
+        self.start_create_agent(invocation)
+        try:
+            yield invocation
+        except Exception as exc:
+            self.fail_create_agent(
+                invocation, Error(message=str(exc), type=type(exc))
+            )
+            raise
+        self.stop_create_agent(invocation)
+
+    # ==================== Embedding Operations ====================
+
+    def start_embedding(
+        self, invocation: EmbeddingInvocation
+    ) -> EmbeddingInvocation:
+        """Start an embedding invocation and create a pending span entry."""
+        span = self._tracer.start_span(
+            name=f"{GenAI.GenAiOperationNameValues.EMBEDDINGS.value} {invocation.request_model}",
+            kind=SpanKind.CLIENT,
+        )
+        invocation.span = span
+        invocation.context_token = otel_context.attach(
+            set_span_in_context(span)
+        )
+        return invocation
+
+    def stop_embedding(
+        self, invocation: EmbeddingInvocation
+    ) -> EmbeddingInvocation:  # pylint: disable=no-self-use
+        """Finalize an embedding invocation successfully and end its span."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_embedding_finish_attributes(invocation.span, invocation)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    def fail_embedding(  # pylint: disable=no-self-use
+        self, invocation: EmbeddingInvocation, error: Error
+    ) -> EmbeddingInvocation:
+        """Fail an embedding invocation and end its span with error status."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_embedding_finish_attributes(invocation.span, invocation)
+        _apply_error_attributes(invocation.span, error)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    @contextmanager
+    def embedding(
+        self, invocation: EmbeddingInvocation | None = None
+    ) -> Iterator[EmbeddingInvocation]:
+        """Context manager for embedding invocations."""
+        if invocation is None:
+            invocation = EmbeddingInvocation(request_model="")
+        self.start_embedding(invocation)
+        try:
+            yield invocation
+        except Exception as exc:
+            self.fail_embedding(
+                invocation, Error(message=str(exc), type=type(exc))
+            )
+            raise
+        self.stop_embedding(invocation)
+
+    # ==================== Execute Tool Operations ====================
+
+    def start_execute_tool(
+        self, invocation: ExecuteToolInvocation
+    ) -> ExecuteToolInvocation:
+        """Start a tool execution invocation and create a pending span entry."""
+        span = self._tracer.start_span(
+            name=f"{GenAI.GenAiOperationNameValues.EXECUTE_TOOL.value} {invocation.tool_name}",
+            kind=SpanKind.INTERNAL,
+        )
+        invocation.span = span
+        invocation.context_token = otel_context.attach(
+            set_span_in_context(span)
+        )
+        return invocation
+
+    def stop_execute_tool(
+        self, invocation: ExecuteToolInvocation
+    ) -> ExecuteToolInvocation:  # pylint: disable=no-self-use
+        """Finalize a tool execution invocation successfully and end its span."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_execute_tool_finish_attributes(invocation.span, invocation)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    def fail_execute_tool(  # pylint: disable=no-self-use
+        self, invocation: ExecuteToolInvocation, error: Error
+    ) -> ExecuteToolInvocation:
+        """Fail a tool execution invocation and end its span with error status."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_execute_tool_finish_attributes(invocation.span, invocation)
+        _apply_error_attributes(invocation.span, error)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    @contextmanager
+    def execute_tool(
+        self, invocation: ExecuteToolInvocation | None = None
+    ) -> Iterator[ExecuteToolInvocation]:
+        """Context manager for tool execution invocations."""
+        if invocation is None:
+            invocation = ExecuteToolInvocation(tool_name="")
+        self.start_execute_tool(invocation)
+        try:
+            yield invocation
+        except Exception as exc:
+            self.fail_execute_tool(
+                invocation, Error(message=str(exc), type=type(exc))
+            )
+            raise
+        self.stop_execute_tool(invocation)
+
+    # ==================== Invoke Agent Operations ====================
+
+    def start_invoke_agent(
+        self, invocation: InvokeAgentInvocation
+    ) -> InvokeAgentInvocation:
+        """Start an agent invocation and create a pending span entry."""
+        if invocation.agent_name:
+            span_name = f"{GenAI.GenAiOperationNameValues.INVOKE_AGENT.value} {invocation.agent_name}"
+        else:
+            span_name = GenAI.GenAiOperationNameValues.INVOKE_AGENT.value
+
+        # Span kind should be INTERNAL for in-process agents, CLIENT for remote services
+        # Default to INTERNAL as most frameworks run agents in-process
+        span = self._tracer.start_span(
+            name=span_name,
+            kind=SpanKind.INTERNAL,
+        )
+        invocation.span = span
+        invocation.context_token = otel_context.attach(
+            set_span_in_context(span)
+        )
+        return invocation
+
+    def stop_invoke_agent(
+        self, invocation: InvokeAgentInvocation
+    ) -> InvokeAgentInvocation:  # pylint: disable=no-self-use
+        """Finalize an agent invocation successfully and end its span."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_invoke_agent_finish_attributes(invocation.span, invocation)
+        _maybe_emit_invoke_agent_event(self._logger, invocation)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    def fail_invoke_agent(  # pylint: disable=no-self-use
+        self, invocation: InvokeAgentInvocation, error: Error
+    ) -> InvokeAgentInvocation:
+        """Fail an agent invocation and end its span with error status."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_invoke_agent_finish_attributes(invocation.span, invocation)
+        _apply_error_attributes(invocation.span, error)
+        _maybe_emit_invoke_agent_event(self._logger, invocation, error)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    @contextmanager
+    def invoke_agent(
+        self, invocation: InvokeAgentInvocation | None = None
+    ) -> Iterator[InvokeAgentInvocation]:
+        """Context manager for agent invocations."""
+        if invocation is None:
+            invocation = InvokeAgentInvocation(provider="")
+        self.start_invoke_agent(invocation)
+        try:
+            yield invocation
+        except Exception as exc:
+            self.fail_invoke_agent(
+                invocation, Error(message=str(exc), type=type(exc))
+            )
+            raise
+        self.stop_invoke_agent(invocation)
+
+    # ==================== Retrieve Documents Operations ====================
+
+    def start_retrieve(
+        self, invocation: RetrieveInvocation
+    ) -> RetrieveInvocation:
+        """Start a retrieve documents invocation and create a pending span entry."""
+        span = self._tracer.start_span(
+            name="retrieve_documents",
+            kind=SpanKind.INTERNAL,
+        )
+        invocation.span = span
+        invocation.context_token = otel_context.attach(
+            set_span_in_context(span)
+        )
+        return invocation
+
+    def stop_retrieve(
+        self, invocation: RetrieveInvocation
+    ) -> RetrieveInvocation:  # pylint: disable=no-self-use
+        """Finalize a retrieve documents invocation successfully and end its span."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_retrieve_finish_attributes(invocation.span, invocation)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    def fail_retrieve(  # pylint: disable=no-self-use
+        self, invocation: RetrieveInvocation, error: Error
+    ) -> RetrieveInvocation:
+        """Fail a retrieve documents invocation and end its span with error status."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_retrieve_finish_attributes(invocation.span, invocation)
+        _apply_error_attributes(invocation.span, error)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    @contextmanager
+    def retrieve(
+        self, invocation: RetrieveInvocation | None = None
+    ) -> Iterator[RetrieveInvocation]:
+        """Context manager for retrieve documents invocations."""
+        if invocation is None:
+            invocation = RetrieveInvocation()
+        self.start_retrieve(invocation)
+        try:
+            yield invocation
+        except Exception as exc:
+            self.fail_retrieve(
+                invocation, Error(message=str(exc), type=type(exc))
+            )
+            raise
+        self.stop_retrieve(invocation)
+
+    # ==================== Rerank Documents Operations ====================
+
+    def start_rerank(self, invocation: RerankInvocation) -> RerankInvocation:
+        """Start a rerank documents invocation and create a pending span entry."""
+        span = self._tracer.start_span(
+            name="rerank_documents",
+            kind=SpanKind.INTERNAL,
+        )
+        invocation.span = span
+        invocation.context_token = otel_context.attach(
+            set_span_in_context(span)
+        )
+        return invocation
+
+    def stop_rerank(self, invocation: RerankInvocation) -> RerankInvocation:  # pylint: disable=no-self-use
+        """Finalize a rerank documents invocation successfully and end its span."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_rerank_finish_attributes(invocation.span, invocation)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    def fail_rerank(  # pylint: disable=no-self-use
+        self, invocation: RerankInvocation, error: Error
+    ) -> RerankInvocation:
+        """Fail a rerank documents invocation and end its span with error status."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_rerank_finish_attributes(invocation.span, invocation)
+        _apply_error_attributes(invocation.span, error)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    @contextmanager
+    def rerank(
+        self, invocation: RerankInvocation | None = None
+    ) -> Iterator[RerankInvocation]:
+        """Context manager for rerank documents invocations."""
+        if invocation is None:
+            invocation = RerankInvocation(provider="")
+        self.start_rerank(invocation)
+        try:
+            yield invocation
+        except Exception as exc:
+            self.fail_rerank(
+                invocation, Error(message=str(exc), type=type(exc))
+            )
+            raise
+        self.stop_rerank(invocation)
+
+
+def get_extended_telemetry_handler(
+    tracer_provider: TracerProvider | None = None,
+    logger_provider: LoggerProvider | None = None,
+) -> ExtendedTelemetryHandler:
+    """
+    Returns a singleton ExtendedTelemetryHandler instance.
+    This handler supports all operations from the base TelemetryHandler
+    plus additional operations like embedding and rerank.
+    """
+    handler: Optional[ExtendedTelemetryHandler] = getattr(
+        get_extended_telemetry_handler, "_default_handler", None
+    )
+    if handler is None:
+        handler = ExtendedTelemetryHandler(
+            tracer_provider=tracer_provider,
+            logger_provider=logger_provider,
+        )
+        setattr(get_extended_telemetry_handler, "_default_handler", handler)
+    return handler

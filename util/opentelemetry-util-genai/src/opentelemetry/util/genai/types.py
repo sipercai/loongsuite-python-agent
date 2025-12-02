@@ -115,6 +115,21 @@ class OutputMessage:
     finish_reason: str | FinishReason
 
 
+# LoongSuite Extension
+
+
+@dataclass()
+class FunctionToolDefinition:
+    name: str
+    description: str | None
+    parameters: Any | None
+    response: Any | None
+    type: Literal["function"] = "function"
+
+
+ToolDefinition = Union[FunctionToolDefinition, Any]
+
+
 def _new_input_messages() -> list[InputMessage]:
     return []
 
@@ -129,6 +144,13 @@ def _new_system_instruction() -> list[MessagePart]:
 
 def _new_str_any_dict() -> dict[str, Any]:
     return {}
+
+
+# LoongSuite Extension
+
+
+def _new_tool_definitions() -> list[ToolDefinition]:
+    return []
 
 
 @dataclass
@@ -150,6 +172,9 @@ class LLMInvocation:
     )
     system_instruction: list[MessagePart] = field(
         default_factory=_new_system_instruction
+    )
+    tool_definitions: list[ToolDefinition] = field(  # LoongSuite Extension
+        default_factory=_new_tool_definitions
     )
     provider: str | None = None
     response_model_name: str | None = None
