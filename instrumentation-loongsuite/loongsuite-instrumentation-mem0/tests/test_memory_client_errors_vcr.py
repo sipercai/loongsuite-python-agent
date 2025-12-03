@@ -33,7 +33,7 @@ def test_client_connection_error_vcr(
     - Asserts top-level span is marked as ERROR and contains error.type
     Note: First time requires --record-mode=all in real environment to record exception; afterwards playback mode replays the exception.
     """
-    from opentelemetry.trace import StatusCode
+    from opentelemetry.trace import StatusCode  # noqa: PLC0415
 
     # Unreachable address (port 9 is typically not listened to, triggers connection refused)
     host = os.environ.get("MEM0_ERROR_HOST", "http://127.0.0.1:9")
@@ -55,12 +55,12 @@ def test_client_connection_error_vcr(
     error_spans = [
         s for s in spans if s.status.status_code == StatusCode.ERROR
     ]
-    assert (
-        error_spans
-    ), "Should generate at least one top-level span with ERROR status"
-    assert any(
-        "error.type" in s.attributes for s in error_spans
-    ), "Error span should contain error.type"
+    assert error_spans, (
+        "Should generate at least one top-level span with ERROR status"
+    )
+    assert any("error.type" in s.attributes for s in error_spans), (
+        "Error span should contain error.type"
+    )
 
 
 def _start_test_http_server(status_code: int) -> Tuple[HTTPServer, str]:
@@ -112,7 +112,7 @@ def test_client_http_401_vcr(
     """
     Returns 401 via local controllable HTTP service, records and replays exception.
     """
-    from opentelemetry.trace import StatusCode
+    from opentelemetry.trace import StatusCode  # noqa: PLC0415
 
     server, base_url = _start_test_http_server(401)
     try:
@@ -148,7 +148,7 @@ def test_client_http_500_vcr(
     """
     Returns 500 via local controllable HTTP service, records and replays exception.
     """
-    from opentelemetry.trace import StatusCode
+    from opentelemetry.trace import StatusCode  # noqa: PLC0415
 
     server, base_url = _start_test_http_server(500)
     try:

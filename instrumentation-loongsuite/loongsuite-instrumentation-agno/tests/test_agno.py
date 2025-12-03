@@ -77,6 +77,6 @@ def test_agno(in_memory_span_exporter: InMemorySpanExporter):
             check_model = True
         if "ToolCall" in span.name:
             check_tool = True
-    assert (
-        check_agent and check_model and check_tool
-    ), "Agent, Model or ToolCall span not found"
+    assert check_agent and check_model and check_tool, (
+        "Agent, Model or ToolCall span not found"
+    )

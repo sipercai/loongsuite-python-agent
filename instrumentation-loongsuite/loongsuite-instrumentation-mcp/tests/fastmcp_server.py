@@ -28,7 +28,9 @@ def create_tracer_provider():
 
 
 def do_instrument():
-    from opentelemetry.instrumentation.mcp import MCPInstrumentor
+    from opentelemetry.instrumentation.mcp import (  # noqa: PLC0415
+        MCPInstrumentor,
+    )
 
     instrumentor = MCPInstrumentor()
     instrumentor._instrument(tracer_provider=create_tracer_provider())

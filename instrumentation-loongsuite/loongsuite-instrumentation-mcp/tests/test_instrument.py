@@ -14,11 +14,11 @@ def test_instrumentation_dependencies():
 
 
 def test_instrument(tracer_provider):
-    import mcp.client.sse
-    import mcp.client.stdio
-    import mcp.client.streamable_http
-    import mcp.client.websocket
-    from mcp.client.session import ClientSession
+    import mcp.client.sse  # noqa: PLC0415
+    import mcp.client.stdio  # noqa: PLC0415
+    import mcp.client.streamable_http  # noqa: PLC0415
+    import mcp.client.websocket  # noqa: PLC0415
+    from mcp.client.session import ClientSession  # noqa: PLC0415
 
     assert not isinstance(ClientSession.list_prompts, BoundFunctionWrapper)
     mcp_instrumentor = MCPInstrumentor()

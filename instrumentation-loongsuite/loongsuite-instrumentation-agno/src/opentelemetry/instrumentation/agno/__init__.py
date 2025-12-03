@@ -98,7 +98,7 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
 
     def _uninstrument(self, **kwargs: Any) -> None:
         # Unwrap the agent call function
-        import agno.agent
+        import agno.agent  # noqa: PLC0415
 
         unwrap(agno.agent.Agent, "_run")
         unwrap(agno.agent.Agent, "_arun")
@@ -106,13 +106,13 @@ class AgnoInstrumentor(BaseInstrumentor):  # type: ignore
         unwrap(agno.agent.Agent, "_arun_stream")
 
         # Unwrap the function call
-        import agno.tools.function
+        import agno.tools.function  # noqa: PLC0415
 
         unwrap(agno.tools.function.FunctionCall, "execute")
         unwrap(agno.tools.function.FunctionCall, "aexecute")
 
         # Unwrap the model
-        import agno.models.base
+        import agno.models.base  # noqa: PLC0415
 
         unwrap(agno.models.base.Model, "response")
         unwrap(agno.models.base.Model, "aresponse")

@@ -123,7 +123,7 @@ class MCPInstrumentor(BaseInstrumentor):
 
     def _uninstrument(self, **kwargs: Any) -> None:
         try:
-            from mcp import ClientSession
+            from mcp import ClientSession  # noqa: PLC0415
 
             for method_name, _ in _client_session_methods:
                 unwrap(ClientSession, method_name)
@@ -131,14 +131,14 @@ class MCPInstrumentor(BaseInstrumentor):
             logger.warning("Fail to uninstrument ClientSession", exc_info=True)
 
         try:
-            import mcp.client.sse
+            import mcp.client.sse  # noqa: PLC0415
 
             unwrap(mcp.client.sse, "sse_client")
         except Exception:
             logger.warning("Fail to uninstrument sse_client", exc_info=True)
 
         try:
-            import mcp.client.streamable_http
+            import mcp.client.streamable_http  # noqa: PLC0415
 
             unwrap(mcp.client.streamable_http, "streamablehttp_client")
         except Exception:
@@ -147,7 +147,7 @@ class MCPInstrumentor(BaseInstrumentor):
             )
 
         try:
-            import mcp.client.stdio
+            import mcp.client.stdio  # noqa: PLC0415
 
             unwrap(mcp.client.stdio, "stdio_client")
         except Exception:
@@ -155,7 +155,7 @@ class MCPInstrumentor(BaseInstrumentor):
 
         if _is_ws_installed():
             try:
-                import mcp.client.websocket
+                import mcp.client.websocket  # noqa: PLC0415
 
                 unwrap(mcp.client.websocket, "websocket_client")
             except Exception:
@@ -164,7 +164,7 @@ class MCPInstrumentor(BaseInstrumentor):
                 )
 
         try:
-            import mcp.server.lowlevel.server
+            import mcp.server.lowlevel.server  # noqa: PLC0415
 
             unwrap(mcp.server.lowlevel.server, "Server._handle_request")
         except Exception:

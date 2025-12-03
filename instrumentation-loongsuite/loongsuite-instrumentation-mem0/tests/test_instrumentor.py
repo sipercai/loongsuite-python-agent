@@ -268,8 +268,8 @@ class TestMem0Instrumentor(unittest.TestCase):
 
     def test_public_methods_of_module(self):
         """Tests getting public methods of a class from module (via temporary module)."""
-        import sys
-        import types
+        import sys  # noqa: PLC0415
+        import types  # noqa: PLC0415
 
         test_mod = types.ModuleType("test_module")
 

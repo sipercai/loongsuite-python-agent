@@ -17,7 +17,7 @@ def _get_chatmodel_output_messages(
         list[dict[str, Any]]: 格式化的输出消息列表
     """
     try:
-        from agentscope.model import ChatResponse
+        from agentscope.model import ChatResponse  # noqa: PLC0415
 
         if not isinstance(chat_response, ChatResponse):
             # logger.warning(f"Expected ChatResponse, got {type(chat_response)}")

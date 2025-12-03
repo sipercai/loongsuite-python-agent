@@ -202,7 +202,7 @@ def test_memory_add_full_flow(
 ) -> None:
     _patch_factories(monkeypatch)
 
-    from mem0.memory.main import Memory
+    from mem0.memory.main import Memory  # noqa: PLC0415
 
     m = cast(Any, Memory())
     # Override instance internal dependencies to avoid real external calls
@@ -241,7 +241,7 @@ def test_memory_search_full_flow(
 ) -> None:
     _patch_factories(monkeypatch)
 
-    from mem0.memory.main import Memory
+    from mem0.memory.main import Memory  # noqa: PLC0415
 
     m = cast(Any, Memory())
     # Override instance internal dependencies
@@ -289,14 +289,14 @@ def test_internal_subphases_attributes(
 
     Note: LLM and Embedding do not need to generate spans (handled by corresponding LLM plugins)
     """
-    import os
-    import sys
+    import os  # noqa: PLC0415
+    import sys  # noqa: PLC0415
 
-    from mem0.configs.base import MemoryConfig, RerankerConfig
-    from mem0.memory.main import Memory
+    from mem0.configs.base import MemoryConfig, RerankerConfig  # noqa: PLC0415
+    from mem0.memory.main import Memory  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM
+    from conftest import FakeEmbedder, FakeLLM  # noqa: PLC0415
 
     # Configure reranker so Memory creates via factory (thus will be instrumented)
     config = MemoryConfig()
@@ -342,7 +342,9 @@ def test_internal_subphases_attributes(
     assert any(
         s.attributes.get("gen_ai.memory.vector.method") in valid_vec_methods
         for s in vec_spans
-    ), f"Vector method should be one of valid values, actual: {[s.attributes.get('gen_ai.memory.vector.method') for s in vec_spans]}"
+    ), (
+        f"Vector method should be one of valid values, actual: {[s.attributes.get('gen_ai.memory.vector.method') for s in vec_spans]}"
+    )
     # Verify provider (now uses data_source.type)
     assert any(
         s.attributes.get("gen_ai.memory.data_source.type") is not None
@@ -358,9 +360,9 @@ def test_internal_subphases_attributes(
     if m.reranker is not None:
         # If Memory instance has reranker, should be able to collect reranker span
         # Because reranker is created via factory, will be instrumented
-        assert (
-            reranker_spans
-        ), "When reranker exists, should collect reranker stage spans"
+        assert reranker_spans, (
+            "When reranker exists, should collect reranker stage spans"
+        )
         # Verify attributes
         assert any(
             s.attributes.get("gen_ai.provider.name") is not None
@@ -374,9 +376,9 @@ def test_internal_subphases_attributes(
         if s.attributes.get("gen_ai.memory.graph.method") is not None
     ]
     if m.enable_graph:
-        assert (
-            graph_spans
-        ), "When graph is enabled, should collect graph stage spans"
+        assert graph_spans, (
+            "When graph is enabled, should collect graph stage spans"
+        )
 
     # 4. LLM and Embedding: do not require generating mem0 subphase spans
     # These should be handled by corresponding LLM/Embedding plugins
@@ -390,13 +392,13 @@ def test_vector_operations_detailed_attributes(
     verify whether Vector operation detailed attributes are correctly collected.
     Including: provider, method, limit, filters.keys, result_count, etc.
     """
-    import os
-    import sys
+    import os  # noqa: PLC0415
+    import sys  # noqa: PLC0415
 
-    from mem0.memory.main import Memory
+    from mem0.memory.main import Memory  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM
+    from conftest import FakeEmbedder, FakeLLM  # noqa: PLC0415
 
     m = cast(Any, Memory())
     m.llm = FakeLLM()
@@ -438,17 +440,17 @@ def test_vector_operations_detailed_attributes(
             or "gen_ai.memory.vector.k" in search_span.attributes
         ), "search span should contain limit or k"
         # Verify filter_keys (note: actual attribute name is filter_keys, not filters.keys)
-        assert (
-            "gen_ai.memory.vector.filter_keys" in search_span.attributes
-        ), "search span should contain filter_keys"
+        assert "gen_ai.memory.vector.filter_keys" in search_span.attributes, (
+            "search span should contain filter_keys"
+        )
         filter_keys = search_span.attributes.get(
             "gen_ai.memory.vector.filter_keys"
         )
         assert "user_id" in filter_keys, "filter_keys should contain user_id"
         # Verify result_count
-        assert (
-            "gen_ai.memory.vector.result_count" in search_span.attributes
-        ), "search span should contain result_count"
+        assert "gen_ai.memory.vector.result_count" in search_span.attributes, (
+            "search span should contain result_count"
+        )
 
 
 @pytest.mark.vcr()
@@ -459,14 +461,17 @@ def test_graph_operations_detailed_attributes(
     verify whether Graph operation detailed attributes are correctly collected.
     Including: provider, method, result_count, etc.
     """
-    import os
-    import sys
+    import os  # noqa: PLC0415
+    import sys  # noqa: PLC0415
 
-    from mem0.configs.base import GraphStoreConfig, MemoryConfig
-    from mem0.memory.main import Memory
+    from mem0.configs.base import (  # noqa: PLC0415
+        GraphStoreConfig,
+        MemoryConfig,
+    )
+    from mem0.memory.main import Memory  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM
+    from conftest import FakeEmbedder, FakeLLM  # noqa: PLC0415
 
     # Enable graph (using kuzu as provider, but will be intercepted by patch_factories to return FakeGraphStore)
     config = MemoryConfig()
@@ -511,9 +516,9 @@ def test_graph_operations_detailed_attributes(
         result_count = add_span.attributes.get(
             "gen_ai.memory.graph.result_count"
         )
-        assert (
-            result_count is not None and result_count >= 0
-        ), f"add span should contain result_count, actual value: {result_count}"
+        assert result_count is not None and result_count >= 0, (
+            f"add span should contain result_count, actual value: {result_count}"
+        )
 
 
 @pytest.mark.vcr()
@@ -524,14 +529,14 @@ def test_reranker_operations_detailed_attributes(
     verify whether Reranker operation detailed attributes are correctly collected.
     Including: provider, top_k, input_count, etc.
     """
-    import os
-    import sys
+    import os  # noqa: PLC0415
+    import sys  # noqa: PLC0415
 
-    from mem0.configs.base import MemoryConfig, RerankerConfig
-    from mem0.memory.main import Memory
+    from mem0.configs.base import MemoryConfig, RerankerConfig  # noqa: PLC0415
+    from mem0.memory.main import Memory  # noqa: PLC0415
 
     sys.path.insert(0, os.path.dirname(__file__))
-    from conftest import FakeEmbedder, FakeLLM
+    from conftest import FakeEmbedder, FakeLLM  # noqa: PLC0415
 
     config = MemoryConfig()
     config.reranker = RerankerConfig(provider="cohere", config={})
@@ -552,9 +557,9 @@ def test_reranker_operations_detailed_attributes(
     assert reranker_spans, "should collect reranker spans"
 
     reranker_span = reranker_spans[0]
-    assert (
-        reranker_span.attributes.get("gen_ai.provider.name") == "fake"
-    ), "should contain correct provider.name"
+    assert reranker_span.attributes.get("gen_ai.provider.name") == "fake", (
+        "should contain correct provider.name"
+    )
     # Now uses gen_ai.rerank.documents_count instead of gen_ai.memory.reranker.input_count
     if "gen_ai.rerank.documents_count" in reranker_span.attributes:
         documents_count = reranker_span.attributes.get(

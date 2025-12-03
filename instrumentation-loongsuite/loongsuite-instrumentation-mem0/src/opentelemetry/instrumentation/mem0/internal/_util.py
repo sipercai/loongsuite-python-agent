@@ -99,7 +99,7 @@ def _normalize_provider_from_class(instance: Any) -> Optional[str]:
     Infer provider name from instance class name by removing common suffixes and lowercasing.
     Example: QdrantVectorStore -> qdrant; PineconeIndex -> pinecone
     """
-    from opentelemetry.instrumentation.mem0.semconv import (
+    from opentelemetry.instrumentation.mem0.semconv import (  # noqa: PLC0415
         PROVIDER_CLASS_SUFFIXES,
     )
 

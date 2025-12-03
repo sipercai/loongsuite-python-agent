@@ -52,10 +52,10 @@ class AgentScopeV0Instrumentor(BaseInstrumentor):  # type: ignore
         )
 
     def _uninstrument(self, **kwargs: Any) -> None:
-        import agentscope.models.model
+        import agentscope.models.model  # noqa: PLC0415
 
         unwrap(agentscope.models.model.ModelWrapperBase, "__init__")
-        import agentscope.service.service_toolkit
+        import agentscope.service.service_toolkit  # noqa: PLC0415
 
         unwrap(
             agentscope.service.service_toolkit.ServiceToolkit, "_execute_func"

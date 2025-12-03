@@ -26,10 +26,10 @@ MCP_SERVER_SCRIPT = os.path.join(os.path.dirname(__file__), "mcp_server.py")
 
 @pytest.mark.asyncio
 async def test_send_request_propagator(memory_exporter, tracer_provider):
-    from mcp import ClientSession, StdioServerParameters
-    from mcp.client.stdio import stdio_client
-    from mcp.shared.message import SessionMessage
-    from mcp.types import JSONRPCRequest
+    from mcp import ClientSession, StdioServerParameters  # noqa: PLC0415
+    from mcp.client.stdio import stdio_client  # noqa: PLC0415
+    from mcp.shared.message import SessionMessage  # noqa: PLC0415
+    from mcp.types import JSONRPCRequest  # noqa: PLC0415
 
     server_params = StdioServerParameters(
         command="python",

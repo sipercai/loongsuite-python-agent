@@ -413,7 +413,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_input_messages_string(self):
         """Tests extracting input messages from string - directly returns original value"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 
@@ -436,7 +436,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_input_messages_dict_with_content(self):
         """Tests extracting input messages from dict - directly returns original value"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 
@@ -463,7 +463,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_input_messages_list_original(self):
         """Tests extracting input messages from list - directly returns original value"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 
@@ -492,7 +492,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_output_messages_original(self):
         """Tests output messages - Return original content directly"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 
@@ -673,7 +673,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_output_messages_memory_client_add_respects_async_mode(self):
         """MemoryClient.add: only capture output.messages when async_mode=False"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 
@@ -757,7 +757,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_update_input_messages_with_data(self):
         """Tests update operation extracting data as input content"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 
@@ -784,7 +784,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_update_input_messages_with_text(self):
         """Tests update operation extracting text as input content (MemoryClient)"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 
@@ -811,7 +811,7 @@ class TestMemoryOperationAttributeExtractor(unittest.TestCase):
 
     def test_batch_update_input_messages(self):
         """Tests batch_update operation extracting memories list as input content"""
-        from opentelemetry.instrumentation.mem0.config import (
+        from opentelemetry.instrumentation.mem0.config import (  # noqa: PLC0415
             should_capture_content,
         )
 

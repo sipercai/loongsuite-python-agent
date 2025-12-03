@@ -29,7 +29,7 @@ class LangChainInstrumentor(BaseInstrumentor):  # type: ignore
         if not (tracer_provider := kwargs.get("tracer_provider")):
             tracer_provider = trace_api.get_tracer_provider()
         tracer = trace_api.get_tracer(__name__, "", tracer_provider)
-        from opentelemetry.instrumentation.langchain.internal._tracer import (
+        from opentelemetry.instrumentation.langchain.internal._tracer import (  # noqa: PLC0415
             LoongsuiteTracer,
         )
 

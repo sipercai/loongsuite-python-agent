@@ -27,9 +27,10 @@ class ModelRequestExtractor(object):
                 f"{agent.model_type}",
             )
 
-        for key in arguments.keys():
+        for item in arguments.items():
+            key, entry_value = item
             if key == "messages":
-                messages = arguments[key]
+                messages = entry_value
                 for idx in range(len(messages)):
                     message = messages[idx]
                     if "role" in message:
@@ -44,7 +45,7 @@ class ModelRequestExtractor(object):
                         )
 
             if key == "tools":
-                tools = arguments[key]
+                tools = entry_value
                 for idx in range(len(tools)):
                     tool = tools[idx]
                     yield (
@@ -53,17 +54,17 @@ class ModelRequestExtractor(object):
                     )
 
             if key == "texts":
-                if isinstance(arguments[key], str):
-                    yield GenAIAttributes.GEN_AI_PROMPT, f"{arguments[key]}"
-                elif isinstance(arguments[key], list):
-                    for idx, text in enumerate(arguments[key]):
+                if isinstance(entry_value, str):
+                    yield GenAIAttributes.GEN_AI_PROMPT, f"{entry_value}"
+                elif isinstance(entry_value, list):
+                    for idx, text in enumerate(entry_value):
                         yield (
                             f"{GenAIAttributes.GEN_AI_PROMPT}.{idx}",
                             f"{text}",
                         )
 
             if key == "prompt":
-                yield GenAIAttributes.GEN_AI_PROMPT, f"{arguments[key]}"
+                yield GenAIAttributes.GEN_AI_PROMPT, f"{entry_value}"
 
 
 class ModelResponseExtractor(object):

@@ -45,7 +45,7 @@ def skip_if_no_agentscope():
     """如果没有安装agentscope则跳过测试"""
     try:
         # test the import of agentscope, skip the warning
-        import agentscope  # noqa: F401
+        import agentscope  # noqa: F401, PLC0415
 
         return pytest.mark.skipif(False, reason="")
     except ImportError:

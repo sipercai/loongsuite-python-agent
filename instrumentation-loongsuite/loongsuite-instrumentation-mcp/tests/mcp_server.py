@@ -14,8 +14,8 @@ do_instrument = False
 
 
 def create_mcp_server():
-    import mcp.types as types
-    from mcp.server import Server
+    import mcp.types as types  # noqa: PLC0415
+    from mcp.server import Server  # noqa: PLC0415
 
     server = Server("example-server")
 
@@ -116,14 +116,16 @@ def create_tracer_provider():
 # Run the server as STDIO
 async def main():
     if do_instrument:
-        from opentelemetry.instrumentation.mcp import MCPInstrumentor
+        from opentelemetry.instrumentation.mcp import (  # noqa: PLC0415
+            MCPInstrumentor,
+        )
 
         instrumentor = MCPInstrumentor()
         instrumentor._instrument(tracer_provider=create_tracer_provider())
 
-    from mcp.server import NotificationOptions
-    from mcp.server.models import InitializationOptions
-    from mcp.server.stdio import stdio_server
+    from mcp.server import NotificationOptions  # noqa: PLC0415
+    from mcp.server.models import InitializationOptions  # noqa: PLC0415
+    from mcp.server.stdio import stdio_server  # noqa: PLC0415
 
     server = create_mcp_server()
     async with stdio_server() as (read_stream, write_stream):
@@ -142,7 +144,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    import asyncio
+    import asyncio  # noqa: PLC0415
 
     if len(sys.argv) > 1 and sys.argv[1] == "instrument":
         do_instrument = True

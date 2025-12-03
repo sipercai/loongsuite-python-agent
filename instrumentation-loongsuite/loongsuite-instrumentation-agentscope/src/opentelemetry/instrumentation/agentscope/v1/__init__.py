@@ -154,7 +154,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
     def _uninstrument(self, **kwargs: Any) -> None:
         """移除插装。"""
         # 恢复被动态替换的方法
-        from ._wrapper import (
+        from ._wrapper import (  # noqa: PLC0415
             AgentScopeV1AgentWrapper,
             AgentScopeV1ChatModelWrapper,
             AgentScopeV1EmbeddingModelWrapper,
@@ -166,35 +166,35 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
 
         # 恢复直接包装的方法
         try:
-            import agentscope.model
+            import agentscope.model  # noqa: PLC0415
 
             unwrap(agentscope.model.ChatModelBase, "__init__")
         except Exception:
             pass
 
         try:
-            import agentscope.embedding
+            import agentscope.embedding  # noqa: PLC0415
 
             unwrap(agentscope.embedding.EmbeddingModelBase, "__init__")
         except Exception:
             pass
 
         try:
-            import agentscope.agent
+            import agentscope.agent  # noqa: PLC0415
 
             unwrap(agentscope.agent.AgentBase, "__init__")
         except Exception:
             pass
 
         try:
-            import agentscope.tool
+            import agentscope.tool  # noqa: PLC0415
 
             unwrap(agentscope.tool.Toolkit, "call_tool_function")
         except Exception:
             pass
 
         try:
-            import agentscope.formatter
+            import agentscope.formatter  # noqa: PLC0415
 
             unwrap(agentscope.formatter.FormatterBase, "format")
         except Exception:
@@ -202,7 +202,7 @@ class AgentScopeV1Instrumentor(BaseInstrumentor):  # type: ignore
 
         # 恢复 setup_tracing
         try:
-            import agentscope.tracing
+            import agentscope.tracing  # noqa: PLC0415
 
             unwrap(agentscope.tracing, "setup_tracing")
         except Exception:

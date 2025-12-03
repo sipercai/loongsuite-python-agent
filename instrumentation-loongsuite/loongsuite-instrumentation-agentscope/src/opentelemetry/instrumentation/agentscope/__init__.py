@@ -20,13 +20,13 @@ class AgentScopeInstrumentor(BaseInstrumentor):  # type: ignore
     def _instrument(self, **kwargs: Any) -> None:
         """Enable AgentScope instrumentation."""
         if is_agentscope_v1():
-            from opentelemetry.instrumentation.agentscope.v1 import (
+            from opentelemetry.instrumentation.agentscope.v1 import (  # noqa: PLC0415
                 AgentScopeV1Instrumentor,
             )
 
             AgentScopeV1Instrumentor().instrument(**kwargs)
         else:
-            from opentelemetry.instrumentation.agentscope.v0 import (
+            from opentelemetry.instrumentation.agentscope.v0 import (  # noqa: PLC0415
                 AgentScopeV0Instrumentor,
             )
 
@@ -34,13 +34,13 @@ class AgentScopeInstrumentor(BaseInstrumentor):  # type: ignore
 
     def _uninstrument(self, **kwargs: Any) -> None:
         if is_agentscope_v1():
-            from opentelemetry.instrumentation.agentscope.v1 import (
+            from opentelemetry.instrumentation.agentscope.v1 import (  # noqa: PLC0415
                 AgentScopeV1Instrumentor,
             )
 
             AgentScopeV1Instrumentor().uninstrument(**kwargs)
         else:
-            from opentelemetry.instrumentation.agentscope.v0 import (
+            from opentelemetry.instrumentation.agentscope.v0 import (  # noqa: PLC0415
                 AgentScopeV0Instrumentor,
             )
 

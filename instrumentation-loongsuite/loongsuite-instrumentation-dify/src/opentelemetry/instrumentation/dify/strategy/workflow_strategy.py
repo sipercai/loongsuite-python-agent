@@ -87,7 +87,7 @@ class WorkflowNodeInitStrategy(ProcessStrategy):
             event_id = kwargs["id"]
             span = None
             with self._lock:
-                from opentelemetry import context
+                from opentelemetry import context  # noqa: PLC0415
 
                 ctx = context.get_current()
                 if len(ctx) == 0:
