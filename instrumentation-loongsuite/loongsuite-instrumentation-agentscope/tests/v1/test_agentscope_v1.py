@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """v1版本的AgentScope测试"""
 
+import asyncio
 from typing import Generator
 
 import agentscope
@@ -84,8 +85,6 @@ def test_agentscope_v1_basic(
     msg_task = Msg("user", "compute 1615114134*4343434343 for me", "user")
 
     # 使用 asyncio 来运行异步函数
-    import asyncio  # noqa: PLC0415
-
     async def run_agent():
         response = await agent(msg_task)
         # 如果是异步生成器，需要消费它
@@ -96,10 +95,10 @@ def test_agentscope_v1_basic(
             return result
         return response
 
-    # FIXME: ruff failed
-    response = asyncio.run(run_agent())  # noqa: F841
+    # 运行异步函数以生成 spans
+    _ = asyncio.run(run_agent())
 
-    check_model, check_tool = False, False
+    check_model = False
     spans = in_memory_span_exporter.get_finished_spans()
 
     # 调试：打印所有 span 名称
@@ -109,9 +108,6 @@ def test_agentscope_v1_basic(
         # 检查是否是聊天模型的 span（格式：chat model_name）
         if span.name.startswith("chat "):
             check_model = True
-        if "tool" in span.name.lower():
-            # FIXME: ruff failed
-            check_tool = True  # noqa: F841
 
     # 先检查是否至少有模型调用 span
     assert check_model, (
@@ -143,8 +139,6 @@ def test_agentscope_v1_simple_chat(
     )
 
     msg_task = Msg("user", "Hello, how are you?", "user")
-
-    import asyncio  # noqa: PLC0415
 
     async def run_agent():
         response = await agent(msg_task)
@@ -187,8 +181,6 @@ def test_agentscope_v1_model_direct(
     # 直接调用模型（使用字典格式避免 Msg 对象问题）
     messages = [{"role": "user", "content": "Hello, what is 1+1?"}]
 
-    import asyncio  # noqa: PLC0415
-
     async def call_model():
         response = await model(messages)
         if hasattr(response, "__aiter__"):
@@ -229,8 +221,6 @@ def test_agentscope_v1_span_attributes(
 
     # 直接调用模型（使用字典格式）
     messages = [{"role": "user", "content": "Simple test message"}]
-
-    import asyncio  # noqa: PLC0415
 
     async def call_model():
         response = await model(messages)
