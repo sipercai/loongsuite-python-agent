@@ -123,7 +123,6 @@ class FunctionToolDefinition:
     name: str
     description: str | None
     parameters: Any | None
-    response: Any | None
     type: Literal["function"] = "function"
 
 

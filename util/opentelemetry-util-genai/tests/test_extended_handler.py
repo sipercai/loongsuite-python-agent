@@ -130,7 +130,7 @@ def _assert_span_attributes(
         assert span_attrs.get(key) == value
 
 
-class TestExtendedTelemetryHandler(unittest.TestCase):
+class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def setUp(self):
         self.span_exporter = InMemorySpanExporter()
         tracer_provider = TracerProvider()
@@ -995,7 +995,3 @@ class TestExtendedTelemetryHandler(unittest.TestCase):
                 ErrorAttributes.ERROR_TYPE: RerankError.__qualname__,
             },
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

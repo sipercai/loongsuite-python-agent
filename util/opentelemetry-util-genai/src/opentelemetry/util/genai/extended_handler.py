@@ -97,7 +97,7 @@ from opentelemetry.util.genai.span_utils import _apply_error_attributes
 from opentelemetry.util.genai.types import Error
 
 
-class ExtendedTelemetryHandler(TelemetryHandler):
+class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-public-methods
     """
     Extended Telemetry Handler that supports additional GenAI operations.
     This class extends the base TelemetryHandler to support:
@@ -132,9 +132,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):
         )
         return invocation
 
-    def stop_create_agent(
+    def stop_create_agent(  # pylint: disable=no-self-use
         self, invocation: CreateAgentInvocation
-    ) -> CreateAgentInvocation:  # pylint: disable=no-self-use
+    ) -> CreateAgentInvocation:
         """Finalize an agent creation invocation successfully and end its span."""
         if invocation.context_token is None or invocation.span is None:
             return invocation
@@ -190,9 +190,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):
         )
         return invocation
 
-    def stop_embedding(
+    def stop_embedding(  # pylint: disable=no-self-use
         self, invocation: EmbeddingInvocation
-    ) -> EmbeddingInvocation:  # pylint: disable=no-self-use
+    ) -> EmbeddingInvocation:
         """Finalize an embedding invocation successfully and end its span."""
         if invocation.context_token is None or invocation.span is None:
             return invocation
@@ -248,9 +248,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):
         )
         return invocation
 
-    def stop_execute_tool(
+    def stop_execute_tool(  # pylint: disable=no-self-use
         self, invocation: ExecuteToolInvocation
-    ) -> ExecuteToolInvocation:  # pylint: disable=no-self-use
+    ) -> ExecuteToolInvocation:
         """Finalize a tool execution invocation successfully and end its span."""
         if invocation.context_token is None or invocation.span is None:
             return invocation
@@ -321,7 +321,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):
             return invocation
 
         _apply_invoke_agent_finish_attributes(invocation.span, invocation)
-        _maybe_emit_invoke_agent_event(self._logger, invocation)
+        _maybe_emit_invoke_agent_event(
+            self._logger, invocation.span, invocation
+        )
         otel_context.detach(invocation.context_token)
         invocation.span.end()
         return invocation
@@ -333,11 +335,12 @@ class ExtendedTelemetryHandler(TelemetryHandler):
         if invocation.context_token is None or invocation.span is None:
             return invocation
 
-        _apply_invoke_agent_finish_attributes(invocation.span, invocation)
-        _apply_error_attributes(invocation.span, error)
-        _maybe_emit_invoke_agent_event(self._logger, invocation, error)
+        span = invocation.span
+        _apply_invoke_agent_finish_attributes(span, invocation)
+        _apply_error_attributes(span, error)
+        _maybe_emit_invoke_agent_event(self._logger, span, invocation, error)  # pylint: disable=too-many-function-args
         otel_context.detach(invocation.context_token)
-        invocation.span.end()
+        span.end()
         return invocation
 
     @contextmanager
@@ -373,9 +376,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):
         )
         return invocation
 
-    def stop_retrieve(
+    def stop_retrieve(  # pylint: disable=no-self-use
         self, invocation: RetrieveInvocation
-    ) -> RetrieveInvocation:  # pylint: disable=no-self-use
+    ) -> RetrieveInvocation:
         """Finalize a retrieve documents invocation successfully and end its span."""
         if invocation.context_token is None or invocation.span is None:
             return invocation

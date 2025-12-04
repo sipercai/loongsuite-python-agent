@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Any
 
 from opentelemetry._logs import Logger, LogRecord
+from opentelemetry.context import get_current
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAI,
 )
@@ -33,6 +34,7 @@ from opentelemetry.semconv.attributes import (
     server_attributes as ServerAttributes,
 )
 from opentelemetry.trace import Span
+from opentelemetry.trace.propagation import set_span_in_context
 from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributs import (
     GEN_AI_EMBEDDINGS_DIMENSION_COUNT,
     GEN_AI_RERANK_BATCH_SIZE,
@@ -73,6 +75,136 @@ from opentelemetry.util.genai.utils import (
 )
 
 # ==================== Helper Functions for Getting Attributes ====================
+
+# -------------------- Invoke Agent Attribute Helpers --------------------
+
+
+def _get_invoke_agent_common_attributes(
+    invocation: InvokeAgentInvocation,
+) -> dict[str, Any]:
+    """Get common invoke_agent attributes (operation_name, provider, agent info).
+
+    Returns a dictionary of attributes.
+    """
+    attributes: dict[str, Any] = {}
+
+    # Operation name
+    attributes[GenAI.GEN_AI_OPERATION_NAME] = (
+        GenAI.GenAiOperationNameValues.INVOKE_AGENT.value
+    )
+
+    # Required attributes
+    if invocation.provider:
+        attributes[GenAI.GEN_AI_PROVIDER_NAME] = invocation.provider
+
+    # Agent-related attributes
+    if invocation.agent_description is not None:
+        attributes[GenAI.GEN_AI_AGENT_DESCRIPTION] = (
+            invocation.agent_description
+        )
+    if invocation.agent_id is not None:
+        attributes[GenAI.GEN_AI_AGENT_ID] = invocation.agent_id
+    if invocation.agent_name is not None:
+        attributes[GenAI.GEN_AI_AGENT_NAME] = invocation.agent_name
+    if invocation.conversation_id is not None:
+        attributes[GenAI.GEN_AI_CONVERSATION_ID] = invocation.conversation_id
+    if invocation.data_source_id is not None:
+        attributes[GenAI.GEN_AI_DATA_SOURCE_ID] = invocation.data_source_id
+    if invocation.request_model is not None:
+        attributes[GenAI.GEN_AI_REQUEST_MODEL] = invocation.request_model
+
+    return attributes
+
+
+def _get_invoke_agent_request_attributes(
+    invocation: InvokeAgentInvocation,
+) -> dict[str, Any]:
+    """Get invoke_agent request attributes (temperature, top_p, etc.).
+
+    Returns a dictionary of attributes.
+    """
+    attributes: dict[str, Any] = {}
+
+    if invocation.temperature is not None:
+        attributes[GenAI.GEN_AI_REQUEST_TEMPERATURE] = invocation.temperature
+    if invocation.top_p is not None:
+        attributes[GenAI.GEN_AI_REQUEST_TOP_P] = invocation.top_p
+    if invocation.frequency_penalty is not None:
+        attributes[GenAI.GEN_AI_REQUEST_FREQUENCY_PENALTY] = (
+            invocation.frequency_penalty
+        )
+    if invocation.presence_penalty is not None:
+        attributes[GenAI.GEN_AI_REQUEST_PRESENCE_PENALTY] = (
+            invocation.presence_penalty
+        )
+    if invocation.max_tokens is not None:
+        attributes[GenAI.GEN_AI_REQUEST_MAX_TOKENS] = invocation.max_tokens
+    if invocation.seed is not None:
+        attributes[GenAI.GEN_AI_REQUEST_SEED] = invocation.seed
+    if invocation.stop_sequences is not None:
+        attributes[GenAI.GEN_AI_REQUEST_STOP_SEQUENCES] = (
+            invocation.stop_sequences
+        )
+
+    return attributes
+
+
+def _get_invoke_agent_response_attributes(
+    invocation: InvokeAgentInvocation,
+) -> dict[str, Any]:
+    """Get invoke_agent response attributes (finish_reasons, response_id, tokens, etc.).
+
+    Returns a dictionary of attributes.
+    """
+    attributes: dict[str, Any] = {}
+
+    if invocation.finish_reasons is not None:
+        attributes[GenAI.GEN_AI_RESPONSE_FINISH_REASONS] = (
+            invocation.finish_reasons
+        )
+    if invocation.response_id is not None:
+        attributes[GenAI.GEN_AI_RESPONSE_ID] = invocation.response_id
+    if invocation.response_model_name is not None:
+        attributes[GenAI.GEN_AI_RESPONSE_MODEL] = (
+            invocation.response_model_name
+        )
+    if invocation.input_tokens is not None:
+        attributes[GenAI.GEN_AI_USAGE_INPUT_TOKENS] = invocation.input_tokens
+    if invocation.output_tokens is not None:
+        attributes[GenAI.GEN_AI_USAGE_OUTPUT_TOKENS] = invocation.output_tokens
+
+    return attributes
+
+
+def _get_invoke_agent_span_name(invocation: InvokeAgentInvocation) -> str:
+    """Get the span name for an invoke_agent invocation."""
+    if invocation.agent_name:
+        return f"{GenAI.GenAiOperationNameValues.INVOKE_AGENT.value} {invocation.agent_name}".strip()
+    return GenAI.GenAiOperationNameValues.INVOKE_AGENT.value
+
+
+def _get_invoke_agent_additional_span_attributes(
+    invocation: InvokeAgentInvocation,
+) -> dict[str, Any]:
+    """Get additional span-specific attributes for invoke_agent.
+
+    These are attributes that are only set on spans, not in events.
+    """
+    attributes: dict[str, Any] = {}
+
+    if invocation.output_type is not None:
+        attributes[GenAI.GEN_AI_OUTPUT_TYPE] = invocation.output_type
+    if invocation.choice_count is not None and invocation.choice_count != 1:
+        attributes[GenAI.GEN_AI_REQUEST_CHOICE_COUNT] = invocation.choice_count
+    if invocation.server_port is not None:
+        attributes[ServerAttributes.SERVER_PORT] = invocation.server_port
+    if invocation.server_address is not None:
+        attributes[ServerAttributes.SERVER_ADDRESS] = invocation.server_address
+
+    return attributes
+
+
+# -------------------- Other Attribute Helpers --------------------
 
 
 def _get_tool_call_data_attributes(
@@ -322,12 +454,14 @@ def _apply_execute_tool_finish_attributes(
 
 def _maybe_emit_invoke_agent_event(
     logger: Logger | None,
+    span: Span,
     invocation: InvokeAgentInvocation,
     error: Error | None = None,
 ) -> None:
     """Emit a gen_ai.client.agent.invoke.operation.details event to the logger.
 
-    This function creates a LogRecord event for invoke_agent operations.
+    This function creates a LogRecord event for invoke_agent operations following
+    the semantic convention for gen_ai.client.agent.invoke.operation.details.
     """
     if not is_experimental_mode() or get_content_capturing_mode() not in (
         ContentCapturingMode.EVENT_ONLY,
@@ -338,67 +472,11 @@ def _maybe_emit_invoke_agent_event(
     if logger is None:
         return
 
-    # Build event attributes
+    # Build event attributes by reusing the attribute getter functions
     attributes: dict[str, Any] = {}
-
-    # Operation name
-    attributes[GenAI.GEN_AI_OPERATION_NAME] = (
-        GenAI.GenAiOperationNameValues.INVOKE_AGENT.value
-    )
-
-    # Required attributes
-    if invocation.provider:
-        attributes[GenAI.GEN_AI_PROVIDER_NAME] = invocation.provider
-
-    # Agent attributes
-    if invocation.agent_description is not None:
-        attributes[GenAI.GEN_AI_AGENT_DESCRIPTION] = (
-            invocation.agent_description
-        )
-    if invocation.agent_id is not None:
-        attributes[GenAI.GEN_AI_AGENT_ID] = invocation.agent_id
-    if invocation.agent_name is not None:
-        attributes[GenAI.GEN_AI_AGENT_NAME] = invocation.agent_name
-    if invocation.conversation_id is not None:
-        attributes[GenAI.GEN_AI_CONVERSATION_ID] = invocation.conversation_id
-    if invocation.data_source_id is not None:
-        attributes[GenAI.GEN_AI_DATA_SOURCE_ID] = invocation.data_source_id
-    if invocation.request_model is not None:
-        attributes[GenAI.GEN_AI_REQUEST_MODEL] = invocation.request_model
-
-    # Request parameters
-    if invocation.temperature is not None:
-        attributes[GenAI.GEN_AI_REQUEST_TEMPERATURE] = invocation.temperature
-    if invocation.top_p is not None:
-        attributes[GenAI.GEN_AI_REQUEST_TOP_P] = invocation.top_p
-    if invocation.frequency_penalty is not None:
-        attributes[GenAI.GEN_AI_REQUEST_FREQUENCY_PENALTY] = (
-            invocation.frequency_penalty
-        )
-    if invocation.presence_penalty is not None:
-        attributes[GenAI.GEN_AI_REQUEST_PRESENCE_PENALTY] = (
-            invocation.presence_penalty
-        )
-    if invocation.max_tokens is not None:
-        attributes[GenAI.GEN_AI_REQUEST_MAX_TOKENS] = invocation.max_tokens
-    if invocation.seed is not None:
-        attributes[GenAI.GEN_AI_REQUEST_SEED] = invocation.seed
-
-    # Response attributes
-    if invocation.finish_reasons is not None:
-        attributes[GenAI.GEN_AI_RESPONSE_FINISH_REASONS] = (
-            invocation.finish_reasons
-        )
-    if invocation.response_id is not None:
-        attributes[GenAI.GEN_AI_RESPONSE_ID] = invocation.response_id
-    if invocation.response_model_name is not None:
-        attributes[GenAI.GEN_AI_RESPONSE_MODEL] = (
-            invocation.response_model_name
-        )
-    if invocation.input_tokens is not None:
-        attributes[GenAI.GEN_AI_USAGE_INPUT_TOKENS] = invocation.input_tokens
-    if invocation.output_tokens is not None:
-        attributes[GenAI.GEN_AI_USAGE_OUTPUT_TOKENS] = invocation.output_tokens
+    attributes.update(_get_invoke_agent_common_attributes(invocation))
+    attributes.update(_get_invoke_agent_request_attributes(invocation))
+    attributes.update(_get_invoke_agent_response_attributes(invocation))
 
     # Messages (structured format for events)
     attributes.update(
@@ -413,10 +491,12 @@ def _maybe_emit_invoke_agent_event(
     if error is not None:
         attributes[ErrorAttributes.ERROR_TYPE] = error.type.__qualname__
 
-    # Create and emit the event
+    # Create and emit the event with span context
+    context = set_span_in_context(span, get_current())
     event = LogRecord(
         event_name="gen_ai.client.agent.invoke.operation.details",
         attributes=attributes,
+        context=context,
     )
     logger.emit(event)
 
@@ -426,84 +506,14 @@ def _apply_invoke_agent_finish_attributes(
 ) -> None:
     """Apply attributes for invoke_agent operations."""
     # Update span name
-    if invocation.agent_name:
-        span.update_name(
-            f"{GenAI.GenAiOperationNameValues.INVOKE_AGENT.value} {invocation.agent_name}".strip()
-        )
-    else:
-        span.update_name(GenAI.GenAiOperationNameValues.INVOKE_AGENT.value)
+    span.update_name(_get_invoke_agent_span_name(invocation))
 
-    # Build all attributes
+    # Build all attributes by reusing the attribute getter functions
     attributes: dict[str, Any] = {}
-
-    # Operation name
-    attributes[GenAI.GEN_AI_OPERATION_NAME] = (
-        GenAI.GenAiOperationNameValues.INVOKE_AGENT.value
-    )
-
-    # Required attributes
-    if invocation.provider:
-        attributes[GenAI.GEN_AI_PROVIDER_NAME] = invocation.provider
-
-    # Conditionally required
-    if invocation.agent_description is not None:
-        attributes[GenAI.GEN_AI_AGENT_DESCRIPTION] = (
-            invocation.agent_description
-        )
-    if invocation.agent_id is not None:
-        attributes[GenAI.GEN_AI_AGENT_ID] = invocation.agent_id
-    if invocation.agent_name is not None:
-        attributes[GenAI.GEN_AI_AGENT_NAME] = invocation.agent_name
-    if invocation.conversation_id is not None:
-        attributes[GenAI.GEN_AI_CONVERSATION_ID] = invocation.conversation_id
-    if invocation.data_source_id is not None:
-        attributes[GenAI.GEN_AI_DATA_SOURCE_ID] = invocation.data_source_id
-    if invocation.output_type is not None:
-        attributes[GenAI.GEN_AI_OUTPUT_TYPE] = invocation.output_type
-    if invocation.choice_count is not None and invocation.choice_count != 1:
-        attributes[GenAI.GEN_AI_REQUEST_CHOICE_COUNT] = invocation.choice_count
-    if invocation.request_model is not None:
-        attributes[GenAI.GEN_AI_REQUEST_MODEL] = invocation.request_model
-    if invocation.seed is not None:
-        attributes[GenAI.GEN_AI_REQUEST_SEED] = invocation.seed
-    if invocation.server_port is not None:
-        attributes[ServerAttributes.SERVER_PORT] = invocation.server_port
-
-    # Recommended attributes
-    if invocation.frequency_penalty is not None:
-        attributes[GenAI.GEN_AI_REQUEST_FREQUENCY_PENALTY] = (
-            invocation.frequency_penalty
-        )
-    if invocation.max_tokens is not None:
-        attributes[GenAI.GEN_AI_REQUEST_MAX_TOKENS] = invocation.max_tokens
-    if invocation.presence_penalty is not None:
-        attributes[GenAI.GEN_AI_REQUEST_PRESENCE_PENALTY] = (
-            invocation.presence_penalty
-        )
-    if invocation.stop_sequences is not None:
-        attributes[GenAI.GEN_AI_REQUEST_STOP_SEQUENCES] = (
-            invocation.stop_sequences
-        )
-    if invocation.temperature is not None:
-        attributes[GenAI.GEN_AI_REQUEST_TEMPERATURE] = invocation.temperature
-    if invocation.top_p is not None:
-        attributes[GenAI.GEN_AI_REQUEST_TOP_P] = invocation.top_p
-    if invocation.finish_reasons is not None:
-        attributes[GenAI.GEN_AI_RESPONSE_FINISH_REASONS] = (
-            invocation.finish_reasons
-        )
-    if invocation.response_id is not None:
-        attributes[GenAI.GEN_AI_RESPONSE_ID] = invocation.response_id
-    if invocation.response_model_name is not None:
-        attributes[GenAI.GEN_AI_RESPONSE_MODEL] = (
-            invocation.response_model_name
-        )
-    if invocation.input_tokens is not None:
-        attributes[GenAI.GEN_AI_USAGE_INPUT_TOKENS] = invocation.input_tokens
-    if invocation.output_tokens is not None:
-        attributes[GenAI.GEN_AI_USAGE_OUTPUT_TOKENS] = invocation.output_tokens
-    if invocation.server_address is not None:
-        attributes[ServerAttributes.SERVER_ADDRESS] = invocation.server_address
+    attributes.update(_get_invoke_agent_common_attributes(invocation))
+    attributes.update(_get_invoke_agent_request_attributes(invocation))
+    attributes.update(_get_invoke_agent_response_attributes(invocation))
+    attributes.update(_get_invoke_agent_additional_span_attributes(invocation))
 
     # Messages and system instruction (controlled by content capturing mode)
     attributes.update(
@@ -562,7 +572,7 @@ def _apply_retrieve_finish_attributes(
         span.set_attributes(attributes)
 
 
-def _apply_rerank_finish_attributes(
+def _apply_rerank_finish_attributes(  # pylint: disable=too-many-branches
     span: Span, invocation: RerankInvocation
 ) -> None:
     """Apply attributes for rerank_documents operations."""
