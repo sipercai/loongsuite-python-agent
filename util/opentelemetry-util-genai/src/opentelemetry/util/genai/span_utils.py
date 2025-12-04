@@ -31,7 +31,7 @@ from opentelemetry.trace import (
 from opentelemetry.trace.propagation import set_span_in_context
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util.genai._extended_semconv import (
-    gen_ai_extended_attributs as GenAIExtended,  # LoongSuite Extension
+    gen_ai_extended_attributes as GenAIExtended,  # LoongSuite Extension
 )
 from opentelemetry.util.genai.types import (
     Error,
