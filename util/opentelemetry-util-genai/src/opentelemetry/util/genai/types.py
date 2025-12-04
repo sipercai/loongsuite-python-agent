@@ -53,18 +53,53 @@ class ToolCallResponse:
     type: Literal["tool_call_response"] = "tool_call_response"
 
 
-FinishReason = Literal[
-    "content_filter", "error", "length", "stop", "tool_calls"
-]
-
-
 @dataclass()
 class Text:
     content: str
     type: Literal["text"] = "text"
 
 
-MessagePart = Union[Text, ToolCall, ToolCallResponse, Any]
+@dataclass()
+class Reasoning:
+    content: str
+    type: Literal["reasoning"] = "reasoning"
+
+
+Modality = Literal["image", "video", "audio"]
+
+
+@dataclass()
+class Blob:
+    mime_type: str | None
+    modality: Union[Modality, str]
+    content: bytes
+    type: Literal["blob"] = "blob"
+
+
+@dataclass()
+class File:
+    mime_type: str | None
+    modality: Union[Modality, str]
+    file_id: str
+    type: Literal["file"] = "file"
+
+
+@dataclass()
+class Uri:
+    mime_type: str | None
+    modality: Union[Modality, str]
+    uri: str
+    type: Literal["uri"] = "uri"
+
+
+MessagePart = Union[
+    Text, ToolCall, ToolCallResponse, Blob, File, Uri, Reasoning, Any
+]
+
+
+FinishReason = Literal[
+    "content_filter", "error", "length", "stop", "tool_calls"
+]
 
 
 @dataclass()
@@ -80,6 +115,20 @@ class OutputMessage:
     finish_reason: str | FinishReason
 
 
+# LoongSuite Extension
+
+
+@dataclass()
+class FunctionToolDefinition:
+    name: str
+    description: str | None
+    parameters: Any | None
+    type: Literal["function"] = "function"
+
+
+ToolDefinition = Union[FunctionToolDefinition, Any]
+
+
 def _new_input_messages() -> list[InputMessage]:
     return []
 
@@ -88,8 +137,19 @@ def _new_output_messages() -> list[OutputMessage]:
     return []
 
 
+def _new_system_instruction() -> list[MessagePart]:
+    return []
+
+
 def _new_str_any_dict() -> dict[str, Any]:
     return {}
+
+
+# LoongSuite Extension
+
+
+def _new_tool_definitions() -> list[ToolDefinition]:
+    return []
 
 
 @dataclass
@@ -108,6 +168,12 @@ class LLMInvocation:
     )
     output_messages: list[OutputMessage] = field(
         default_factory=_new_output_messages
+    )
+    system_instruction: list[MessagePart] = field(
+        default_factory=_new_system_instruction
+    )
+    tool_definitions: list[ToolDefinition] = field(  # LoongSuite Extension
+        default_factory=_new_tool_definitions
     )
     provider: str | None = None
     response_model_name: str | None = None
