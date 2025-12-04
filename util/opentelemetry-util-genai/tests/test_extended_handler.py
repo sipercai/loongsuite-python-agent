@@ -55,7 +55,7 @@ from opentelemetry.semconv.attributes import (
     server_attributes as ServerAttributes,
 )
 from opentelemetry.trace.status import StatusCode
-from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributs import (
+from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
     GEN_AI_EMBEDDINGS_DIMENSION_COUNT,
     GEN_AI_RERANK_DOCUMENTS_COUNT,
     GEN_AI_RETRIEVAL_DOCUMENTS,
