@@ -254,8 +254,6 @@ API
 ---
 """
 
-from __future__ import annotations
-
 import weakref
 from logging import getLogger
 from time import time_ns

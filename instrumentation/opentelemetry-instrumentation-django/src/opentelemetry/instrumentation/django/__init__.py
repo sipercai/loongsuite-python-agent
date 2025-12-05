@@ -299,8 +299,6 @@ API
 
 """
 
-from __future__ import annotations
-
 from logging import getLogger
 from os import environ
 from typing import Collection

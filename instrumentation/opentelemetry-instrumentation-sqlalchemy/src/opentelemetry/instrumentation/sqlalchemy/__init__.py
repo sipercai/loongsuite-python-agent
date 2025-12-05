@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
 Instrument `sqlalchemy`_ to report SQL queries.
 
@@ -131,8 +132,6 @@ Warning:
 API
 ---
 """
-
-from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import Collection
