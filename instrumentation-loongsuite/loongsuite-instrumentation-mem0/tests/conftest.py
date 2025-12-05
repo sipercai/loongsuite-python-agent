@@ -3,6 +3,7 @@
 Shared test fixtures for Mem0 instrumentation tests (pytest + VCR).
 Provides OTel exporters, VCR configuration, and convenient instrumentor fixtures.
 """
+from __future__ import annotations
 
 import json
 import os
