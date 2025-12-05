@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import annotations
 
 # Note: This package is not named "flask" because of
 # https://github.com/PyCQA/pylint/issues/2648
@@ -254,6 +253,7 @@ The following sqlcomment key-values can be opted out of through ``commenter_opti
 API
 ---
 """
+from __future__ import annotations
 
 import weakref
 from logging import getLogger

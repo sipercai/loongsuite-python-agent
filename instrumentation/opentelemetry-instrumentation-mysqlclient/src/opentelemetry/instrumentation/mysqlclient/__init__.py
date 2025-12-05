@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import annotations
-
 """
 The integration with MySQLClient supports the `MySQLClient`_ library and can be enabled
 by using ``MySQLClientInstrumentor``.
@@ -134,6 +132,7 @@ Warning:
 API
 ---
 """
+from __future__ import annotations
 
 from typing import Collection
 

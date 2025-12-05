@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import annotations
-
 """
 The integration with PostgreSQL supports the `psycopg2`_ library. It can be enabled by
 using ``Psycopg2Instrumentor``.
@@ -140,6 +138,7 @@ Warning:
 API
 ---
 """
+from __future__ import annotations
 
 import logging
 import typing
