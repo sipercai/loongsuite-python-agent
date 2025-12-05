@@ -253,6 +253,7 @@ The following sqlcomment key-values can be opted out of through ``commenter_opti
 API
 ---
 """
+
 from __future__ import annotations
 
 import weakref

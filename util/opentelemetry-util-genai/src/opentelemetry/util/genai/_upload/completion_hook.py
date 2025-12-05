@@ -172,9 +172,9 @@ class UploadCompletionHook(CompletionHook):
         if is_system_instructions_hashable(system_instruction):
             # Get a hash of the text.
             system_instruction_hash = hashlib.sha256(
-                "\n".join(x.content for x in system_instruction).encode(  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownArgumentType]
-                    "utf-8"
-                ),
+                "\n".join(
+                    str(x.content) for x in system_instruction  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownArgumentType]
+                ).encode("utf-8"),
                 usedforsecurity=False,
             ).hexdigest()
         uuid_str = str(uuid4())
