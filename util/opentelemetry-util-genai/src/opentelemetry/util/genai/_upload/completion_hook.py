@@ -173,7 +173,8 @@ class UploadCompletionHook(CompletionHook):
             # Get a hash of the text.
             system_instruction_hash = hashlib.sha256(
                 "\n".join(
-                    str(x.content) for x in system_instruction  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownArgumentType]
+                    str(x.content)
+                    for x in system_instruction  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownArgumentType]
                 ).encode("utf-8"),
                 usedforsecurity=False,
             ).hexdigest()
