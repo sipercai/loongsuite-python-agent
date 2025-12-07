@@ -139,9 +139,16 @@ class TelemetryHandler:
         invocation: LLMInvocation,
     ) -> LLMInvocation:
         """Start an LLM invocation and create a pending span entry."""
+        # Check if custom operation name is set in invocation.attributes
+        # This allows instrumentation to override the default "chat" operation name
+        operation_name = invocation.attributes.get("gen_ai.operation.name")
+        if operation_name:
+            span_name = f"{operation_name} {invocation.request_model}"
+        else:
+            span_name = f"{GenAI.GenAiOperationNameValues.CHAT.value} {invocation.request_model}"
         # Create a span and attach it as current; keep the token to detach later
         span = self._tracer.start_span(
-            name=f"{GenAI.GenAiOperationNameValues.CHAT.value} {invocation.request_model}",
+            name=span_name,
             kind=SpanKind.CLIENT,
         )
         # Record a monotonic start timestamp (seconds) for duration

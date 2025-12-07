@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Support for AioGeneration.call (async)
 - Support for TextEmbedding.call
 - Support for TextReRank.call
+- Support for ImageSynthesis.call (sync)
+- Support for ImageSynthesis.async_call (async task submission)
+- Support for ImageSynthesis.wait (async task waiting)
 - Support for streaming responses (sync and async)
 - Data extraction and telemetry collection using `opentelemetry-util-genai`
 - Span attributes following OpenTelemetry GenAI Semantic Conventions:

@@ -17,6 +17,10 @@
 import inspect
 import logging
 
+from opentelemetry import context, trace
+from opentelemetry.semconv._incubating.attributes import (
+    gen_ai_attributes as GenAIAttributes,
+)
 from opentelemetry.util.genai.extended_types import (
     EmbeddingInvocation,
     RerankInvocation,
@@ -26,7 +30,12 @@ from opentelemetry.util.genai.types import Error
 from .utils import (
     _create_accumulated_response,
     _create_invocation_from_generation,
+    _create_invocation_from_image_synthesis,
+    _extract_task_id,
     _get_parameter,
+    _SKIP_INSTRUMENTATION_KEY,
+    _update_invocation_from_image_synthesis_async_response,
+    _update_invocation_from_image_synthesis_response,
     _update_invocation_from_response,
 )
 
@@ -391,3 +400,257 @@ async def _wrap_async_generator(
         error = Error(message=str(e), type=type(e))
         handler.fail_llm(invocation, error)
         raise
+
+
+def wrap_image_synthesis_call(wrapped, instance, args, kwargs, handler=None):
+    """Wrapper for ImageSynthesis.call (sync).
+
+    This wrapper tracks the complete synchronous call flow (async_call + wait).
+    Uses context flag to avoid duplicate span creation from async_call and wait.
+
+    Args:
+        wrapped: The original function being wrapped
+        instance: The instance the method is bound to (if any)
+        args: Positional arguments
+        kwargs: Keyword arguments
+        handler: ExtendedTelemetryHandler instance (created during instrumentation)
+    """
+    # Extract model from kwargs
+    model = kwargs.get("model")
+    if not model:
+        logger.warning("Model not found in kwargs, skipping instrumentation")
+        return wrapped(*args, **kwargs)
+
+    if handler is None:
+        logger.warning("Handler not provided, skipping instrumentation")
+        return wrapped(*args, **kwargs)
+
+    try:
+        # Create invocation object
+        invocation = _create_invocation_from_image_synthesis(kwargs, model)
+
+        # Start LLM invocation (creates span)
+        handler.start_llm(invocation)
+
+        # In sync call scenario, set a flag in context to skip span creation in async_call and wait
+        ctx = context.set_value(_SKIP_INSTRUMENTATION_KEY, True)
+        token = context.attach(ctx)
+
+        try:
+            # Execute the wrapped call (internal will call async_call + wait)
+            result = wrapped(*args, **kwargs)
+
+            # Update invocation with response data
+            _update_invocation_from_image_synthesis_response(invocation, result)
+            handler.stop_llm(invocation)
+
+            # Manually update span name and operation name after stop_llm
+            # because _apply_common_span_attributes hardcodes "chat"
+            if invocation.span and invocation.span.is_recording():
+                operation_name = invocation.attributes.get("gen_ai.operation.name")
+                if operation_name:
+                    invocation.span.update_name(
+                        f"{operation_name} {invocation.request_model}"
+                    )
+                    invocation.span.set_attribute(
+                        GenAIAttributes.GEN_AI_OPERATION_NAME, operation_name
+                    )
+
+            return result
+
+        except Exception as e:
+            error = Error(message=str(e), type=type(e))
+            handler.fail_llm(invocation, error)
+            raise
+        finally:
+            # Restore context
+            if token is not None:
+                context.detach(token)
+
+    except Exception as e:
+        logger.exception("Error in instrumentation wrapper: %s", e)
+        return wrapped(*args, **kwargs)
+
+
+def wrap_image_synthesis_async_call(
+    wrapped, instance, args, kwargs, handler=None
+):
+    """Wrapper for ImageSynthesis.async_call.
+
+    This wrapper tracks the task submission phase.
+    If called within call() context, skips span creation.
+    Stores span context in response object for span linking with wait().
+
+    Args:
+        wrapped: The original function being wrapped
+        instance: The instance the method is bound to (if any)
+        args: Positional arguments
+        kwargs: Keyword arguments
+        handler: ExtendedTelemetryHandler instance (created during instrumentation)
+    """
+    # Check if in call() context (sync call scenario)
+    if context.get_value(_SKIP_INSTRUMENTATION_KEY):
+        # In sync call scenario, skip span creation
+        return wrapped(*args, **kwargs)
+
+    # Extract model from kwargs
+    model = kwargs.get("model")
+    if not model:
+        logger.warning("Model not found in kwargs, skipping instrumentation")
+        return wrapped(*args, **kwargs)
+
+    if handler is None:
+        logger.warning("Handler not provided, skipping instrumentation")
+        return wrapped(*args, **kwargs)
+
+    try:
+        # Create invocation object
+        invocation = _create_invocation_from_image_synthesis(kwargs, model)
+        invocation.attributes["gen_ai.request.async"] = True
+
+        # Start LLM invocation (creates span)
+        handler.start_llm(invocation)
+
+        try:
+            # Execute the wrapped call (submit task)
+            result = wrapped(*args, **kwargs)
+
+            # Extract task_id and update invocation
+            task_id = None
+            if result and hasattr(result, "output"):
+                if hasattr(result.output, "get"):
+                    task_id = result.output.get("task_id")
+                elif hasattr(result.output, "task_id"):
+                    task_id = getattr(result.output, "task_id", None)
+
+            if task_id:
+                invocation.attributes["gen_ai.response.id"] = task_id
+                invocation.attributes["dashscope.task_id"] = task_id
+
+            # Get current span context and store in response object for span linking
+            current_span = trace.get_current_span()
+            if current_span and current_span.is_recording():
+                span_context = current_span.get_span_context()
+                # Store span context in response object
+                if hasattr(result, "__dict__"):
+                    result.__dict__["_otel_span_context"] = span_context
+                elif hasattr(result, "_otel_span_context"):
+                    result._otel_span_context = span_context
+
+            # Update invocation with async response data (task_id, task_status)
+            _update_invocation_from_image_synthesis_async_response(
+                invocation, result
+            )
+            handler.stop_llm(invocation)
+            return result
+
+        except Exception as e:
+            error = Error(message=str(e), type=type(e))
+            handler.fail_llm(invocation, error)
+            raise
+
+    except Exception as e:
+        logger.exception("Error in async_call instrumentation wrapper: %s", e)
+        return wrapped(*args, **kwargs)
+
+
+def wrap_image_synthesis_wait(wrapped, instance, args, kwargs, handler=None):
+    """Wrapper for ImageSynthesis.wait.
+
+    This wrapper tracks the task waiting and result retrieval phase.
+    If called within call() context, skips span creation.
+    Attempts to get span context from response object for span linking.
+
+    Args:
+        wrapped: The original function being wrapped
+        instance: The instance the method is bound to (if any)
+        args: Positional arguments
+        kwargs: Keyword arguments
+        handler: ExtendedTelemetryHandler instance (created during instrumentation)
+    """
+    # Check if in call() context (sync call scenario)
+    if context.get_value(_SKIP_INSTRUMENTATION_KEY):
+        # In sync call scenario, skip span creation
+        return wrapped(*args, **kwargs)
+
+    if handler is None:
+        logger.warning("Handler not provided, skipping instrumentation")
+        return wrapped(*args, **kwargs)
+
+    try:
+        # Extract task and task_id
+        task = args[0] if args else kwargs.get("task")
+        task_id = _extract_task_id(task)
+
+        if not task_id:
+            # If cannot extract task_id, skip instrumentation
+            return wrapped(*args, **kwargs)
+
+        # Try to get span context from response object for span linking
+        span_context = None
+        if task:
+            try:
+                # DashScope response objects use __getattr__ which raises KeyError
+                # Use getattr with default to safely check
+                if hasattr(task, "__dict__") and "_otel_span_context" in task.__dict__:
+                    span_context = task.__dict__["_otel_span_context"]
+                elif hasattr(task, "_otel_span_context"):
+                    # Try to get it, but catch KeyError if it doesn't exist
+                    try:
+                        span_context = getattr(task, "_otel_span_context", None)
+                    except KeyError:
+                        pass
+            except (KeyError, AttributeError):
+                pass
+
+        # Create invocation object (wait phase doesn't know model, use "unknown")
+        invocation = _create_invocation_from_image_synthesis({}, "unknown")
+        invocation.attributes["gen_ai.operation.name"] = "generate_content"
+        invocation.attributes["gen_ai.request.async"] = True
+        invocation.attributes["gen_ai.response.id"] = task_id
+        invocation.attributes["dashscope.task_id"] = task_id
+        invocation.attributes["dashscope.operation"] = "wait"
+
+        # Store span context for potential linking (if ExtendedTelemetryHandler supports it)
+        # Note: We don't store span_context in attributes as it's not a valid attribute type
+        # Span linking would need to be implemented differently if ExtendedTelemetryHandler supports it
+
+        # Start LLM invocation (creates span)
+        handler.start_llm(invocation)
+
+        # TODO: If ExtendedTelemetryHandler supports, add span link after span creation
+        # current_span = trace.get_current_span()
+        # if current_span and current_span.is_recording() and span_context:
+        #     link = trace.Link(span_context)
+        #     # Add link to span
+
+        try:
+            # Execute the wrapped call (wait for task completion)
+            result = wrapped(*args, **kwargs)
+
+            # Update invocation with response data
+            _update_invocation_from_image_synthesis_response(invocation, result)
+            handler.stop_llm(invocation)
+
+            # Manually update span name and operation name after stop_llm
+            # because _apply_common_span_attributes hardcodes "chat"
+            if invocation.span and invocation.span.is_recording():
+                operation_name = invocation.attributes.get("gen_ai.operation.name")
+                if operation_name:
+                    invocation.span.update_name(
+                        f"{operation_name} {invocation.request_model}"
+                    )
+                    invocation.span.set_attribute(
+                        GenAIAttributes.GEN_AI_OPERATION_NAME, operation_name
+                    )
+
+            return result
+
+        except Exception as e:
+            error = Error(message=str(e), type=type(e))
+            handler.fail_llm(invocation, error)
+            raise
+
+    except Exception as e:
+        logger.exception("Error in wait instrumentation wrapper: %s", e)
+        return wrapped(*args, **kwargs)

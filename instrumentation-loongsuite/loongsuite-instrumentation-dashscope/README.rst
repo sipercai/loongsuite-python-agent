@@ -62,6 +62,12 @@ Supported APIs
   
   * ``TextReRank.call``
 
+* **Image Synthesis**
+  
+  * ``ImageSynthesis.call`` (sync)
+  * ``ImageSynthesis.async_call`` (async task submission)
+  * ``ImageSynthesis.wait`` (async task waiting)
+
 
 Captured Attributes
 --------------------

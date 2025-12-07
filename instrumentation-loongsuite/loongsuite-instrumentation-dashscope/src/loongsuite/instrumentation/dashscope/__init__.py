@@ -16,12 +16,13 @@
 LoongSuite Instrumentation for Alibaba Cloud DashScope SDK.
 
 This instrumentation library provides automatic tracing for DashScope API calls,
-including text generation, text embedding, and text reranking.
+including text generation, text embedding, text reranking, and image synthesis.
 
 Supported Operations:
     - Text Generation (sync/async, streaming/non-streaming)
     - Text Embedding
     - Text Reranking
+    - Image Synthesis (sync/async)
 
 Note: Chat Completion (OpenAI-compatible) is NOT supported due to a bug in
 DashScope SDK where Completions.create references a non-existent attribute
@@ -45,6 +46,9 @@ from loongsuite.instrumentation.dashscope.package import _instruments
 from loongsuite.instrumentation.dashscope.patch import (
     wrap_aio_generation_call,
     wrap_generation_call,
+    wrap_image_synthesis_async_call,
+    wrap_image_synthesis_call,
+    wrap_image_synthesis_wait,
     wrap_text_embedding_call,
     wrap_text_rerank_call,
 )
@@ -61,6 +65,7 @@ from opentelemetry.util.genai.extended_handler import (
 logger = logging.getLogger(__name__)
 
 _MODULE_GENERATION = "dashscope.aigc.generation"
+_MODULE_IMAGE_SYNTHESIS = "dashscope.aigc.image_synthesis"
 _MODULE_TEXT_EMBEDDING = "dashscope.embeddings.text_embedding"
 _MODULE_TEXT_RERANK = "dashscope.rerank.text_rerank"
 
@@ -130,6 +135,27 @@ class DashScopeInstrumentor(BaseInstrumentor):
                 wrapped, instance, args, kwargs, handler=handler
             )
 
+        def wrap_image_synthesis_call_with_provider(
+            wrapped, instance, args, kwargs
+        ):
+            return wrap_image_synthesis_call(
+                wrapped, instance, args, kwargs, handler=handler
+            )
+
+        def wrap_image_synthesis_async_call_with_provider(
+            wrapped, instance, args, kwargs
+        ):
+            return wrap_image_synthesis_async_call(
+                wrapped, instance, args, kwargs, handler=handler
+            )
+
+        def wrap_image_synthesis_wait_with_provider(
+            wrapped, instance, args, kwargs
+        ):
+            return wrap_image_synthesis_wait(
+                wrapped, instance, args, kwargs, handler=handler
+            )
+
         # Instrument Generation.call (sync)
         try:
             wrap_function_wrapper(
@@ -174,6 +200,41 @@ class DashScopeInstrumentor(BaseInstrumentor):
         except Exception as e:
             logger.warning(f"Failed to instrument TextReRank.call: {e}")
 
+        # Instrument ImageSynthesis.call (sync)
+        try:
+            wrap_function_wrapper(
+                module=_MODULE_IMAGE_SYNTHESIS,
+                name="ImageSynthesis.call",
+                wrapper=wrap_image_synthesis_call_with_provider,
+            )
+            logger.debug("Instrumented ImageSynthesis.call")
+        except Exception as e:
+            logger.warning(f"Failed to instrument ImageSynthesis.call: {e}")
+
+        # Instrument ImageSynthesis.async_call
+        try:
+            wrap_function_wrapper(
+                module=_MODULE_IMAGE_SYNTHESIS,
+                name="ImageSynthesis.async_call",
+                wrapper=wrap_image_synthesis_async_call_with_provider,
+            )
+            logger.debug("Instrumented ImageSynthesis.async_call")
+        except Exception as e:
+            logger.warning(
+                f"Failed to instrument ImageSynthesis.async_call: {e}"
+            )
+
+        # Instrument ImageSynthesis.wait
+        try:
+            wrap_function_wrapper(
+                module=_MODULE_IMAGE_SYNTHESIS,
+                name="ImageSynthesis.wait",
+                wrapper=wrap_image_synthesis_wait_with_provider,
+            )
+            logger.debug("Instrumented ImageSynthesis.wait")
+        except Exception as e:
+            logger.warning(f"Failed to instrument ImageSynthesis.wait: {e}")
+
     def _uninstrument(self, **kwargs):
         """Uninstrument the DashScope SDK.
 
@@ -184,11 +245,15 @@ class DashScopeInstrumentor(BaseInstrumentor):
         """
         # pylint: disable=import-outside-toplevel
         import dashscope.aigc.generation
+        import dashscope.aigc.image_synthesis
         import dashscope.embeddings.text_embedding
         import dashscope.rerank.text_rerank
 
         unwrap(dashscope.aigc.generation.Generation, "call")
         unwrap(dashscope.aigc.generation.AioGeneration, "call")
+        unwrap(dashscope.aigc.image_synthesis.ImageSynthesis, "call")
+        unwrap(dashscope.aigc.image_synthesis.ImageSynthesis, "async_call")
+        unwrap(dashscope.aigc.image_synthesis.ImageSynthesis, "wait")
         unwrap(dashscope.embeddings.text_embedding.TextEmbedding, "call")
         unwrap(dashscope.rerank.text_rerank.TextReRank, "call")
 

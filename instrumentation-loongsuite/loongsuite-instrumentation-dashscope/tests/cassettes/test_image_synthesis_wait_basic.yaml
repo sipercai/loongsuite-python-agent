@@ -1,0 +1,1084 @@
+interactions:
+- request:
+    body: |-
+      {
+        "model": "wanx-v1",
+        "parameters": {},
+        "input": {
+          "prompt": "A forest scene"
+        }
+      }
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '77'
+      Content-Type:
+      - application/json
+      X-DashScope-Async:
+      - enable
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: POST
+    uri: https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "70bd308a-7a2c-413d-94c4-4ddbe7c192ae",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING"
+          }
+        }
+    headers:
+      content-length:
+      - '137'
+      content-type:
+      - application/json
+      date:
+      - Sun, 07 Dec 2025 11:29:27 GMT
+      req-arrive-time:
+      - '1765106967520'
+      req-cost-time:
+      - '132'
+      resp-start-time:
+      - '1765106967652'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=70bd308a-7a2c-413d-94c4-4ddbe7c192ae09fbf75bc1854f52d3e6efceee7b92bb;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin,Access-Control-Request-Method,Access-Control-Request-Headers, Accept-Encoding
+      x-dashscope-call-gateway:
+      - 'true'
+      x-dashscope-timeout:
+      - '298'
+      x-envoy-upstream-service-time:
+      - '125'
+      x-request-id:
+      - 70bd308a-7a2c-413d-94c4-4ddbe7c192ae
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "175a5591-af0c-4030-b126-b7396a3b4a21",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:27 GMT
+      req-arrive-time:
+      - '1765106967817'
+      req-cost-time:
+      - '51'
+      resp-start-time:
+      - '1765106967868'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=175a5591-af0c-4030-b126-b7396a3b4a21e0972bc9c24702f2001accff5a326c22;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '44'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "99a9030b-ad71-4735-8af3-def55bf563ef",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:29 GMT
+      req-arrive-time:
+      - '1765106968986'
+      req-cost-time:
+      - '52'
+      resp-start-time:
+      - '1765106969038'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=99a9030b-ad71-4735-8af3-def55bf563ef3ea8cc71a468d8cb6082af15094b10ba;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '45'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "7917603d-cb76-46ac-90a1-baa41e8c16e7",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:30 GMT
+      req-arrive-time:
+      - '1765106970144'
+      req-cost-time:
+      - '50'
+      resp-start-time:
+      - '1765106970195'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=7917603d-cb76-46ac-90a1-baa41e8c16e791616d285ba2dc778d21b1af94c687b6;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '44'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "19a86183-0f26-4c04-ab53-afcac48d93d2",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:32 GMT
+      req-arrive-time:
+      - '1765106972319'
+      req-cost-time:
+      - '41'
+      resp-start-time:
+      - '1765106972361'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=19a86183-0f26-4c04-ab53-afcac48d93d27a44d99aaa70d2888b432c2dfdfc55dd;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '33'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "6aec9fa2-722f-480d-bdfd-e2c818802725",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:34 GMT
+      req-arrive-time:
+      - '1765106974467'
+      req-cost-time:
+      - '48'
+      resp-start-time:
+      - '1765106974516'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=6aec9fa2-722f-480d-bdfd-e2c818802725a6bae32cbd6fc53f3593adc60df7cb46;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '40'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "68740efb-8b57-4d48-87f2-a11f166cf814",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:36 GMT
+      req-arrive-time:
+      - '1765106976661'
+      req-cost-time:
+      - '58'
+      resp-start-time:
+      - '1765106976720'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=68740efb-8b57-4d48-87f2-a11f166cf8147799a2771275a2fbb8190dba0e2ea136;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '53'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "f0fb91c0-cd05-43a4-a3d2-50a2b34cbf4e",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:40 GMT
+      req-arrive-time:
+      - '1765106980831'
+      req-cost-time:
+      - '61'
+      resp-start-time:
+      - '1765106980893'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=f0fb91c0-cd05-43a4-a3d2-50a2b34cbf4e35bd2e45fffa1d16fae03499e5a82c90;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '41'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "dfe240f6-b896-4af1-ae32-d9f445189965",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:45 GMT
+      req-arrive-time:
+      - '1765106985016'
+      req-cost-time:
+      - '48'
+      resp-start-time:
+      - '1765106985065'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=dfe240f6-b896-4af1-ae32-d9f445189965b4ba50c5302fa1c71d0df8d0c9dc16f4;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '42'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "6273c926-02e4-4626-810f-c00f70f1fdf9",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:49 GMT
+      req-arrive-time:
+      - '1765106989168'
+      req-cost-time:
+      - '38'
+      resp-start-time:
+      - '1765106989207'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=6273c926-02e4-4626-810f-c00f70f1fdf9da45a206ba6d8b9e83b9f7971de13c44;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '33'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "247a0c1d-7aac-43d6-91ba-8f239a4f96f6",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "PENDING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '229'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:54 GMT
+      req-arrive-time:
+      - '1765106994351'
+      req-cost-time:
+      - '39'
+      resp-start-time:
+      - '1765106994390'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=247a0c1d-7aac-43d6-91ba-8f239a4f96f68fd4359ca10d046d26da87aa077e2753;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '32'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "8b64ebea-eb40-4659-9839-554ab6fd3b66",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "RUNNING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "scheduled_time": "2025-12-07 19:29:58.354",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '272'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:29:59 GMT
+      req-arrive-time:
+      - '1765106999513'
+      req-cost-time:
+      - '51'
+      resp-start-time:
+      - '1765106999565'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=8b64ebea-eb40-4659-9839-554ab6fd3b66c0359ec13138a0accd1121f378980bb9;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '45'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "52e629ed-57cd-4a11-9c51-84b68710e581",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "RUNNING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "scheduled_time": "2025-12-07 19:29:58.354",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '272'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:30:04 GMT
+      req-arrive-time:
+      - '1765107004674'
+      req-cost-time:
+      - '48'
+      resp-start-time:
+      - '1765107004722'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=52e629ed-57cd-4a11-9c51-84b68710e581cbb349cb3b6d9d1c615a0857ab61b2c3;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '40'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "280a5b3a-1d43-477a-89f2-56df8313226a",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "RUNNING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "scheduled_time": "2025-12-07 19:29:58.354",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '272'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:30:09 GMT
+      req-arrive-time:
+      - '1765107009906'
+      req-cost-time:
+      - '46'
+      resp-start-time:
+      - '1765107009953'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=280a5b3a-1d43-477a-89f2-56df8313226aea22fc23459e3094c710b4a080c85eec;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '41'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "c9b54d6b-d8b5-4407-ad17-00a0286a9e75",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "RUNNING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "scheduled_time": "2025-12-07 19:29:58.354",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '272'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:30:15 GMT
+      req-arrive-time:
+      - '1765107015057'
+      req-cost-time:
+      - '56'
+      resp-start-time:
+      - '1765107015113'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=c9b54d6b-d8b5-4407-ad17-00a0286a9e7537166bd5774a16a8c9a347e9e0da0bc0;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '49'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "d56fb4ce-53bf-4ae6-8bc1-7358b4b084fb",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "RUNNING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "scheduled_time": "2025-12-07 19:29:58.354",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 0,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '272'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:30:20 GMT
+      req-arrive-time:
+      - '1765107020237'
+      req-cost-time:
+      - '46'
+      resp-start-time:
+      - '1765107020284'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=d56fb4ce-53bf-4ae6-8bc1-7358b4b084fb6fe4e014fce09c0b64450affd5b65a30;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '39'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "3f67f053-447f-4fb9-8f4c-b86520db3937",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "RUNNING",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "scheduled_time": "2025-12-07 19:29:58.354",
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 2,
+              "FAILED": 0
+            }
+          }
+        }
+    headers:
+      content-length:
+      - '272'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:30:25 GMT
+      req-arrive-time:
+      - '1765107025395'
+      req-cost-time:
+      - '42'
+      resp-start-time:
+      - '1765107025438'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=3f67f053-447f-4fb9-8f4c-b86520db3937dba674235c43eff41384010bbf35a090;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '37'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      authorization:
+      - Bearer test_dashscope_api_key
+      user-agent:
+      - dashscope/1.25.2; python/3.13.9; platform/macOS-15.3.2-arm64-arm-64bit-Mach-O;
+        processor/arm
+    method: GET
+    uri: https://dashscope.aliyuncs.com/api/v1/tasks/f4df5487-bab7-467d-857a-3ab2b3bc4e8c
+  response:
+    body:
+      string: |-
+        {
+          "request_id": "fb23ed7d-4a6a-4a67-b2e0-05e1a8023efb",
+          "output": {
+            "task_id": "f4df5487-bab7-467d-857a-3ab2b3bc4e8c",
+            "task_status": "SUCCEEDED",
+            "submit_time": "2025-12-07 19:29:27.629",
+            "scheduled_time": "2025-12-07 19:29:58.354",
+            "end_time": "2025-12-07 19:30:27.420",
+            "results": [
+              {
+                "url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/e9/20251207/c70535fc/b08c952f-0030-488f-91f6-ee96f6dddfb6-1.png"
+              },
+              {
+                "url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/11/20251207/c70535fc/c8c6ef00-bbe8-42aa-802c-6262d155d2b2-1.png"
+              },
+              {
+                "url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/68/20251207/c70535fc/f3f7ddaf-decc-4ee3-88fb-51a1b8295393-1.png"
+              },
+              {
+                "url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/0c/20251207/c70535fc/78ddb71f-afab-4147-9322-108045b9b43b-1.png"
+              }
+            ],
+            "task_metrics": {
+              "TOTAL": 4,
+              "SUCCEEDED": 4,
+              "FAILED": 0
+            }
+          },
+          "usage": {
+            "image_count": 4
+          }
+        }
+    headers:
+      content-length:
+      - '1287'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Sun, 07 Dec 2025 11:30:30 GMT
+      req-arrive-time:
+      - '1765107030581'
+      req-cost-time:
+      - '45'
+      resp-start-time:
+      - '1765107030627'
+      server:
+      - istio-envoy
+      set-cookie:
+      - acw_tc=fb23ed7d-4a6a-4a67-b2e0-05e1a8023efb3f8635949db7b4865758f77b2ab876e5;path=/;HttpOnly;Max-Age=1800
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-envoy-upstream-service-time:
+      - '37'
+    status:
+      code: 200
+      message: OK
+version: 1
