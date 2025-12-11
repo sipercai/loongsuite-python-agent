@@ -30,4 +30,3 @@ __all__ = [
     "_apply_memory_finish_attributes",
     "_maybe_emit_memory_event",
 ]
-

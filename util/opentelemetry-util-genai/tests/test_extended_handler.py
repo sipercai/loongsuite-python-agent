@@ -22,23 +22,10 @@ from opentelemetry.instrumentation._semconv import (
     OTEL_SEMCONV_STABILITY_OPT_IN,
     _OpenTelemetrySemanticConventionStability,
 )
-
-# Backward compatibility for InMemoryLogExporter -> InMemoryLogRecordExporter rename
-# Changed in opentelemetry-sdk@0.60b0
-try:
-    from opentelemetry.sdk._logs.export import (  # pylint: disable=no-name-in-module
-        InMemoryLogRecordExporter,
-        SimpleLogRecordProcessor,
-    )
-except ImportError:
-    # Fallback to old name for compatibility with older SDK versions
-    from opentelemetry.sdk._logs.export import (
-        InMemoryLogExporter as InMemoryLogRecordExporter,
-    )
-    from opentelemetry.sdk._logs.export import (
-        SimpleLogRecordProcessor,
-    )
-
+from opentelemetry.sdk._logs.export import (  # pylint: disable=no-name-in-module
+    InMemoryLogRecordExporter,
+    SimpleLogRecordProcessor,
+)
 from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor

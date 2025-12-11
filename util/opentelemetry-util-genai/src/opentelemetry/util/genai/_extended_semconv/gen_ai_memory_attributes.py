@@ -100,12 +100,6 @@ GEN_AI_MEMORY_OUTPUT_MESSAGES: Final = "gen_ai.memory.output.messages"
 The query results returned from the memory operation.
 """
 
-# Memory operation result
-GEN_AI_MEMORY_RESULT_COUNT: Final = "gen_ai.memory.result_count"
-"""
-The number of memory records in the operation result.
-"""
-
 
 class GenAiMemoryOperationValues(Enum):
     """Memory operation type values."""
@@ -139,4 +133,3 @@ class GenAiMemoryOperationValues(Enum):
 
     DELETE_ALL = "delete_all"
     """Delete all memory records."""
-

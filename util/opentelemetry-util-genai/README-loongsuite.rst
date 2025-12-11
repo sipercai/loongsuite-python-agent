@@ -356,9 +356,6 @@ Token 使用:
   - ``gen_ai.memory.input.messages``: 原始记忆内容
   - ``gen_ai.memory.output.messages``: 查询结果
 
-操作结果:
-  - ``gen_ai.memory.result_count``: 操作结果中的记忆记录数量
-
 服务器信息:
   - ``server.address``: 服务器地址
   - ``server.port``: 服务器端口
@@ -398,7 +395,6 @@ Token 使用:
             {"memory_id": "mem1", "content": "用户喜欢苹果", "score": 0.95},
             {"memory_id": "mem2", "content": "用户喜欢橙子", "score": 0.88}
         ]
-        invocation.result_count = 2
 
     # 更新记忆
     invocation = MemoryInvocation(operation="update")
@@ -600,7 +596,6 @@ Token 使用:
         memory_inv.input_messages = "用户偏好：喜欢轻薄型笔记本电脑"
         
         # 执行添加记忆...
-        memory_inv.result_count = 1
 
     # 搜索记忆
     search_inv = MemoryInvocation(operation="search")
@@ -614,7 +609,6 @@ Token 使用:
         search_inv.output_messages = [
             {"memory_id": "mem1", "content": "用户偏好：喜欢轻薄型笔记本电脑", "score": 0.92}
         ]
-        search_inv.result_count = 1
 
 
 设计文档

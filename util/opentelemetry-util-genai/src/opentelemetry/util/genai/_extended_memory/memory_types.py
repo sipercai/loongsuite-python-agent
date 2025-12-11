@@ -19,6 +19,7 @@ from typing import Any, Dict
 
 from opentelemetry.util.genai.types import ContextToken, Span
 
+
 def _new_str_any_dict() -> Dict[str, Any]:
     """Helper function to create a new empty dict for default factory."""
     return {}
@@ -53,8 +54,6 @@ class MemoryInvocation:
     # Memory content (optional, controlled by content capturing mode)
     input_messages: Any = None  # Original memory content
     output_messages: Any = None  # Query results
-    # Memory operation result
-    result_count: int | None = None
     # Server information
     server_address: str | None = None
     server_port: int | None = None

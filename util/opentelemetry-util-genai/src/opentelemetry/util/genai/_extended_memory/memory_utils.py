@@ -26,10 +26,17 @@ from opentelemetry.context import get_current
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAI,
 )
-from opentelemetry.semconv.attributes import error_attributes as ErrorAttributes
-from opentelemetry.semconv.attributes import server_attributes as ServerAttributes
+from opentelemetry.semconv.attributes import (
+    error_attributes as ErrorAttributes,
+)
+from opentelemetry.semconv.attributes import (
+    server_attributes as ServerAttributes,
+)
 from opentelemetry.trace import Span
 from opentelemetry.trace.propagation import set_span_in_context
+from opentelemetry.util.genai._extended_memory.memory_types import (
+    MemoryInvocation,
+)
 from opentelemetry.util.genai._extended_semconv.gen_ai_memory_attributes import (
     GEN_AI_MEMORY_AGENT_ID,
     GEN_AI_MEMORY_APP_ID,
@@ -42,7 +49,6 @@ from opentelemetry.util.genai._extended_semconv.gen_ai_memory_attributes import 
     GEN_AI_MEMORY_PAGE,
     GEN_AI_MEMORY_PAGE_SIZE,
     GEN_AI_MEMORY_RERANK,
-    GEN_AI_MEMORY_RESULT_COUNT,
     GEN_AI_MEMORY_RUN_ID,
     GEN_AI_MEMORY_THRESHOLD,
     GEN_AI_MEMORY_TOP_K,
@@ -56,7 +62,7 @@ from opentelemetry.util.genai.utils import (
     is_experimental_mode,
     should_emit_event,
 )
-from opentelemetry.util.genai._extended_memory.memory_types import MemoryInvocation
+
 
 def _get_memory_common_attributes(
     invocation: MemoryInvocation,
@@ -156,7 +162,9 @@ def _get_memory_content_attributes(
 
     if invocation.input_messages is not None:
         if isinstance(invocation.input_messages, str):
-            attributes[GEN_AI_MEMORY_INPUT_MESSAGES] = invocation.input_messages
+            attributes[GEN_AI_MEMORY_INPUT_MESSAGES] = (
+                invocation.input_messages
+            )
         else:
             attributes[GEN_AI_MEMORY_INPUT_MESSAGES] = gen_ai_json_dumps(
                 invocation.input_messages
@@ -164,7 +172,9 @@ def _get_memory_content_attributes(
 
     if invocation.output_messages is not None:
         if isinstance(invocation.output_messages, str):
-            attributes[GEN_AI_MEMORY_OUTPUT_MESSAGES] = invocation.output_messages
+            attributes[GEN_AI_MEMORY_OUTPUT_MESSAGES] = (
+                invocation.output_messages
+            )
         else:
             attributes[GEN_AI_MEMORY_OUTPUT_MESSAGES] = gen_ai_json_dumps(
                 invocation.output_messages
@@ -189,8 +199,6 @@ def _apply_memory_finish_attributes(
     attributes.update(_get_memory_parameter_attributes(invocation))
 
     # Recommended attributes
-    if invocation.result_count is not None:
-        attributes[GEN_AI_MEMORY_RESULT_COUNT] = invocation.result_count
     if invocation.server_address is not None:
         attributes[ServerAttributes.SERVER_ADDRESS] = invocation.server_address
     if invocation.server_port is not None:
@@ -198,7 +206,9 @@ def _apply_memory_finish_attributes(
 
     # Content attributes (controlled by content capturing mode)
     # For spans, only capture if SPAN_ONLY or SPAN_AND_EVENT
-    attributes.update(_get_memory_content_attributes(invocation, for_span=True))
+    attributes.update(
+        _get_memory_content_attributes(invocation, for_span=True)
+    )
 
     # Custom attributes
     attributes.update(invocation.attributes)
@@ -228,7 +238,9 @@ def _maybe_emit_memory_event(
     attributes.update(_get_memory_parameter_attributes(invocation))
 
     # Content attributes for events (controlled by content capturing mode)
-    attributes.update(_get_memory_content_attributes(invocation, for_span=False))
+    attributes.update(
+        _get_memory_content_attributes(invocation, for_span=False)
+    )
 
     # Add error.type if operation ended in error
     if error is not None:

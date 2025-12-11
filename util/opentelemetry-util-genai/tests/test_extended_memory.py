@@ -68,7 +68,6 @@ from opentelemetry.util.genai._extended_semconv.gen_ai_memory_attributes import 
     GEN_AI_MEMORY_PAGE,
     GEN_AI_MEMORY_PAGE_SIZE,
     GEN_AI_MEMORY_RERANK,
-    GEN_AI_MEMORY_RESULT_COUNT,
     GEN_AI_MEMORY_RUN_ID,
     GEN_AI_MEMORY_THRESHOLD,
     GEN_AI_MEMORY_TOP_K,
@@ -83,9 +82,7 @@ from opentelemetry.util.genai.extended_handler import (
 )
 
 
-def patch_env_vars(
-    stability_mode, content_capturing=None, emit_event=None
-):
+def patch_env_vars(stability_mode, content_capturing=None, emit_event=None):
     def decorator(test_case):
         env_vars = {
             OTEL_SEMCONV_STABILITY_OPT_IN: stability_mode,
@@ -202,7 +199,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
             invocation.threshold = 0.7
             invocation.rerank = True
             invocation.top_k = 5
-            invocation.result_count = 3
 
         span = _get_single_span(self.span_exporter)
         self.assertEqual(span.name, "memory_operation search")
@@ -217,7 +213,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
                 GEN_AI_MEMORY_THRESHOLD: 0.7,
                 GEN_AI_MEMORY_RERANK: True,
                 GEN_AI_MEMORY_TOP_K: 5,
-                GEN_AI_MEMORY_RESULT_COUNT: 3,
             },
         )
 
@@ -338,7 +333,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
 
         self.telemetry_handler.start_memory(invocation)
         assert invocation.span is not None
-        invocation.result_count = 5
         self.telemetry_handler.stop_memory(invocation)
 
         span = _get_single_span(self.span_exporter)
@@ -350,19 +344,18 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
                 GEN_AI_MEMORY_OPERATION: "search",
                 GEN_AI_MEMORY_USER_ID: "user_123",
                 GEN_AI_MEMORY_LIMIT: 20,
-                GEN_AI_MEMORY_RESULT_COUNT: 5,
             },
         )
 
     def test_memory_error_handling(self):
-        class MemoryError(RuntimeError):
+        class MemoryOperationError(RuntimeError):
             pass
 
-        with self.assertRaises(MemoryError):
+        with self.assertRaises(MemoryOperationError):
             invocation = MemoryInvocation(operation="add")
             with self.telemetry_handler.memory(invocation) as invocation:
                 invocation.user_id = "user_123"
-                raise MemoryError("Memory operation failed")
+                raise MemoryOperationError("Memory operation failed")
 
         span = _get_single_span(self.span_exporter)
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
@@ -370,7 +363,7 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         _assert_span_attributes(
             span_attrs,
             {
-                ErrorAttributes.ERROR_TYPE: MemoryError.__qualname__,
+                ErrorAttributes.ERROR_TYPE: MemoryOperationError.__qualname__,
             },
         )
 
@@ -385,7 +378,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
             invocation.user_id = "user_123"
             invocation.input_messages = "What does the user like?"
             invocation.output_messages = "The user likes apples"
-            invocation.result_count = 1
 
         span = _get_single_span(self.span_exporter)
         span_attrs = _get_span_attributes(span)
@@ -394,7 +386,8 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         self.assertIn(GEN_AI_MEMORY_INPUT_MESSAGES, span_attrs)
         self.assertIn(GEN_AI_MEMORY_OUTPUT_MESSAGES, span_attrs)
         self.assertEqual(
-            span_attrs[GEN_AI_MEMORY_INPUT_MESSAGES], "What does the user like?"
+            span_attrs[GEN_AI_MEMORY_INPUT_MESSAGES],
+            "What does the user like?",
         )
         self.assertEqual(
             span_attrs[GEN_AI_MEMORY_OUTPUT_MESSAGES], "The user likes apples"
@@ -428,7 +421,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
             invocation.agent_id = "agent_456"
             invocation.input_messages = "What does the user like?"
             invocation.output_messages = "The user likes apples"
-            invocation.result_count = 1
 
         # Check that event was emitted
         logs = self.log_exporter.get_finished_logs()
@@ -444,7 +436,9 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         # Verify event attributes
         attrs = log_record.attributes
         self.assertIsNotNone(attrs)
-        self.assertEqual(attrs[GenAI.GEN_AI_OPERATION_NAME], "memory_operation")
+        self.assertEqual(
+            attrs[GenAI.GEN_AI_OPERATION_NAME], "memory_operation"
+        )
         self.assertEqual(attrs[GEN_AI_MEMORY_OPERATION], "search")
         self.assertEqual(attrs[GEN_AI_MEMORY_USER_ID], "user_123")
         self.assertEqual(attrs[GEN_AI_MEMORY_AGENT_ID], "agent_456")
@@ -462,7 +456,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         with self.telemetry_handler.memory(invocation) as invocation:
             invocation.user_id = "user_123"
             invocation.input_messages = "User likes apples"
-            invocation.result_count = 1
 
         # Check span was created
         span = _get_single_span(self.span_exporter)
@@ -487,15 +480,15 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
     def test_memory_emits_event_with_error(self):
         """Test that memory operation emits event with error when operation fails."""
 
-        class MemoryError(RuntimeError):
+        class MemoryOperationError(RuntimeError):
             pass
 
-        with self.assertRaises(MemoryError):
+        with self.assertRaises(MemoryOperationError):
             invocation = MemoryInvocation(operation="add")
             with self.telemetry_handler.memory(invocation) as invocation:
                 invocation.user_id = "user_123"
                 invocation.input_messages = "Test memory"
-                raise MemoryError("Memory operation failed")
+                raise MemoryOperationError("Memory operation failed")
 
         # Check event was emitted
         logs = self.log_exporter.get_finished_logs()
@@ -506,9 +499,11 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         # Verify error attribute is present
         self.assertEqual(
             attrs[ErrorAttributes.ERROR_TYPE],
-            MemoryError.__qualname__,
+            MemoryOperationError.__qualname__,
         )
-        self.assertEqual(attrs[GenAI.GEN_AI_OPERATION_NAME], "memory_operation")
+        self.assertEqual(
+            attrs[GenAI.GEN_AI_OPERATION_NAME], "memory_operation"
+        )
 
     def test_memory_does_not_emit_event_when_disabled(self):
         """Test that memory operation does not emit event when emit_event is disabled."""
@@ -526,7 +521,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         with self.telemetry_handler.memory(invocation) as invocation:
             invocation.user_id = "user_123"
             invocation.agent_id = "agent_456"
-            invocation.result_count = 5
 
         span = _get_single_span(self.span_exporter)
         span_attrs = _get_span_attributes(span)
@@ -536,7 +530,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
                 GEN_AI_MEMORY_OPERATION: "batch_update",
                 GEN_AI_MEMORY_USER_ID: "user_123",
                 GEN_AI_MEMORY_AGENT_ID: "agent_456",
-                GEN_AI_MEMORY_RESULT_COUNT: 5,
             },
         )
 
@@ -561,7 +554,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         invocation = MemoryInvocation(operation="batch_delete")
         with self.telemetry_handler.memory(invocation) as invocation:
             invocation.user_id = "user_123"
-            invocation.result_count = 3
 
         span = _get_single_span(self.span_exporter)
         span_attrs = _get_span_attributes(span)
@@ -570,7 +562,6 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
             {
                 GEN_AI_MEMORY_OPERATION: "batch_delete",
                 GEN_AI_MEMORY_USER_ID: "user_123",
-                GEN_AI_MEMORY_RESULT_COUNT: 3,
             },
         )
 
@@ -618,4 +609,3 @@ class TestMemoryOperations(unittest.TestCase):  # pylint: disable=too-many-publi
         # Should be JSON strings
         self.assertIsInstance(span_attrs[GEN_AI_MEMORY_INPUT_MESSAGES], str)
         self.assertIsInstance(span_attrs[GEN_AI_MEMORY_OUTPUT_MESSAGES], str)
-
