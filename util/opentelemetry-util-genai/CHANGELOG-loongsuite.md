@@ -7,4 +7,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- Add support for memory operations. ([]())
+- Add support for memory operations. ([#83](https://github.com/alibaba/loongsuite-python-agent/pull/83))
