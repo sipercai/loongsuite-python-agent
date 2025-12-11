@@ -14,6 +14,7 @@ LoongSuite 扩展为 OpenTelemetry GenAI Util 包提供了额外的 Generative A
 - **execute_tool**: 工具执行操作
 - **retrieve**: 文档检索操作（向量数据库查询）
 - **rerank**: 文档重排序操作
+- **memory**: 记忆操作，支持记忆的增删改查等操作
 
 这些扩展操作遵循 OpenTelemetry GenAI 语义约定，并与基础的 LLM 操作保持一致的使用体验。
 
@@ -37,6 +38,14 @@ LoongSuite 扩展为 OpenTelemetry GenAI Util 包提供了额外的 Generative A
 - ``EVENT_ONLY``: 仅在 event 中捕获消息内容（结构化格式）
 - ``SPAN_AND_EVENT``: 同时在 span 和 event 中捕获消息内容
 
+事件发出控制
+~~~~~~~~~~~~
+
+设置环境变量 ``OTEL_INSTRUMENTATION_GENAI_EMIT_EVENT`` 来控制是否发出事件：
+
+- ``true``: 启用事件发出（当内容捕获模式为 ``EVENT_ONLY`` 或 ``SPAN_AND_EVENT`` 时）
+- ``false``: 禁用事件发出（默认）
+
 示例配置
 ~~~~~~~~
 
@@ -44,6 +53,7 @@ LoongSuite 扩展为 OpenTelemetry GenAI Util 包提供了额外的 Generative A
 
     export OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
     export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_AND_EVENT
+    export OTEL_INSTRUMENTATION_GENAI_EMIT_EVENT=true
 
 
 支持的操作
@@ -91,7 +101,7 @@ Token 使用:
 
 **事件支持:**
 
-当配置为 ``EVENT_ONLY`` 或 ``SPAN_AND_EVENT`` 模式且提供 LoggerProvider 时，会发出 ``gen_ai.client.agent.invoke.operation.details`` 事件，包含结构化的消息内容。
+当 ``OTEL_INSTRUMENTATION_GENAI_EMIT_EVENT`` 设置为 ``true`` 且提供 LoggerProvider 时，会发出 ``gen_ai.client.agent.invoke.operation.details`` 事件，包含结构化的消息内容（受内容捕获模式控制）。
 
 **使用示例:**
 
@@ -302,6 +312,129 @@ Token 使用:
         invocation.rerank_output_documents = [...]
 
 
+7. 记忆操作 (memory)
+~~~~~~~~~~~~~~~~~~~~
+
+用于跟踪 AI Agent 的记忆操作，支持记忆的增删改查、搜索和历史查询等功能。
+
+**支持的操作类型:**
+
+- ``add``: 添加记忆记录
+- ``search``: 搜索记忆记录
+- ``update``: 更新记忆记录
+- ``batch_update``: 批量更新记忆记录
+- ``get``: 获取特定记忆记录
+- ``get_all``: 获取所有记忆记录
+- ``history``: 获取记忆历史
+- ``delete``: 删除记忆记录
+- ``batch_delete``: 批量删除记忆记录
+- ``delete_all``: 删除所有记忆记录
+
+**支持的属性:**
+
+基础属性:
+  - ``gen_ai.operation.name``: 操作名称，固定为 "memory_operation"
+  - ``gen_ai.memory.operation``: 记忆操作类型（必需）
+
+标识符（条件必需）:
+  - ``gen_ai.memory.user_id``: 用户标识符
+  - ``gen_ai.memory.agent_id``: Agent 标识符
+  - ``gen_ai.memory.run_id``: 运行标识符
+  - ``gen_ai.memory.app_id``: 应用标识符（用于托管平台）
+  - ``gen_ai.memory.id``: 记忆 ID（用于 get、update、delete 操作）
+
+操作参数（可选）:
+  - ``gen_ai.memory.limit``: 返回结果数量限制
+  - ``gen_ai.memory.page``: 分页页码
+  - ``gen_ai.memory.page_size``: 分页大小
+  - ``gen_ai.memory.top_k``: 返回 Top K 结果数量（用于托管 API）
+  - ``gen_ai.memory.memory_type``: 记忆类型（如 "procedural_memory"）
+  - ``gen_ai.memory.threshold``: 相似度阈值（用于搜索操作）
+  - ``gen_ai.memory.rerank``: 是否启用重排序
+
+记忆内容（受内容捕获模式控制）:
+  - ``gen_ai.memory.input.messages``: 原始记忆内容
+  - ``gen_ai.memory.output.messages``: 查询结果
+
+操作结果:
+  - ``gen_ai.memory.result_count``: 操作结果中的记忆记录数量
+
+服务器信息:
+  - ``server.address``: 服务器地址
+  - ``server.port``: 服务器端口
+
+**事件支持:**
+
+当配置为 ``EVENT_ONLY`` 或 ``SPAN_AND_EVENT`` 模式且提供 LoggerProvider 时，会发出 ``gen_ai.memory.operation.details`` 事件，包含结构化的记忆内容。
+
+**使用示例:**
+
+::
+
+    from opentelemetry.util.genai._extended_memory import MemoryInvocation
+
+    # 添加记忆
+    invocation = MemoryInvocation(operation="add")
+    with handler.memory(invocation) as invocation:
+        invocation.user_id = "user_123"
+        invocation.agent_id = "agent_456"
+        invocation.run_id = "run_789"
+        invocation.input_messages = "用户喜欢苹果"
+        invocation.server_address = "api.mem0.ai"
+        invocation.server_port = 443
+
+    # 搜索记忆
+    invocation = MemoryInvocation(operation="search")
+    with handler.memory(invocation) as invocation:
+        invocation.user_id = "user_123"
+        invocation.agent_id = "agent_456"
+        invocation.limit = 10
+        invocation.threshold = 0.7
+        invocation.rerank = True
+        invocation.top_k = 5
+        
+        # 执行搜索...
+        invocation.output_messages = [
+            {"memory_id": "mem1", "content": "用户喜欢苹果", "score": 0.95},
+            {"memory_id": "mem2", "content": "用户喜欢橙子", "score": 0.88}
+        ]
+        invocation.result_count = 2
+
+    # 更新记忆
+    invocation = MemoryInvocation(operation="update")
+    with handler.memory(invocation) as invocation:
+        invocation.memory_id = "mem_abc123"
+        invocation.user_id = "user_123"
+        invocation.input_messages = "更新后的记忆内容"
+
+    # 获取记忆
+    invocation = MemoryInvocation(operation="get")
+    with handler.memory(invocation) as invocation:
+        invocation.memory_id = "mem_xyz789"
+        invocation.user_id = "user_123"
+        invocation.agent_id = "agent_456"
+
+    # 获取所有记忆（带分页）
+    invocation = MemoryInvocation(operation="get_all")
+    with handler.memory(invocation) as invocation:
+        invocation.user_id = "user_123"
+        invocation.page = 1
+        invocation.page_size = 100
+
+    # 获取记忆历史
+    invocation = MemoryInvocation(operation="history")
+    with handler.memory(invocation) as invocation:
+        invocation.user_id = "user_123"
+        invocation.agent_id = "agent_456"
+        invocation.run_id = "run_789"
+
+    # 删除记忆
+    invocation = MemoryInvocation(operation="delete")
+    with handler.memory(invocation) as invocation:
+        invocation.memory_id = "mem_to_delete"
+        invocation.user_id = "user_123"
+
+
 错误处理
 --------
 
@@ -455,6 +588,33 @@ Token 使用:
         # 执行重排序...
         
         rerank_inv.rerank_output_documents = [...]
+
+    # 记忆操作
+    from opentelemetry.util.genai._extended_memory import MemoryInvocation
+
+    # 添加记忆
+    memory_inv = MemoryInvocation(operation="add")
+    with handler.memory(memory_inv) as memory_inv:
+        memory_inv.user_id = "user_123"
+        memory_inv.agent_id = "ShoppingAssistant"
+        memory_inv.input_messages = "用户偏好：喜欢轻薄型笔记本电脑"
+        
+        # 执行添加记忆...
+        memory_inv.result_count = 1
+
+    # 搜索记忆
+    search_inv = MemoryInvocation(operation="search")
+    with handler.memory(search_inv) as search_inv:
+        search_inv.user_id = "user_123"
+        search_inv.agent_id = "ShoppingAssistant"
+        search_inv.limit = 5
+        search_inv.threshold = 0.7
+        
+        # 执行搜索...
+        search_inv.output_messages = [
+            {"memory_id": "mem1", "content": "用户偏好：喜欢轻薄型笔记本电脑", "score": 0.92}
+        ]
+        search_inv.result_count = 1
 
 
 设计文档

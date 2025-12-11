@@ -72,6 +72,7 @@ from opentelemetry.util.genai.utils import (
     gen_ai_json_dumps,
     get_content_capturing_mode,
     is_experimental_mode,
+    should_emit_event,
 )
 
 # ==================== Helper Functions for Getting Attributes ====================
@@ -463,13 +464,7 @@ def _maybe_emit_invoke_agent_event(
     This function creates a LogRecord event for invoke_agent operations following
     the semantic convention for gen_ai.client.agent.invoke.operation.details.
     """
-    if not is_experimental_mode() or get_content_capturing_mode() not in (
-        ContentCapturingMode.EVENT_ONLY,
-        ContentCapturingMode.SPAN_AND_EVENT,
-    ):
-        return
-
-    if logger is None:
+    if not is_experimental_mode() or not should_emit_event() or logger is None:
         return
 
     # Build event attributes by reusing the attribute getter functions

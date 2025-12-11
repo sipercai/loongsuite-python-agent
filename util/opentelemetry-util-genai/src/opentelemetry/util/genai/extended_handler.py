@@ -16,7 +16,8 @@
 Extended Telemetry Handler for GenAI invocations.
 
 This module extends the base `TelemetryHandler` to support additional GenAI (Generative AI)
-invocations such as embedding, execute_tool, invoke_agent and rerank, which are not supported by the base handler.
+invocations such as embedding, execute_tool, invoke_agent, rerank, and memory operations,
+which are not supported by the base handler.
 
 This is an extension module that does not modify the original `handler.py`,
 allowing for easy upstream synchronization without conflicts.
@@ -75,6 +76,11 @@ from opentelemetry.trace import (
     TracerProvider,
     set_span_in_context,
 )
+from opentelemetry.util.genai._extended_memory import (
+    MemoryInvocation,
+    _apply_memory_finish_attributes,
+    _maybe_emit_memory_event,
+)
 from opentelemetry.util.genai.extended_span_utils import (
     _apply_create_agent_finish_attributes,
     _apply_embedding_finish_attributes,
@@ -107,6 +113,7 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
     - Invoke agent operations
     - Retrieve documents operations
     - Rerank documents operations
+    - Memory operations
     - All operations supported by the base TelemetryHandler (LLM/chat)
     """
 
@@ -471,6 +478,66 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             )
             raise
         self.stop_rerank(invocation)
+
+    # ==================== Memory Operations ====================
+
+    def start_memory(self, invocation: MemoryInvocation) -> MemoryInvocation:
+        """Start a memory operation invocation and create a pending span entry."""
+        span_name = f"memory_operation {invocation.operation}"
+
+        # Memory operations are CLIENT operations to remote services
+        span = self._tracer.start_span(
+            name=span_name,
+            kind=SpanKind.CLIENT,
+        )
+        invocation.span = span
+        invocation.context_token = otel_context.attach(
+            set_span_in_context(span)
+        )
+        return invocation
+
+    def stop_memory(self, invocation: MemoryInvocation) -> MemoryInvocation:  # pylint: disable=no-self-use
+        """Finalize a memory operation invocation successfully and end its span."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        _apply_memory_finish_attributes(invocation.span, invocation)
+        _maybe_emit_memory_event(self._logger, invocation.span, invocation)
+        otel_context.detach(invocation.context_token)
+        invocation.span.end()
+        return invocation
+
+    def fail_memory(  # pylint: disable=no-self-use
+        self, invocation: MemoryInvocation, error: Error
+    ) -> MemoryInvocation:
+        """Fail a memory operation invocation and end its span with error status."""
+        if invocation.context_token is None or invocation.span is None:
+            return invocation
+
+        span = invocation.span
+        _apply_memory_finish_attributes(span, invocation)
+        _apply_error_attributes(span, error)
+        _maybe_emit_memory_event(self._logger, span, invocation, error)  # pylint: disable=too-many-function-args
+        otel_context.detach(invocation.context_token)
+        span.end()
+        return invocation
+
+    @contextmanager
+    def memory(
+        self, invocation: MemoryInvocation | None = None
+    ) -> Iterator[MemoryInvocation]:
+        """Context manager for memory operation invocations."""
+        if invocation is None:
+            invocation = MemoryInvocation(operation="")
+        self.start_memory(invocation)
+        try:
+            yield invocation
+        except Exception as exc:
+            self.fail_memory(
+                invocation, Error(message=str(exc), type=type(exc))
+            )
+            raise
+        self.stop_memory(invocation)
 
 
 def get_extended_telemetry_handler(
