@@ -33,6 +33,10 @@ from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util.genai._extended_semconv import (
     gen_ai_extended_attributes as GenAIExtended,  # LoongSuite Extension
 )
+from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
+    GEN_AI_SPAN_KIND,  # LoongSuite Extension
+    GenAiSpanKindValues,  # LoongSuite Extension
+)
 from opentelemetry.util.genai.types import (
     Error,
     FunctionToolDefinition,
@@ -60,6 +64,10 @@ def _get_llm_common_attributes(
     """
     attributes: dict[str, Any] = {}
     attributes[GenAI.GEN_AI_OPERATION_NAME] = invocation.operation_name
+    
+    # LoongSuite Extension: Logical span kind
+    attributes[GEN_AI_SPAN_KIND] = GenAiSpanKindValues.LLM.value
+
     if invocation.request_model:
         attributes[GenAI.GEN_AI_REQUEST_MODEL] = invocation.request_model
     if invocation.provider is not None:
