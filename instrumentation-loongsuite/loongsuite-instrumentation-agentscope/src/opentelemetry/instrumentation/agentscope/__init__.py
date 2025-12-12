@@ -153,15 +153,15 @@ class AgentScopeInstrumentor(BaseInstrumentor):
 
         # Instrument Toolkit
         try:
-            def wrap_tool_with_tracer(wrapped, instance, args, kwargs):
+            def wrap_tool_with_handler(wrapped, instance, args, kwargs):
                 return wrap_tool_call(
-                    wrapped, instance, args, kwargs, handler=self._handler, tracer=self._tracer
+                    wrapped, instance, args, kwargs, handler=self._handler
                 )
 
             wrap_function_wrapper(
                 module=_TOOL_MODULE,
                 name="Toolkit.call_tool_function",
-                wrapper=wrap_tool_with_tracer,
+                wrapper=wrap_tool_with_handler,
             )
             logger.debug("Instrumented Toolkit")
         except Exception as e:
