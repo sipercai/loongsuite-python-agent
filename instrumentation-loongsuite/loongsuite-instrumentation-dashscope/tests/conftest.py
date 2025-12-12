@@ -5,6 +5,13 @@ import os
 
 import pytest
 import yaml
+
+# Set up DASHSCOPE_API_KEY environment variable BEFORE any dashscope modules are imported
+# This is critical because dashscope SDK reads environment variables at module import time
+# and caches them in module-level variables
+if "DASHSCOPE_API_KEY" not in os.environ:
+    os.environ["DASHSCOPE_API_KEY"] = "test_dashscope_api_key"
+
 from loongsuite.instrumentation.dashscope import DashScopeInstrumentor
 
 from opentelemetry.instrumentation._semconv import (
@@ -34,16 +41,6 @@ def fixture_tracer_provider(span_exporter):
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(span_exporter))
     return provider
-
-
-@pytest.fixture(autouse=True)
-def environment():
-    """Set up environment variables for testing."""
-    if not os.getenv("DASHSCOPE_API_KEY"):
-        # Use the provided API key from environment or set a test value
-        os.environ["DASHSCOPE_API_KEY"] = os.getenv(
-            "DASHSCOPE_API_KEY", "test_dashscope_api_key"
-        )
 
 
 @pytest.fixture(scope="function")

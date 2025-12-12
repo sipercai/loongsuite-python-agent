@@ -1,4 +1,5 @@
 """Tests for TextReRank instrumentation."""
+import os
 
 import pytest
 
@@ -19,14 +20,14 @@ def _assert_rerank_span_attributes(span, request_model: str):
     """
     # Span name format is "{operation_name} {model}" per semantic conventions
     # Operation name is "rerank" (custom value, waiting for semantic convention definition)
-    assert span.name == f"rerank {request_model}"
+    assert span.name == f"rerank_documents {request_model}"
 
     # Required attributes (following GenAI pattern)
     assert (
         GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes
     ), f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
     assert (
-        span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "rerank"
+        span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "rerank_documents"
     ), f"Expected 'rerank', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
 
     assert (

@@ -25,7 +25,7 @@ from opentelemetry.util.genai.types import (
     Text,
     ToolCall,
     ToolCallResponse,
-    ToolDefinitions,
+    ToolDefinition,
 )
 
 
@@ -235,7 +235,7 @@ def _extract_input_messages(kwargs: dict) -> List[InputMessage]:
     return input_messages
 
 
-def _extract_tool_definitions(kwargs: dict) -> ToolDefinitions:
+def _extract_tool_definitions(kwargs: dict) -> list[ToolDefinition]:
     """Extract tool definitions from DashScope API kwargs and convert to FunctionToolDefinition objects.
 
     DashScope supports both `tools` and `plugins` parameters for tool definitions.
@@ -248,7 +248,7 @@ def _extract_tool_definitions(kwargs: dict) -> ToolDefinitions:
     Returns:
         List of FunctionToolDefinition objects, or empty list if not found
     """
-    tool_definitions: ToolDefinitions = []
+    tool_definitions: list[ToolDefinition] = []
 
     # Check for tools parameter first (preferred)
     tools = kwargs.get("tools")
@@ -288,7 +288,6 @@ def _extract_tool_definitions(kwargs: dict) -> ToolDefinitions:
                         name=function.get("name", ""),
                         description=function.get("description"),
                         parameters=function.get("parameters"),
-                        response=function.get("response"),
                         type="function",
                     )
                     tool_definitions.append(tool_def)
@@ -298,7 +297,6 @@ def _extract_tool_definitions(kwargs: dict) -> ToolDefinitions:
                         name=tool.get("name", ""),
                         description=tool.get("description"),
                         parameters=tool.get("parameters"),
-                        response=tool.get("response"),
                         type="function",
                     )
                     tool_definitions.append(tool_def)
@@ -717,7 +715,7 @@ def _create_invocation_from_image_synthesis(
 
     invocation = LLMInvocation(request_model=request_model)
     invocation.provider = "dashscope"
-    invocation.attributes["gen_ai.operation.name"] = "generate_content"
+    invocation.operation_name = "generate_content"
 
     # Extract prompt as input message
     prompt = kwargs.get("prompt")

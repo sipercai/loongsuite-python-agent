@@ -114,10 +114,10 @@ class DashScopeInstrumentor(BaseInstrumentor):
                 wrapped, instance, args, kwargs, handler=handler
             )
 
-        def wrap_aio_generation_call_with_provider(
+        async def wrap_aio_generation_call_with_provider(
             wrapped, instance, args, kwargs
         ):
-            return wrap_aio_generation_call(
+            return await wrap_aio_generation_call(
                 wrapped, instance, args, kwargs, handler=handler
             )
 
