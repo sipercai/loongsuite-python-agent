@@ -22,11 +22,11 @@ from opentelemetry.instrumentation._semconv import (
     OTEL_SEMCONV_STABILITY_OPT_IN,
     _OpenTelemetrySemanticConventionStability,
 )
+from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import (  # pylint: disable=no-name-in-module
     InMemoryLogRecordExporter,
     SimpleLogRecordProcessor,
 )
-from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
