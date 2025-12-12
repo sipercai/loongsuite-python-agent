@@ -22,24 +22,11 @@ from opentelemetry.instrumentation._semconv import (
     OTEL_SEMCONV_STABILITY_OPT_IN,
     _OpenTelemetrySemanticConventionStability,
 )
-
-# Backward compatibility for InMemoryLogExporter -> InMemoryLogRecordExporter rename
-# Changed in opentelemetry-sdk@0.60b0
-try:
-    from opentelemetry.sdk._logs.export import (  # pylint: disable=no-name-in-module
-        InMemoryLogRecordExporter,
-        SimpleLogRecordProcessor,
-    )
-except ImportError:
-    # Fallback to old name for compatibility with older SDK versions
-    from opentelemetry.sdk._logs.export import (
-        InMemoryLogExporter as InMemoryLogRecordExporter,
-    )
-    from opentelemetry.sdk._logs.export import (
-        SimpleLogRecordProcessor,
-    )
-
 from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs.export import (  # pylint: disable=no-name-in-module
+    InMemoryLogRecordExporter,
+    SimpleLogRecordProcessor,
+)
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
@@ -65,6 +52,7 @@ from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes impor
 )
 from opentelemetry.util.genai.environment_variables import (
     OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT,
+    OTEL_INSTRUMENTATION_GENAI_EMIT_EVENT,
 )
 from opentelemetry.util.genai.extended_handler import (
     get_extended_telemetry_handler,
@@ -85,15 +73,19 @@ from opentelemetry.util.genai.types import (
 )
 
 
-def patch_env_vars(stability_mode, content_capturing):
+def patch_env_vars(stability_mode, content_capturing=None, emit_event=None):
     def decorator(test_case):
-        @patch.dict(
-            os.environ,
-            {
-                OTEL_SEMCONV_STABILITY_OPT_IN: stability_mode,
-                OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: content_capturing,
-            },
-        )
+        env_vars = {
+            OTEL_SEMCONV_STABILITY_OPT_IN: stability_mode,
+        }
+        if content_capturing is not None:
+            env_vars[OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT] = (
+                content_capturing
+            )
+        if emit_event is not None:
+            env_vars[OTEL_INSTRUMENTATION_GENAI_EMIT_EVENT] = emit_event
+
+        @patch.dict(os.environ, env_vars)
         def wrapper(*args, **kwargs):
             # Reset state.
             _OpenTelemetrySemanticConventionStability._initialized = False
@@ -671,9 +663,10 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
     @patch_env_vars(
         stability_mode="gen_ai_latest_experimental",
         content_capturing="EVENT_ONLY",
+        emit_event="true",
     )
     def test_invoke_agent_emits_event(self):
-        """Test that invoke_agent emits events when EVENT_ONLY mode is enabled."""
+        """Test that invoke_agent emits events when emit_event is enabled."""
         with self.telemetry_handler.invoke_agent() as invocation:
             invocation.provider = "test-provider"
             invocation.agent_name = "EventAgent"
@@ -713,9 +706,10 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
     @patch_env_vars(
         stability_mode="gen_ai_latest_experimental",
         content_capturing="SPAN_AND_EVENT",
+        emit_event="true",
     )
     def test_invoke_agent_emits_event_and_span(self):
-        """Test that invoke_agent emits both event and span when SPAN_AND_EVENT mode is enabled."""
+        """Test that invoke_agent emits both event and span when emit_event is enabled."""
         with self.telemetry_handler.invoke_agent() as invocation:
             invocation.provider = "test-provider"
             invocation.agent_name = "CombinedAgent"
@@ -748,6 +742,7 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
     @patch_env_vars(
         stability_mode="gen_ai_latest_experimental",
         content_capturing="EVENT_ONLY",
+        emit_event="true",
     )
     def test_invoke_agent_emits_event_with_error(self):
         """Test that invoke_agent emits event with error when operation fails."""
@@ -777,8 +772,8 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
         )
         self.assertEqual(attrs[GenAI.GEN_AI_OPERATION_NAME], "invoke_agent")
 
-    def test_invoke_agent_does_not_emit_event_when_no_content(self):
-        """Test that invoke_agent does not emit event when content capturing is disabled."""
+    def test_invoke_agent_does_not_emit_event_when_disabled(self):
+        """Test that invoke_agent does not emit event when emit_event is disabled."""
         with self.telemetry_handler.invoke_agent() as invocation:
             invocation.provider = "test-provider"
             invocation.agent_name = "NoEventAgent"
