@@ -502,23 +502,11 @@ def wrap_image_synthesis_async_call(
             # Execute the wrapped call (submit task)
             result = wrapped(*args, **kwargs)
 
-            # Extract task_id and update invocation
-            task_id = None
-            if result and hasattr(result, "output"):
-                if hasattr(result.output, "get"):
-                    task_id = result.output.get("task_id")
-                elif hasattr(result.output, "task_id"):
-                    task_id = getattr(result.output, "task_id", None)
+            # TODO: Implement span linking between async_call and wait spans.
+            # This would allow wait() span to be linked to async_call() span for better trace visualization.
+            # Consider using a task_id-based mapping to store span contexts across threads.
 
-            if task_id:
-                invocation.attributes["gen_ai.response.id"] = task_id
-                invocation.attributes["dashscope.task_id"] = task_id
-
-            # Note: Span linking is not currently supported by ExtendedTelemetryHandler.
-            # If span linking is needed in the future, it should be implemented in the handler.
-            # For now, we skip storing span context for linking.
-
-            # Update invocation with async response data (task_id, task_status)
+            # Update invocation with async response data (request_id, task_id)
             _update_invocation_from_image_synthesis_async_response(
                 invocation, result
             )
@@ -566,19 +554,19 @@ def wrap_image_synthesis_wait(wrapped, instance, args, kwargs, handler=None):
             # If cannot extract task_id, skip instrumentation
             return wrapped(*args, **kwargs)
 
-        # Note: Span linking is not currently supported by ExtendedTelemetryHandler.
-        # If span linking is needed in the future, it should be implemented in the handler.
+        # TODO: Implement span linking between async_call and wait spans.
+        # This would allow wait() span to be linked to async_call() span for better trace visualization.
+        # Consider using a task_id-based mapping to store span contexts across threads.
 
         # Create invocation object (wait phase doesn't know model, use "unknown")
+        # Use "wait generate_content" as operation_name to make span name clearer
         invocation = _create_invocation_from_image_synthesis({}, "unknown")
-        invocation.operation_name = "generate_content"
+        # TODO: Add semantic conventions for wait operations
+        invocation.operation_name = "wait generate_content"
         invocation.attributes["gen_ai.request.async"] = True
-        invocation.attributes["gen_ai.response.id"] = task_id
-        invocation.attributes["dashscope.task_id"] = task_id
-        invocation.attributes["dashscope.operation"] = "wait"
-
-        # Note: Span linking is not currently supported by ExtendedTelemetryHandler.
-        # If span linking is needed in the future, it should be implemented in the handler.
+        # Note: response_id will be set from response.output.task_id in _update_invocation_from_image_synthesis_response
+        # We set task_id here as a fallback
+        invocation.response_id = task_id
 
         # Start LLM invocation (creates span)
         handler.start_llm(invocation)

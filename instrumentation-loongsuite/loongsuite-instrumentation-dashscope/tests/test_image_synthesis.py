@@ -1,5 +1,7 @@
 """Tests for ImageSynthesis instrumentation."""
 
+from typing import Optional
+
 import pytest
 from dashscope import ImageSynthesis
 
@@ -19,49 +21,51 @@ def _safe_getattr(obj, attr, default=None):
 def _assert_image_synthesis_span_attributes(
     span,
     request_model: str,
-    response_id: str = None,
-    response_model: str = None,
-    input_tokens: int = None,
-    output_tokens: int = None,
-    task_id: str = None,
-    task_status: str = None,
-    image_url: str = None,
-    negative_prompt: str = None,
-    size: str = None,
-    n: int = None,
+    response_model: Optional[str] = None,
+    input_tokens: Optional[int] = None,
+    output_tokens: Optional[int] = None,
+    task_id: Optional[str] = None,
     expect_input_messages: bool = False,
+    is_wait_span: bool = False,
 ):
     """Assert ImageSynthesis span attributes according to GenAI semantic conventions.
 
     Args:
         span: The span to assert
         request_model: Expected model name
-        response_id: Expected response ID (if available)
         response_model: Expected response model name (if available)
         input_tokens: Expected input token count (if available)
         output_tokens: Expected output token count (if available)
-        task_id: Expected task ID (if available)
-        task_status: Expected task status (if available)
-        image_url: Expected image URL (if available)
-        negative_prompt: Expected negative prompt (if provided)
-        size: Expected image size (if provided)
-        n: Expected number of images (if provided)
+        task_id: Expected task ID (if available) - used for response_id validation
         expect_input_messages: Whether to expect input messages in span
+        is_wait_span: Whether this is a wait span (span name will be "wait generate_content unknown")
     """
     # Span name format is "{operation_name} {model}" per semantic conventions
-    # Operation name is "generate_content"
-    assert span.name == f"generate_content {request_model}"
+    # For wait spans, operation_name is "wait generate_content"
+    if is_wait_span:
+        assert span.name == f"wait generate_content {request_model}"
+    else:
+        # Operation name is "generate_content"
+        assert span.name == f"generate_content {request_model}"
 
     # Required attributes
     assert GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes, (
         f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
     )
-    assert (
-        span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME]
-        == "generate_content"
-    ), (
-        f"Expected 'generate_content', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
-    )
+    if is_wait_span:
+        assert (
+            span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME]
+            == "wait generate_content"
+        ), (
+            f"Expected 'wait generate_content', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+        )
+    else:
+        assert (
+            span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME]
+            == "generate_content"
+        ), (
+            f"Expected 'generate_content', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+        )
 
     assert GenAIAttributes.GEN_AI_PROVIDER_NAME in span.attributes, (
         f"Missing {GenAIAttributes.GEN_AI_PROVIDER_NAME}"
@@ -85,12 +89,14 @@ def _assert_image_synthesis_span_attributes(
             == response_model
         )
 
-    if response_id is not None:
+    # response_id should be task_id for ImageSynthesis
+    # If task_id is provided, use it for response_id validation
+    if task_id is not None:
         assert GenAIAttributes.GEN_AI_RESPONSE_ID in span.attributes, (
             f"Missing {GenAIAttributes.GEN_AI_RESPONSE_ID}"
         )
-        # response_id may vary between test runs (VCR recordings), so just check it exists
-        assert span.attributes[GenAIAttributes.GEN_AI_RESPONSE_ID] is not None
+        # response_id should be task_id for ImageSynthesis
+        assert span.attributes[GenAIAttributes.GEN_AI_RESPONSE_ID] == task_id
 
     if input_tokens is not None:
         assert GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS in span.attributes, (
@@ -109,49 +115,6 @@ def _assert_image_synthesis_span_attributes(
             span.attributes[GenAIAttributes.GEN_AI_USAGE_OUTPUT_TOKENS]
             == output_tokens
         )
-
-    # DashScope-specific attributes
-    if task_id is not None:
-        assert "dashscope.task_id" in span.attributes, (
-            "Missing dashscope.task_id"
-        )
-        assert span.attributes["dashscope.task_id"] == task_id
-
-    if task_status is not None:
-        assert "dashscope.task_status" in span.attributes, (
-            "Missing dashscope.task_status"
-        )
-        assert span.attributes["dashscope.task_status"] == task_status
-
-    if image_url is not None:
-        assert "dashscope.image.url" in span.attributes, (
-            "Missing dashscope.image.url"
-        )
-        # image_url might be a string or a list representation
-        span_url = span.attributes["dashscope.image.url"]
-        if isinstance(span_url, str) and image_url in span_url:
-            # If it's a list representation, check if image_url is in it
-            pass
-        else:
-            assert span_url == image_url
-
-    if negative_prompt is not None:
-        assert "dashscope.negative_prompt" in span.attributes, (
-            "Missing dashscope.negative_prompt"
-        )
-        assert span.attributes["dashscope.negative_prompt"] == negative_prompt
-
-    if size is not None:
-        assert "dashscope.image.size" in span.attributes, (
-            "Missing dashscope.image.size"
-        )
-        assert span.attributes["dashscope.image.size"] == size
-
-    if n is not None:
-        assert "dashscope.image.n" in span.attributes, (
-            "Missing dashscope.image.n"
-        )
-        assert span.attributes["dashscope.image.n"] == n
 
     # Assert input messages based on expectation
     if expect_input_messages:
@@ -180,29 +143,19 @@ def test_image_synthesis_call_basic(instrument, span_exporter):
     span = spans[0]
     output = _safe_getattr(response, "output", None)
     usage = _safe_getattr(response, "usage", None)
-    request_id = _safe_getattr(response, "request_id", None)
     response_model = _safe_getattr(response, "model", None)
 
-    # Extract task_id and task_status from output
+    # Extract task_id from output
     task_id = None
-    task_status = None
-    image_url = None
     if output:
         if hasattr(output, "get"):
             task_id = output.get("task_id")
-            task_status = output.get("task_status")
-            results = output.get("results")
-            if results and isinstance(results, list) and len(results) > 0:
-                first_result = results[0]
-                if isinstance(first_result, dict):
-                    image_url = first_result.get("url")
-                elif hasattr(first_result, "url"):
-                    image_url = getattr(first_result, "url", None)
+        elif hasattr(output, "task_id"):
+            task_id = getattr(output, "task_id", None)
 
     _assert_image_synthesis_span_attributes(
         span,
         request_model="wanx-v1",
-        response_id=request_id,
         response_model=response_model,
         input_tokens=_safe_getattr(usage, "input_tokens", None)
         if usage
@@ -210,9 +163,7 @@ def test_image_synthesis_call_basic(instrument, span_exporter):
         output_tokens=_safe_getattr(usage, "output_tokens", None)
         if usage
         else None,
-        task_id=task_id,
-        task_status=task_status,
-        image_url=image_url,
+        task_id=task_id,  # Used for response_id validation
         expect_input_messages=False,  # Default: no content capture
     )
 
@@ -238,29 +189,19 @@ def test_image_synthesis_call_with_parameters(instrument, span_exporter):
     span = spans[0]
     output = _safe_getattr(response, "output", None)
     usage = _safe_getattr(response, "usage", None)
-    request_id = _safe_getattr(response, "request_id", None)
     response_model = _safe_getattr(response, "model", None)
 
-    # Extract task_id and task_status from output
+    # Extract task_id from output
     task_id = None
-    task_status = None
-    image_url = None
     if output:
         if hasattr(output, "get"):
             task_id = output.get("task_id")
-            task_status = output.get("task_status")
-            results = output.get("results")
-            if results and isinstance(results, list) and len(results) > 0:
-                first_result = results[0]
-                if isinstance(first_result, dict):
-                    image_url = first_result.get("url")
-                elif hasattr(first_result, "url"):
-                    image_url = getattr(first_result, "url", None)
+        elif hasattr(output, "task_id"):
+            task_id = getattr(output, "task_id", None)
 
     _assert_image_synthesis_span_attributes(
         span,
         request_model="wanx-v1",
-        response_id=request_id,
         response_model=response_model,
         input_tokens=_safe_getattr(usage, "input_tokens", None)
         if usage
@@ -268,12 +209,7 @@ def test_image_synthesis_call_with_parameters(instrument, span_exporter):
         output_tokens=_safe_getattr(usage, "output_tokens", None)
         if usage
         else None,
-        task_id=task_id,
-        task_status=task_status,
-        image_url=image_url,
-        negative_prompt="blurry, low quality",
-        size="1024*1024",
-        n=2,
+        task_id=task_id,  # Used for response_id validation
         expect_input_messages=False,  # Default: no content capture
     )
 
@@ -296,16 +232,15 @@ def test_image_synthesis_async_call_basic(instrument, span_exporter):
 
     span = spans[0]
     output = _safe_getattr(response, "output", None)
-    request_id = _safe_getattr(response, "request_id", None)
     response_model = _safe_getattr(response, "model", None)
 
-    # Extract task_id and task_status from output
+    # Extract task_id from output
     task_id = None
-    task_status = None
     if output:
         if hasattr(output, "get"):
             task_id = output.get("task_id")
-            task_status = output.get("task_status")
+        elif hasattr(output, "task_id"):
+            task_id = getattr(output, "task_id", None)
 
     # Check async attribute
     assert "gen_ai.request.async" in span.attributes, (
@@ -316,10 +251,8 @@ def test_image_synthesis_async_call_basic(instrument, span_exporter):
     _assert_image_synthesis_span_attributes(
         span,
         request_model="wanx-v1",
-        response_id=request_id,
         response_model=response_model,
-        task_id=task_id,
-        task_status=task_status,
+        task_id=task_id,  # Used for response_id validation
         expect_input_messages=False,  # Default: no content capture
     )
 
@@ -344,10 +277,10 @@ def test_image_synthesis_wait_basic(instrument, span_exporter):
     spans = span_exporter.get_finished_spans()
     assert len(spans) == 2, f"Expected 2 spans, got {len(spans)}"
 
-    # Find wait span (should have dashscope.operation = "wait")
+    # Find wait span (span name should be "wait generate_content unknown")
     wait_span = None
     for span in spans:
-        if span.attributes.get("dashscope.operation") == "wait":
+        if span.name == "wait generate_content unknown":
             wait_span = span
             break
 
@@ -355,24 +288,15 @@ def test_image_synthesis_wait_basic(instrument, span_exporter):
 
     output = _safe_getattr(response, "output", None)
     usage = _safe_getattr(response, "usage", None)
-    request_id = _safe_getattr(response, "request_id", None)
     response_model = _safe_getattr(response, "model", None)
 
-    # Extract task_id and task_status from output
+    # Extract task_id from output
     task_id = None
-    task_status = None
-    image_url = None
     if output:
         if hasattr(output, "get"):
             task_id = output.get("task_id")
-            task_status = output.get("task_status")
-            results = output.get("results")
-            if results and isinstance(results, list) and len(results) > 0:
-                first_result = results[0]
-                if isinstance(first_result, dict):
-                    image_url = first_result.get("url")
-                elif hasattr(first_result, "url"):
-                    image_url = getattr(first_result, "url", None)
+        elif hasattr(output, "task_id"):
+            task_id = getattr(output, "task_id", None)
 
     # Check async attribute
     assert "gen_ai.request.async" in wait_span.attributes, (
@@ -380,16 +304,9 @@ def test_image_synthesis_wait_basic(instrument, span_exporter):
     )
     assert wait_span.attributes["gen_ai.request.async"] is True
 
-    # Wait span should have request_model="unknown" (we don't know model in wait phase)
-    # But we can check task_id and operation
-    assert wait_span.attributes.get("dashscope.operation") == "wait", (
-        "Missing dashscope.operation=wait"
-    )
-
     _assert_image_synthesis_span_attributes(
         wait_span,
         request_model="unknown",  # Wait phase doesn't know model
-        response_id=request_id,
         response_model=response_model,
         input_tokens=_safe_getattr(usage, "input_tokens", None)
         if usage
@@ -397,10 +314,9 @@ def test_image_synthesis_wait_basic(instrument, span_exporter):
         output_tokens=_safe_getattr(usage, "output_tokens", None)
         if usage
         else None,
-        task_id=task_id,
-        task_status=task_status,
-        image_url=image_url,
+        task_id=task_id,  # Used for response_id validation
         expect_input_messages=False,  # Default: no content capture
+        is_wait_span=True,  # Mark as wait span for span name validation
     )
 
     print("✓ ImageSynthesis.wait (basic) completed successfully")
@@ -450,7 +366,7 @@ def test_image_synthesis_async_call_and_wait_separate_spans(
         if span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)
         == "generate_content"
         and span.attributes.get("gen_ai.request.async") is True
-        and span.attributes.get("dashscope.operation") != "wait"
+        and not span.name.startswith("wait generate_content")
     ]
     assert len(async_spans) == 1, (
         f"Expected 1 span after async_call, got {len(async_spans)}"
@@ -466,7 +382,7 @@ def test_image_synthesis_async_call_and_wait_separate_spans(
         span
         for span in spans_after_wait
         if span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)
-        == "generate_content"
+        in ("generate_content", "wait generate_content")
     ]
     assert len(wait_spans) == 2, (
         f"Expected 2 spans after wait, got {len(wait_spans)}. Spans: {[span.name for span in wait_spans]}"
@@ -476,7 +392,7 @@ def test_image_synthesis_async_call_and_wait_separate_spans(
     async_span = None
     wait_span = None
     for span in wait_spans:
-        if span.attributes.get("dashscope.operation") == "wait":
+        if span.name.startswith("wait generate_content"):
             wait_span = span
         else:
             async_span = span

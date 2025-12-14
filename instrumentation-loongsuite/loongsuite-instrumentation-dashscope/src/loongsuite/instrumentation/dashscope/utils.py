@@ -26,6 +26,7 @@ from opentelemetry.util.genai.types import (
     ToolCall,
     ToolCallResponse,
     ToolDefinition,
+    Uri,
 )
 
 
@@ -738,29 +739,6 @@ def _create_invocation_from_image_synthesis(
                     InputMessage(role="user", parts=parts)
                 ]
 
-    # Extract negative_prompt (as attribute)
-    negative_prompt = kwargs.get("negative_prompt")
-    if negative_prompt:
-        if isinstance(negative_prompt, str):
-            invocation.attributes["dashscope.negative_prompt"] = (
-                negative_prompt
-            )
-
-    # Extract size (image dimensions)
-    size = kwargs.get("size")
-    if size:
-        invocation.attributes["dashscope.image.size"] = size
-
-    # Extract n (number of images to generate)
-    n = kwargs.get("n")
-    if n is not None:
-        invocation.attributes["dashscope.image.n"] = n
-
-    # Extract similarity parameter (if available)
-    similarity = kwargs.get("similarity")
-    if similarity is not None:
-        invocation.attributes["dashscope.image.similarity"] = similarity
-
     return invocation
 
 
@@ -790,16 +768,8 @@ def _update_invocation_from_image_synthesis_response(
         except (KeyError, AttributeError):
             pass
 
-        # Extract request ID (if available)
-        # Note: For ImageSynthesis, request_id is the main identifier, not task_id
-        try:
-            request_id = getattr(response, "request_id", None)
-            if request_id:
-                invocation.response_id = request_id
-        except (KeyError, AttributeError):
-            pass
-
-        # Extract task_id and task_status from output
+        # Extract task_id from output and set as response_id
+        # Note: For ImageSynthesis, response_id should be task_id, not request_id
         try:
             output = getattr(response, "output", None)
             if output:
@@ -811,30 +781,9 @@ def _update_invocation_from_image_synthesis_response(
                     task_id = getattr(output, "task_id", None)
 
                 if task_id:
-                    # Store task_id in attributes
-                    # Note: gen_ai.response.id should be request_id, not task_id
-                    # task_id is stored separately in dashscope.task_id
-                    invocation.attributes["dashscope.task_id"] = task_id
-                    # Don't set gen_ai.response.id to task_id, as it should be request_id
-                    # Only set response_id to task_id if request_id is not available
-                    if not invocation.response_id:
-                        invocation.response_id = task_id
-                        invocation.attributes["gen_ai.response.id"] = task_id
+                    invocation.response_id = task_id
 
-                # Extract task_status
-                task_status = None
-                if hasattr(output, "get"):
-                    task_status = output.get("task_status")
-                elif hasattr(output, "task_status"):
-                    task_status = getattr(output, "task_status", None)
-
-                if task_status:
-                    invocation.attributes["dashscope.task_status"] = (
-                        task_status
-                    )
-
-                # Extract image URLs from results
-                # TODO: If returned as files or binary data, handle accordingly
+                # Extract image URLs from results and add as Uri MessageParts
                 results = None
                 if hasattr(output, "get"):
                     results = output.get("results")
@@ -842,23 +791,46 @@ def _update_invocation_from_image_synthesis_response(
                     results = getattr(output, "results", None)
 
                 if results and isinstance(results, list):
-                    image_urls = []
+                    image_uris = []
                     for result in results:
                         if isinstance(result, dict):
                             url = result.get("url")
                             if url:
-                                image_urls.append(url)
+                                image_uris.append(
+                                    Uri(
+                                        uri=url,
+                                        modality="image",
+                                        mime_type=None,
+                                        type="uri",
+                                    )
+                                )
                         elif hasattr(result, "url"):
                             url = getattr(result, "url", None)
                             if url:
-                                image_urls.append(url)
-                    if image_urls:
-                        # Store first image URL as attribute (or all if needed)
-                        invocation.attributes["dashscope.image.url"] = (
-                            image_urls[0]
-                            if len(image_urls) == 1
-                            else str(image_urls)
-                        )
+                                image_uris.append(
+                                    Uri(
+                                        uri=url,
+                                        modality="image",
+                                        mime_type=None,
+                                        type="uri",
+                                    )
+                                )
+                    if image_uris:
+                        # Add image URIs to output messages
+                        # If output_messages is empty, create a new one
+                        if not invocation.output_messages:
+                            invocation.output_messages = [
+                                OutputMessage(
+                                    role="assistant",
+                                    parts=image_uris,
+                                    finish_reason="stop",
+                                )
+                            ]
+                        else:
+                            # Append URIs to the last output message
+                            invocation.output_messages[-1].parts.extend(
+                                image_uris
+                            )
         except (KeyError, AttributeError):
             pass
     except (KeyError, AttributeError):
@@ -872,7 +844,7 @@ def _update_invocation_from_image_synthesis_async_response(
     """Update LLMInvocation with ImageSynthesis async_call response data.
 
     This is called when async_call() returns, before wait() is called.
-    Only extracts task_id and task_status (usually PENDING).
+    Extracts task_id and sets it as response_id.
 
     Args:
         invocation: LLMInvocation to update
@@ -882,10 +854,9 @@ def _update_invocation_from_image_synthesis_async_response(
         return
 
     try:
-        # Extract task_id and task_status from output
+        # Extract task_id from output and set as response_id
         output = getattr(response, "output", None)
         if output:
-            # Extract task_id
             task_id = None
             if hasattr(output, "get"):
                 task_id = output.get("task_id")
@@ -893,17 +864,6 @@ def _update_invocation_from_image_synthesis_async_response(
                 task_id = getattr(output, "task_id", None)
 
             if task_id:
-                invocation.attributes["gen_ai.response.id"] = task_id
-                invocation.attributes["dashscope.task_id"] = task_id
-
-            # Extract task_status (usually PENDING for async_call)
-            task_status = None
-            if hasattr(output, "get"):
-                task_status = output.get("task_status")
-            elif hasattr(output, "task_status"):
-                task_status = getattr(output, "task_status", None)
-
-            if task_status:
-                invocation.attributes["dashscope.task_status"] = task_status
+                invocation.response_id = task_id
     except (KeyError, AttributeError):
         pass
