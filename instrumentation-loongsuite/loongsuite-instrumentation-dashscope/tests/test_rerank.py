@@ -1,7 +1,7 @@
 """Tests for TextReRank instrumentation."""
-import os
 
 import pytest
+from dashscope import TextReRank
 
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
@@ -23,21 +23,24 @@ def _assert_rerank_span_attributes(span, request_model: str):
     assert span.name == f"rerank_documents {request_model}"
 
     # Required attributes (following GenAI pattern)
+    assert GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
+    )
     assert (
-        GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
-    assert (
-        span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "rerank_documents"
-    ), f"Expected 'rerank', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+        span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME]
+        == "rerank_documents"
+    ), (
+        f"Expected 'rerank', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+    )
 
-    assert (
-        GenAIAttributes.GEN_AI_PROVIDER_NAME in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_PROVIDER_NAME}"
+    assert GenAIAttributes.GEN_AI_PROVIDER_NAME in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_PROVIDER_NAME}"
+    )
     assert span.attributes[GenAIAttributes.GEN_AI_PROVIDER_NAME] == "dashscope"
 
-    assert (
-        GenAIAttributes.GEN_AI_REQUEST_MODEL in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_REQUEST_MODEL}"
+    assert GenAIAttributes.GEN_AI_REQUEST_MODEL in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_REQUEST_MODEL}"
+    )
     assert (
         span.attributes[GenAIAttributes.GEN_AI_REQUEST_MODEL] == request_model
     )
@@ -46,7 +49,6 @@ def _assert_rerank_span_attributes(span, request_model: str):
 @pytest.mark.vcr()
 def test_text_rerank_basic(instrument, span_exporter):
     """Test basic text rerank call."""
-    from dashscope import TextReRank
 
     response = TextReRank.call(
         model="gte-rerank",
@@ -73,7 +75,6 @@ def test_text_rerank_basic(instrument, span_exporter):
 @pytest.mark.vcr()
 def test_text_rerank_with_top_n(instrument, span_exporter):
     """Test text rerank with top_n parameter."""
-    from dashscope import TextReRank
 
     response = TextReRank.call(
         model="gte-rerank",
@@ -102,7 +103,6 @@ def test_text_rerank_with_top_n(instrument, span_exporter):
 @pytest.mark.vcr()
 def test_text_rerank_return_documents(instrument, span_exporter):
     """Test text rerank with return_documents parameter."""
-    from dashscope import TextReRank
 
     response = TextReRank.call(
         model="gte-rerank",
@@ -134,7 +134,6 @@ def test_text_rerank_error_handling(instrument, span_exporter):
     If an error occurs before the wrapper is called or if the API
     returns an error response, a span should still be created with error status.
     """
-    from dashscope import TextReRank
 
     # Test with invalid model to trigger error
     # Note: DashScope API may return an error response instead of raising an exception
@@ -172,8 +171,8 @@ def test_text_rerank_error_handling(instrument, span_exporter):
     if len(spans) > 0:
         span = spans[0]
         # Check that operation name is set
-        assert (
-            GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
+        assert GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
+        )
 
     print("✓ TextReRank.call (error handling) completed successfully")

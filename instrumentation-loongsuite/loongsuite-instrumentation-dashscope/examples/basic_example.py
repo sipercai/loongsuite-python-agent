@@ -12,6 +12,7 @@ Before running this example:
 
 import os
 
+from dashscope import Generation, TextEmbedding
 from loongsuite.instrumentation.dashscope import DashScopeInstrumentor
 
 from opentelemetry import trace
@@ -45,8 +46,6 @@ def main():
     print("Example 1: Text Generation (non-streaming)")
     print("=" * 60)
 
-    from dashscope import Generation
-
     response = Generation.call(
         model="qwen-turbo",
         prompt="Hello! Please introduce yourself in one sentence.",
@@ -75,8 +74,6 @@ def main():
     print("\n" + "=" * 60)
     print("Example 3: Text Embedding")
     print("=" * 60)
-
-    from dashscope import TextEmbedding
 
     response = TextEmbedding.call(
         model="text-embedding-v1", input="Hello, world!"

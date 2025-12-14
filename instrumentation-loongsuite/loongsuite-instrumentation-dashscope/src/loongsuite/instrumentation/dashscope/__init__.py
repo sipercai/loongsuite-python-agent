@@ -244,10 +244,10 @@ class DashScopeInstrumentor(BaseInstrumentor):
             **kwargs: Optional configuration parameters.
         """
         # pylint: disable=import-outside-toplevel
-        import dashscope.aigc.generation
-        import dashscope.aigc.image_synthesis
-        import dashscope.embeddings.text_embedding
-        import dashscope.rerank.text_rerank
+        import dashscope.aigc.generation  # noqa: PLC0415
+        import dashscope.aigc.image_synthesis  # noqa: PLC0415
+        import dashscope.embeddings.text_embedding  # noqa: PLC0415
+        import dashscope.rerank.text_rerank  # noqa: PLC0415
 
         unwrap(dashscope.aigc.generation.Generation, "call")
         unwrap(dashscope.aigc.generation.AioGeneration, "call")

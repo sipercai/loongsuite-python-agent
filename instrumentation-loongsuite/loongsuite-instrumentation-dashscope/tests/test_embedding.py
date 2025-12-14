@@ -3,6 +3,7 @@
 from typing import Optional
 
 import pytest
+from dashscope import TextEmbedding
 
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
@@ -37,31 +38,33 @@ def _assert_embedding_span_attributes(
     assert span.name == f"embeddings {request_model}"
 
     # Required attributes
-    assert (
-        GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
+    assert GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
+    )
     assert (
         span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "embeddings"
-    ), f"Expected 'embeddings', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+    ), (
+        f"Expected 'embeddings', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+    )
 
-    assert (
-        GenAIAttributes.GEN_AI_PROVIDER_NAME in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_PROVIDER_NAME}"
+    assert GenAIAttributes.GEN_AI_PROVIDER_NAME in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_PROVIDER_NAME}"
+    )
     assert span.attributes[GenAIAttributes.GEN_AI_PROVIDER_NAME] == "dashscope"
 
     # Conditionally required attributes
-    assert (
-        GenAIAttributes.GEN_AI_REQUEST_MODEL in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_REQUEST_MODEL}"
+    assert GenAIAttributes.GEN_AI_REQUEST_MODEL in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_REQUEST_MODEL}"
+    )
     assert (
         span.attributes[GenAIAttributes.GEN_AI_REQUEST_MODEL] == request_model
     )
 
     # Recommended attributes - check if available
     if input_tokens is not None:
-        assert (
-            GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS}"
+        assert GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS}"
+        )
         assert (
             span.attributes[GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS]
             == input_tokens
@@ -91,38 +94,37 @@ def _assert_embedding_span_attributes(
     # Dimension count should only be set if it was specified in the request
     if dimension_count is not None:
         # If dimension_count was explicitly provided in the request, it must be set in span
-        assert (
-            "gen_ai.embeddings.dimension.count" in span.attributes
-        ), "Missing gen_ai.embeddings.dimension.count"
+        assert "gen_ai.embeddings.dimension.count" in span.attributes, (
+            "Missing gen_ai.embeddings.dimension.count"
+        )
         assert (
             span.attributes["gen_ai.embeddings.dimension.count"]
             == dimension_count
         )
     else:
         # If dimension_count was not provided in the request, it should not be set in span
-        assert (
-            "gen_ai.embeddings.dimension.count" not in span.attributes
-        ), "gen_ai.embeddings.dimension.count should not be set when not specified in request"
+        assert "gen_ai.embeddings.dimension.count" not in span.attributes, (
+            "gen_ai.embeddings.dimension.count should not be set when not specified in request"
+        )
 
     if server_address is not None:
-        assert (
-            ServerAttributes.SERVER_ADDRESS in span.attributes
-        ), f"Missing {ServerAttributes.SERVER_ADDRESS}"
+        assert ServerAttributes.SERVER_ADDRESS in span.attributes, (
+            f"Missing {ServerAttributes.SERVER_ADDRESS}"
+        )
         assert (
             span.attributes[ServerAttributes.SERVER_ADDRESS] == server_address
         )
 
     if server_port is not None:
-        assert (
-            ServerAttributes.SERVER_PORT in span.attributes
-        ), f"Missing {ServerAttributes.SERVER_PORT}"
+        assert ServerAttributes.SERVER_PORT in span.attributes, (
+            f"Missing {ServerAttributes.SERVER_PORT}"
+        )
         assert span.attributes[ServerAttributes.SERVER_PORT] == server_port
 
 
 @pytest.mark.vcr()
 def test_text_embedding_basic(instrument, span_exporter):
     """Test basic text embedding call."""
-    from dashscope import TextEmbedding
 
     response = TextEmbedding.call(
         model="text-embedding-v1", input="Hello, world!"
@@ -160,7 +162,6 @@ def test_text_embedding_basic(instrument, span_exporter):
 @pytest.mark.vcr()
 def test_text_embedding_batch(instrument, span_exporter):
     """Test text embedding with batch input."""
-    from dashscope import TextEmbedding
 
     response = TextEmbedding.call(
         model="text-embedding-v1", input=["Hello", "World"]
@@ -198,7 +199,6 @@ def test_text_embedding_batch(instrument, span_exporter):
 @pytest.mark.vcr()
 def test_text_embedding_with_text_type(instrument, span_exporter):
     """Test text embedding with text_type parameter."""
-    from dashscope import TextEmbedding
 
     response = TextEmbedding.call(
         model="text-embedding-v1",
@@ -238,7 +238,6 @@ def test_text_embedding_with_text_type(instrument, span_exporter):
 @pytest.mark.vcr()
 def test_text_embedding_with_dimension(instrument, span_exporter):
     """Test text embedding with dimension parameter."""
-    from dashscope import TextEmbedding
 
     response = TextEmbedding.call(
         model="text-embedding-v1",

@@ -855,7 +855,9 @@ def _update_invocation_from_image_synthesis_response(
                     if image_urls:
                         # Store first image URL as attribute (or all if needed)
                         invocation.attributes["dashscope.image.url"] = (
-                            image_urls[0] if len(image_urls) == 1 else str(image_urls)
+                            image_urls[0]
+                            if len(image_urls) == 1
+                            else str(image_urls)
                         )
         except (KeyError, AttributeError):
             pass

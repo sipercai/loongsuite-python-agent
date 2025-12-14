@@ -18,22 +18,22 @@ import inspect
 import logging
 
 from opentelemetry import context
+from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
+    GenAiExtendedProviderNameValues as GenAI,
+)
 from opentelemetry.util.genai.extended_types import (
     EmbeddingInvocation,
     RerankInvocation,
 )
-from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
-    GenAiExtendedProviderNameValues as GenAI
-)
 from opentelemetry.util.genai.types import Error
 
 from .utils import (
+    _SKIP_INSTRUMENTATION_KEY,
     _create_accumulated_response,
     _create_invocation_from_generation,
     _create_invocation_from_image_synthesis,
     _extract_task_id,
     _get_parameter,
-    _SKIP_INSTRUMENTATION_KEY,
     _update_invocation_from_image_synthesis_async_response,
     _update_invocation_from_image_synthesis_response,
     _update_invocation_from_response,
@@ -108,7 +108,9 @@ def wrap_generation_call(wrapped, instance, args, kwargs, handler=None):
         return wrapped(*args, **kwargs)
 
 
-async def wrap_aio_generation_call(wrapped, instance, args, kwargs, handler=None):
+async def wrap_aio_generation_call(
+    wrapped, instance, args, kwargs, handler=None
+):
     """Wrapper for AioGeneration.call (async).
 
     Uses TelemetryHandler from opentelemetry-util-genai to manage span lifecycle.
@@ -123,9 +125,7 @@ async def wrap_aio_generation_call(wrapped, instance, args, kwargs, handler=None
     # Extract model from kwargs
     model = kwargs.get("model")
     if not model:
-        logger.warning(
-            "Model not found in kwargs, skipping instrumentation"
-        )
+        logger.warning("Model not found in kwargs, skipping instrumentation")
         return await wrapped(*args, **kwargs)
 
     if handler is None:
@@ -270,7 +270,9 @@ def wrap_text_rerank_call(wrapped, instance, args, kwargs, handler=None):
 
     try:
         # Create rerank invocation object
-        invocation = RerankInvocation(provider=GenAI.DASHSCOPE.value, request_model=model)
+        invocation = RerankInvocation(
+            provider=GenAI.DASHSCOPE.value, request_model=model
+        )
         invocation.provider = "dashscope"
 
         # Start rerank invocation (creates span)
@@ -437,7 +439,9 @@ def wrap_image_synthesis_call(wrapped, instance, args, kwargs, handler=None):
             result = wrapped(*args, **kwargs)
 
             # Update invocation with response data
-            _update_invocation_from_image_synthesis_response(invocation, result)
+            _update_invocation_from_image_synthesis_response(
+                invocation, result
+            )
             handler.stop_llm(invocation)
 
             return result
@@ -584,7 +588,9 @@ def wrap_image_synthesis_wait(wrapped, instance, args, kwargs, handler=None):
             result = wrapped(*args, **kwargs)
 
             # Update invocation with response data
-            _update_invocation_from_image_synthesis_response(invocation, result)
+            _update_invocation_from_image_synthesis_response(
+                invocation, result
+            )
             handler.stop_llm(invocation)
 
             return result

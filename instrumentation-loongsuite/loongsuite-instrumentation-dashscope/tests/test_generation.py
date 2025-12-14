@@ -1,6 +1,9 @@
 """Tests for Generation instrumentation."""
 
+import json as json_utils
+
 import pytest
+from dashscope import AioGeneration, Generation
 
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
@@ -40,29 +43,29 @@ def _assert_generation_span_attributes(
     # Span name format is "{operation_name} {model}" per semantic conventions
     # Operation name is "chat" (not "gen_ai.chat")
     assert span.name == f"chat {request_model}"
-    assert (
-        GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
-    assert (
-        span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "chat"
-    ), f"Expected 'chat', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+    assert GenAIAttributes.GEN_AI_OPERATION_NAME in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_OPERATION_NAME}"
+    )
+    assert span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "chat", (
+        f"Expected 'chat', got {span.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)}"
+    )
 
-    assert (
-        GenAIAttributes.GEN_AI_PROVIDER_NAME in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_PROVIDER_NAME}"
+    assert GenAIAttributes.GEN_AI_PROVIDER_NAME in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_PROVIDER_NAME}"
+    )
     assert span.attributes[GenAIAttributes.GEN_AI_PROVIDER_NAME] == "dashscope"
 
-    assert (
-        GenAIAttributes.GEN_AI_REQUEST_MODEL in span.attributes
-    ), f"Missing {GenAIAttributes.GEN_AI_REQUEST_MODEL}"
+    assert GenAIAttributes.GEN_AI_REQUEST_MODEL in span.attributes, (
+        f"Missing {GenAIAttributes.GEN_AI_REQUEST_MODEL}"
+    )
     assert (
         span.attributes[GenAIAttributes.GEN_AI_REQUEST_MODEL] == request_model
     )
 
     if response_model is not None:
-        assert (
-            GenAIAttributes.GEN_AI_RESPONSE_MODEL in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_RESPONSE_MODEL}"
+        assert GenAIAttributes.GEN_AI_RESPONSE_MODEL in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_RESPONSE_MODEL}"
+        )
         assert (
             span.attributes[GenAIAttributes.GEN_AI_RESPONSE_MODEL]
             == response_model
@@ -70,27 +73,27 @@ def _assert_generation_span_attributes(
     # If response_model is None, don't assert it exists (it may not be available)
 
     if response_id is not None:
-        assert (
-            GenAIAttributes.GEN_AI_RESPONSE_ID in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_RESPONSE_ID}"
+        assert GenAIAttributes.GEN_AI_RESPONSE_ID in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_RESPONSE_ID}"
+        )
         assert (
             span.attributes[GenAIAttributes.GEN_AI_RESPONSE_ID] == response_id
         )
     # If response_id is None, don't assert it exists (it may not be available)
 
     if input_tokens is not None:
-        assert (
-            GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS}"
+        assert GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS}"
+        )
         assert (
             span.attributes[GenAIAttributes.GEN_AI_USAGE_INPUT_TOKENS]
             == input_tokens
         )
 
     if output_tokens is not None:
-        assert (
-            GenAIAttributes.GEN_AI_USAGE_OUTPUT_TOKENS in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_USAGE_OUTPUT_TOKENS}"
+        assert GenAIAttributes.GEN_AI_USAGE_OUTPUT_TOKENS in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_USAGE_OUTPUT_TOKENS}"
+        )
         assert (
             span.attributes[GenAIAttributes.GEN_AI_USAGE_OUTPUT_TOKENS]
             == output_tokens
@@ -111,70 +114,70 @@ def _assert_generation_span_attributes(
 
     # Assert input/output messages based on expectation
     if expect_input_messages:
-        assert (
-            GenAIAttributes.GEN_AI_INPUT_MESSAGES in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_INPUT_MESSAGES}"
+        assert GenAIAttributes.GEN_AI_INPUT_MESSAGES in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_INPUT_MESSAGES}"
+        )
     else:
-        assert (
-            GenAIAttributes.GEN_AI_INPUT_MESSAGES not in span.attributes
-        ), f"{GenAIAttributes.GEN_AI_INPUT_MESSAGES} should not be present"
+        assert GenAIAttributes.GEN_AI_INPUT_MESSAGES not in span.attributes, (
+            f"{GenAIAttributes.GEN_AI_INPUT_MESSAGES} should not be present"
+        )
 
     if expect_output_messages:
-        assert (
-            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in span.attributes
-        ), f"Missing {GenAIAttributes.GEN_AI_OUTPUT_MESSAGES}"
+        assert GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in span.attributes, (
+            f"Missing {GenAIAttributes.GEN_AI_OUTPUT_MESSAGES}"
+        )
     else:
-        assert (
-            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES not in span.attributes
-        ), f"{GenAIAttributes.GEN_AI_OUTPUT_MESSAGES} should not be present"
+        assert GenAIAttributes.GEN_AI_OUTPUT_MESSAGES not in span.attributes, (
+            f"{GenAIAttributes.GEN_AI_OUTPUT_MESSAGES} should not be present"
+        )
 
     # Assert optional request parameters
     if temperature is not None:
-        assert (
-            "gen_ai.request.temperature" in span.attributes
-        ), "Missing gen_ai.request.temperature"
+        assert "gen_ai.request.temperature" in span.attributes, (
+            "Missing gen_ai.request.temperature"
+        )
         assert span.attributes["gen_ai.request.temperature"] == temperature
 
     if max_tokens is not None:
-        assert (
-            "gen_ai.request.max_tokens" in span.attributes
-        ), "Missing gen_ai.request.max_tokens"
+        assert "gen_ai.request.max_tokens" in span.attributes, (
+            "Missing gen_ai.request.max_tokens"
+        )
         assert span.attributes["gen_ai.request.max_tokens"] == max_tokens
 
     if top_p is not None:
-        assert (
-            "gen_ai.request.top_p" in span.attributes
-        ), "Missing gen_ai.request.top_p"
+        assert "gen_ai.request.top_p" in span.attributes, (
+            "Missing gen_ai.request.top_p"
+        )
         assert span.attributes["gen_ai.request.top_p"] == top_p
 
     if top_k is not None:
-        assert (
-            "gen_ai.request.top_k" in span.attributes
-        ), "Missing gen_ai.request.top_k"
+        assert "gen_ai.request.top_k" in span.attributes, (
+            "Missing gen_ai.request.top_k"
+        )
         assert span.attributes["gen_ai.request.top_k"] == top_k
 
     if frequency_penalty is not None:
-        assert (
-            "gen_ai.request.frequency_penalty" in span.attributes
-        ), "Missing gen_ai.request.frequency_penalty"
+        assert "gen_ai.request.frequency_penalty" in span.attributes, (
+            "Missing gen_ai.request.frequency_penalty"
+        )
         assert (
             span.attributes["gen_ai.request.frequency_penalty"]
             == frequency_penalty
         )
 
     if presence_penalty is not None:
-        assert (
-            "gen_ai.request.presence_penalty" in span.attributes
-        ), "Missing gen_ai.request.presence_penalty"
+        assert "gen_ai.request.presence_penalty" in span.attributes, (
+            "Missing gen_ai.request.presence_penalty"
+        )
         assert (
             span.attributes["gen_ai.request.presence_penalty"]
             == presence_penalty
         )
 
     if stop_sequences is not None:
-        assert (
-            "gen_ai.request.stop_sequences" in span.attributes
-        ), "Missing gen_ai.request.stop_sequences"
+        assert "gen_ai.request.stop_sequences" in span.attributes, (
+            "Missing gen_ai.request.stop_sequences"
+        )
         # Convert span attribute to list for comparison (it may be a tuple)
         span_stop_sequences = span.attributes["gen_ai.request.stop_sequences"]
         if isinstance(span_stop_sequences, tuple):
@@ -182,28 +185,27 @@ def _assert_generation_span_attributes(
         assert span_stop_sequences == stop_sequences
 
     if seed is not None:
-        assert (
-            "gen_ai.request.seed" in span.attributes
-        ), "Missing gen_ai.request.seed"
+        assert "gen_ai.request.seed" in span.attributes, (
+            "Missing gen_ai.request.seed"
+        )
         assert span.attributes["gen_ai.request.seed"] == seed
 
     if choice_count is not None and choice_count != 1:
-        assert (
-            "gen_ai.request.choice.count" in span.attributes
-        ), "Missing gen_ai.request.choice.count"
+        assert "gen_ai.request.choice.count" in span.attributes, (
+            "Missing gen_ai.request.choice.count"
+        )
         assert span.attributes["gen_ai.request.choice.count"] == choice_count
 
     if output_type is not None:
-        assert (
-            "gen_ai.output.type" in span.attributes
-        ), "Missing gen_ai.output.type"
+        assert "gen_ai.output.type" in span.attributes, (
+            "Missing gen_ai.output.type"
+        )
         assert span.attributes["gen_ai.output.type"] == output_type
 
 
 @pytest.mark.vcr()
 def test_generation_call_basic(instrument, span_exporter):
     """Test basic synchronous generation call."""
-    from dashscope import Generation
 
     response = Generation.call(model="qwen-turbo", prompt="Hello!")
 
@@ -245,7 +247,6 @@ def test_generation_call_basic(instrument, span_exporter):
 @pytest.mark.vcr()
 def test_generation_call_with_messages(instrument, span_exporter):
     """Test generation call with messages parameter."""
-    from dashscope import Generation
 
     response = Generation.call(
         model="qwen-turbo", messages=[{"role": "user", "content": "Hello!"}]
@@ -286,7 +287,6 @@ def test_generation_call_with_messages(instrument, span_exporter):
 @pytest.mark.vcr()
 def test_generation_call_streaming(instrument, span_exporter):
     """Test synchronous generation with streaming (default: full output mode)."""
-    from dashscope import Generation
 
     responses = Generation.call(
         model="qwen-turbo", prompt="Count from 1 to 5", stream=True
@@ -335,7 +335,6 @@ def test_generation_call_streaming_incremental_output(
     instrument, span_exporter
 ):
     """Test synchronous generation with streaming in incremental output mode."""
-    from dashscope import Generation
 
     responses = Generation.call(
         model="qwen-turbo",
@@ -385,7 +384,6 @@ def test_generation_call_streaming_incremental_output(
 @pytest.mark.vcr()
 def test_generation_call_with_parameters(instrument, span_exporter):
     """Test generation call with various parameters."""
-    from dashscope import Generation
 
     response = Generation.call(
         model="qwen-turbo",
@@ -434,7 +432,6 @@ def test_generation_call_with_parameters(instrument, span_exporter):
 @pytest.mark.vcr()
 async def test_aio_generation_call_basic(instrument, span_exporter):
     """Test basic asynchronous generation call."""
-    from dashscope import AioGeneration
 
     response = await AioGeneration.call(model="qwen-turbo", prompt="Hello!")
 
@@ -474,7 +471,6 @@ async def test_aio_generation_call_basic(instrument, span_exporter):
 @pytest.mark.vcr()
 async def test_aio_generation_call_streaming(instrument, span_exporter):
     """Test asynchronous generation with streaming (default: full output mode)."""
-    from dashscope import AioGeneration
 
     responses = await AioGeneration.call(
         model="qwen-turbo", prompt="Count from 1 to 5", stream=True
@@ -523,7 +519,6 @@ async def test_aio_generation_call_streaming_incremental_output(
     instrument, span_exporter
 ):
     """Test asynchronous generation with streaming in incremental output mode."""
-    from dashscope import AioGeneration
 
     responses = await AioGeneration.call(
         model="qwen-turbo",
@@ -575,7 +570,6 @@ def test_generation_call_with_content_capture(
     instrument_with_content, span_exporter
 ):
     """Test generation call with message content capture enabled."""
-    from dashscope import Generation
 
     messages = [{"role": "user", "content": "Say this is a test"}]
     response = Generation.call(model="qwen-turbo", messages=messages)
@@ -617,7 +611,6 @@ def test_generation_call_no_content_capture(
     instrument_no_content, span_exporter
 ):
     """Test generation call with message content capture disabled."""
-    from dashscope import Generation
 
     messages = [{"role": "user", "content": "Say this is a test"}]
     response = Generation.call(model="qwen-turbo", messages=messages)
@@ -659,7 +652,6 @@ def test_generation_call_with_prompt_content_capture(
     instrument_with_content, span_exporter
 ):
     """Test generation call with prompt (string) and content capture enabled."""
-    from dashscope import Generation
 
     response = Generation.call(model="qwen-turbo", prompt="Hello, world!")
 
@@ -700,7 +692,6 @@ def test_generation_call_with_prompt_content_capture(
 @pytest.mark.vcr()
 def test_generation_call_with_all_parameters(instrument, span_exporter):
     """Test generation call with all optional parameters."""
-    from dashscope import Generation
 
     response = Generation.call(
         model="qwen-turbo",
@@ -760,7 +751,6 @@ def test_generation_call_with_tool_calls_content_capture(
     instrument_with_content, span_exporter
 ):
     """Test generation call with tool calls and content capture enabled."""
-    from dashscope import Generation
 
     tools = [
         {
@@ -805,20 +795,19 @@ def test_generation_call_with_tool_calls_content_capture(
     usage = _safe_getattr(response, "usage", None)
 
     # Assert tool definitions are present
-    assert (
-        "gen_ai.tool.definitions" in span.attributes
-    ), "Missing gen_ai.tool.definitions"
+    assert "gen_ai.tool.definitions" in span.attributes, (
+        "Missing gen_ai.tool.definitions"
+    )
     tool_definitions_str = span.attributes["gen_ai.tool.definitions"]
-    assert isinstance(
-        tool_definitions_str, str
-    ), "Tool definitions should be a JSON string"
-    # Parse JSON to verify content
-    import json
+    assert isinstance(tool_definitions_str, str), (
+        "Tool definitions should be a JSON string"
+    )
 
-    tool_definitions = json.loads(tool_definitions_str)
-    assert isinstance(
-        tool_definitions, list
-    ), "Tool definitions should be a list after parsing"
+    # Parse JSON to verify content
+    tool_definitions = json_utils.loads(tool_definitions_str)
+    assert isinstance(tool_definitions, list), (
+        "Tool definitions should be a list after parsing"
+    )
     assert len(tool_definitions) > 0, "Tool definitions should not be empty"
 
     # Verify full tool definition is recorded (content capture enabled)
@@ -828,12 +817,12 @@ def test_generation_call_with_tool_calls_content_capture(
     assert tool_def["name"] == "get_current_weather", "Tool name should match"
     assert tool_def["type"] == "function", "Tool type should be 'function'"
     # With content capture enabled, should have full definition
-    assert (
-        "description" in tool_def
-    ), "Tool definition should have 'description' when content capture is enabled"
-    assert (
-        "parameters" in tool_def
-    ), "Tool definition should have 'parameters' when content capture is enabled"
+    assert "description" in tool_def, (
+        "Tool definition should have 'description' when content capture is enabled"
+    )
+    assert "parameters" in tool_def, (
+        "Tool definition should have 'parameters' when content capture is enabled"
+    )
 
     # Assert input/output messages with tool calls (content capture enabled)
     _assert_generation_span_attributes(
@@ -860,10 +849,8 @@ def test_generation_call_with_tool_calls_content_capture(
         if output_messages:
             # Check if any message contains tool calls
             # Output messages are stored as JSON strings, parse them
-            import json
-
             if isinstance(output_messages, str):
-                output_messages = json.loads(output_messages)
+                output_messages = json_utils.loads(output_messages)
 
             # Check if any message has tool calls
             has_tool_calls = False
@@ -882,7 +869,9 @@ def test_generation_call_with_tool_calls_content_capture(
 
             # If finish_reason is "tool_calls", we should have tool calls
             if finish_reason == "tool_calls":
-                assert has_tool_calls, "Expected tool calls in output messages when finish_reason is tool_calls"
+                assert has_tool_calls, (
+                    "Expected tool calls in output messages when finish_reason is tool_calls"
+                )
 
     print(
         "✓ Generation.call (with tool calls, content capture) completed successfully"
@@ -894,7 +883,6 @@ def test_generation_call_with_tool_calls_no_content_capture(
     instrument_no_content, span_exporter
 ):
     """Test generation call with tool calls and content capture disabled."""
-    from dashscope import Generation
 
     tools = [
         {
@@ -939,20 +927,19 @@ def test_generation_call_with_tool_calls_no_content_capture(
     usage = _safe_getattr(response, "usage", None)
 
     # Assert tool definitions are present (should be present regardless of content capture)
-    assert (
-        "gen_ai.tool.definitions" in span.attributes
-    ), "Missing gen_ai.tool.definitions"
+    assert "gen_ai.tool.definitions" in span.attributes, (
+        "Missing gen_ai.tool.definitions"
+    )
     tool_definitions_str = span.attributes["gen_ai.tool.definitions"]
-    assert isinstance(
-        tool_definitions_str, str
-    ), "Tool definitions should be a JSON string"
-    # Parse JSON to verify content
-    import json
+    assert isinstance(tool_definitions_str, str), (
+        "Tool definitions should be a JSON string"
+    )
 
-    tool_definitions = json.loads(tool_definitions_str)
-    assert isinstance(
-        tool_definitions, list
-    ), "Tool definitions should be a list after parsing"
+    # Parse JSON to verify content
+    tool_definitions = json_utils.loads(tool_definitions_str)
+    assert isinstance(tool_definitions, list), (
+        "Tool definitions should be a list after parsing"
+    )
     assert len(tool_definitions) > 0, "Tool definitions should not be empty"
 
     # Verify only type and name are recorded (content capture disabled)
@@ -962,12 +949,12 @@ def test_generation_call_with_tool_calls_no_content_capture(
     assert tool_def["name"] == "get_current_weather", "Tool name should match"
     assert tool_def["type"] == "function", "Tool type should be 'function'"
     # With content capture disabled, should only have name and type
-    assert (
-        "description" not in tool_def
-    ), "Tool definition should NOT have 'description' when content capture is disabled"
-    assert (
-        "parameters" not in tool_def
-    ), "Tool definition should NOT have 'parameters' when content capture is disabled"
+    assert "description" not in tool_def, (
+        "Tool definition should NOT have 'description' when content capture is disabled"
+    )
+    assert "parameters" not in tool_def, (
+        "Tool definition should NOT have 'parameters' when content capture is disabled"
+    )
 
     # Assert input/output messages are NOT present (content capture disabled)
     _assert_generation_span_attributes(
@@ -996,7 +983,6 @@ def test_generation_call_with_tool_call_response_content_capture(
     instrument_with_content, span_exporter
 ):
     """Test generation call with tool call response in messages and content capture enabled."""
-    from dashscope import Generation
 
     tools = [
         {
@@ -1105,38 +1091,37 @@ def test_generation_call_with_tool_call_response_content_capture(
         )
 
         # Assert tool definitions are present
-        assert (
-            "gen_ai.tool.definitions" in span2.attributes
-        ), "Missing gen_ai.tool.definitions"
+        assert "gen_ai.tool.definitions" in span2.attributes, (
+            "Missing gen_ai.tool.definitions"
+        )
         tool_definitions_str = span2.attributes["gen_ai.tool.definitions"]
-        assert isinstance(
-            tool_definitions_str, str
-        ), "Tool definitions should be a JSON string"
-        import json
+        assert isinstance(tool_definitions_str, str), (
+            "Tool definitions should be a JSON string"
+        )
 
-        tool_definitions = json.loads(tool_definitions_str)
-        assert isinstance(
-            tool_definitions, list
-        ), "Tool definitions should be a list after parsing"
-        assert (
-            len(tool_definitions) > 0
-        ), "Tool definitions should not be empty"
+        tool_definitions = json_utils.loads(tool_definitions_str)
+        assert isinstance(tool_definitions, list), (
+            "Tool definitions should be a list after parsing"
+        )
+        assert len(tool_definitions) > 0, (
+            "Tool definitions should not be empty"
+        )
 
         # Verify full tool definition is recorded (content capture enabled)
         tool_def = tool_definitions[0]
         assert "name" in tool_def, "Tool definition should have 'name'"
         assert "type" in tool_def, "Tool definition should have 'type'"
-        assert (
-            tool_def["name"] == "get_current_weather"
-        ), "Tool name should match"
+        assert tool_def["name"] == "get_current_weather", (
+            "Tool name should match"
+        )
         assert tool_def["type"] == "function", "Tool type should be 'function'"
         # With content capture enabled, should have full definition
-        assert (
-            "description" in tool_def
-        ), "Tool definition should have 'description' when content capture is enabled"
-        assert (
-            "parameters" in tool_def
-        ), "Tool definition should have 'parameters' when content capture is enabled"
+        assert "description" in tool_def, (
+            "Tool definition should have 'description' when content capture is enabled"
+        )
+        assert "parameters" in tool_def, (
+            "Tool definition should have 'parameters' when content capture is enabled"
+        )
 
         # Check if response has output messages
         # For tool call response scenario, output may be empty or have different format
@@ -1169,10 +1154,8 @@ def test_generation_call_with_tool_call_response_content_capture(
                 GenAIAttributes.GEN_AI_INPUT_MESSAGES
             ]
             if input_messages:
-                import json
-
                 if isinstance(input_messages, str):
-                    input_messages = json.loads(input_messages)
+                    input_messages = json_utils.loads(input_messages)
 
                 # Check if any message has tool call response
                 has_tool_response = False
@@ -1192,9 +1175,9 @@ def test_generation_call_with_tool_call_response_content_capture(
                         if has_tool_response:
                             break
 
-                assert (
-                    has_tool_response
-                ), "Expected tool call response in input messages"
+                assert has_tool_response, (
+                    "Expected tool call response in input messages"
+                )
 
         print(
             "✓ Generation.call (with tool call response, content capture) completed successfully"

@@ -1,5 +1,6 @@
 interactions:
-body: |-
+- request:
+    body: |-
       {
         "model": "wanx-v1",
         "parameters": {
