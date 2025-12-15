@@ -328,7 +328,8 @@ def extract_agent_attributes(
     provider_name = None
     if hasattr(reply_instance, "model") and reply_instance.model:
         model = reply_instance.model
-        request_model = getattr(model, "model_name", "unknown_model")
+        # Only set request_model if model has a model_name attribute
+        request_model = getattr(model, "model_name", None)
         if isinstance(model, ChatModelBase):
             provider_name = get_provider_name(model)
     
