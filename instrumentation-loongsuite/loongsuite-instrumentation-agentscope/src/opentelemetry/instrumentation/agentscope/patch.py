@@ -112,7 +112,6 @@ async def _trace_async_generator_wrapper(result_generator, invocation, span, han
                         span, invocation, error_type=error_obj.type.__qualname__
                     )
             else:
-                span.set_status(Status(StatusCode.OK))
                 # Record metrics without error
                 if handler._metrics_recorder is not None:
                     handler._metrics_recorder.record(span, invocation)
@@ -127,18 +126,6 @@ async def _trace_async_generator_wrapper(result_generator, invocation, span, han
 async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
     """
     Async wrapper for Toolkit.call_tool_function.
-    
-    This function demonstrates a pattern for reusing handler's logic with async generators,
-    without using handler's context management (which causes issues in async generator scenarios).
-    
-    Key insights:
-    - We create the span ourselves (not via handler.start_execute_tool)
-    - We wrap the async generator to collect results
-    - We call handler's utility functions directly:
-      * _apply_execute_tool_finish_attributes for standardized attributes
-      * _metrics_recorder.record for metrics
-      * _apply_error_attributes for error handling
-    - This avoids context token management issues while still reusing handler logic
     
     Args:
         wrapped: The original async generator function being wrapped
@@ -157,7 +144,6 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
     tool_description = _get_tool_description(instance, tool_name)
     
     # Create invocation object with all tool data
-    # This is the data container that handler's utility functions will use
     invocation = ExecuteToolInvocation(
         tool_name=tool_name,
         tool_call_id=tool_id,
@@ -165,32 +151,30 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
         tool_call_arguments=tool_args,
     )
     
-    # Create span ourselves (don't use handler.start_execute_tool to avoid context issues)
     span_name = f"{GenAIAttributes.GenAiOperationNameValues.EXECUTE_TOOL.value} {tool_name}"
-    span = handler._tracer.start_span(
+    with handler._tracer.start_as_current_span(
         name=span_name,
         kind=SpanKind.INTERNAL,
-    )
-    
-    try:
-        result_generator = await wrapped(*args, **kwargs)
-        # Wrap the async generator to collect results and apply handler's logic
-        # Pass invocation, span, and handler to access utility functions
-        return _trace_async_generator_wrapper(result_generator, invocation, span, handler)
-    except Exception as error:
-        # Apply handler's error logic manually
-        error_obj = Error(message=str(error), type=type(error))
-        _apply_execute_tool_finish_attributes(span, invocation)
-        _apply_error_attributes(span, error_obj)
-        
-        # Record metrics with error
-        if handler._metrics_recorder is not None:
-            handler._metrics_recorder.record(
-                span, invocation, error_type=error_obj.type.__qualname__
-            )
-        
-        span.end()
-        raise error from None
+        end_on_exit=False,
+    ) as span:
+        try:
+            result_generator = await wrapped(*args, **kwargs)
+            # Wrap the async generator to collect results and end span when done
+            return _trace_async_generator_wrapper(result_generator, invocation, span, handler)
+        except Exception as error:
+            # Handle errors before returning the generator
+            error_obj = Error(message=str(error), type=type(error))
+            _apply_execute_tool_finish_attributes(span, invocation)
+            _apply_error_attributes(span, error_obj)
+            
+            # Record metrics with error
+            if handler._metrics_recorder is not None:
+                handler._metrics_recorder.record(
+                    span, invocation, error_type=error_obj.type.__qualname__
+                )
+            
+            span.end()
+            raise error from None
 
 
 async def wrap_formatter_format(wrapped, instance, args, kwargs, tracer=None):

@@ -30,7 +30,13 @@ from numbers import Number
 from typing import Optional, Union
 
 from opentelemetry.metrics import Meter
-from opentelemetry.trace import Span, StatusCode, set_span_in_context
+from opentelemetry.semconv._incubating.attributes import (
+    gen_ai_attributes as GenAI,
+)
+from opentelemetry.trace import Span, set_span_in_context
+from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
+    GEN_AI_SPAN_KIND,
+)
 from opentelemetry.util.genai.extended_types import (
     CreateAgentInvocation,
     EmbeddingInvocation,
@@ -172,11 +178,7 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """Record LoongSuite metrics for LLM invocations."""
         try:
             # Build LoongSuite attributes
-            attributes = {
-                "modelName": self._get_model_name(invocation),
-                "spanKind": self._get_span_kind(invocation),
-                "statusCode": self._get_span_status_code(span),
-            }
+            attributes = self._build_base_attributes(span, invocation)
 
             # 1. Record call count
             self._calls_count.add(1, attributes=attributes)
@@ -202,11 +204,11 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
             
             # 5. Record token usage (LLM supports tokens)
             if invocation.input_tokens is not None and invocation.input_tokens > 0:
-                token_attrs = {**attributes, "usageType": "input"}
+                token_attrs = {**attributes, "usageType": GenAI.GenAiTokenTypeValues.INPUT.value}
                 self._llm_usage_tokens.add(invocation.input_tokens, attributes=token_attrs)
             
             if invocation.output_tokens is not None and invocation.output_tokens > 0:
-                token_attrs = {**attributes, "usageType": "output"}
+                token_attrs = {**attributes, "usageType": GenAI.GenAiTokenTypeValues.OUTPUT.value}
                 self._llm_usage_tokens.add(invocation.output_tokens, attributes=token_attrs)
             
             # 6. Record first token latency (LLM supports first_token)
@@ -234,11 +236,7 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """Record LoongSuite metrics for embedding invocations."""
         try:
             # Build LoongSuite attributes
-            attributes = {
-                "modelName": self._get_model_name(invocation),
-                "spanKind": self._get_span_kind(invocation),
-                "statusCode": self._get_span_status_code(span),
-            }
+            attributes = self._build_base_attributes(span, invocation)
             
             # 1. Record call count
             self._calls_count.add(1, attributes=attributes)
@@ -263,11 +261,11 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
             
             # 5. Record token usage (Embedding supports tokens)
             if invocation.input_tokens is not None and invocation.input_tokens > 0:
-                token_attrs = {**attributes, "usageType": "input"}
+                token_attrs = {**attributes, "usageType": GenAI.GenAiTokenTypeValues.INPUT.value}
                 self._llm_usage_tokens.add(invocation.input_tokens, attributes=token_attrs)
             
             if invocation.output_tokens is not None and invocation.output_tokens > 0:
-                token_attrs = {**attributes, "usageType": "output"}
+                token_attrs = {**attributes, "usageType": GenAI.GenAiTokenTypeValues.OUTPUT.value}
                 self._llm_usage_tokens.add(invocation.output_tokens, attributes=token_attrs)
 
             _logger.debug(
@@ -287,12 +285,8 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """Record LoongSuite metrics for tool execution invocations."""
         try:
             # Build LoongSuite attributes (Tool special: add rpc)
-            attributes = {
-                "modelName": self._get_model_name(invocation),
-                "spanKind": self._get_span_kind(invocation),
-                "statusCode": self._get_span_status_code(span),
-                "rpc": invocation.tool_name,  # Tool special: rpc = tool_name
-            }
+            attributes = self._build_base_attributes(span, invocation)
+            attributes["rpc"] = invocation.tool_name  # Tool special: rpc = tool_name
 
             # 1. Record call count
             self._calls_count.add(1, attributes=attributes)
@@ -330,11 +324,7 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """Record LoongSuite metrics for agent invocation."""
         try:
             # Build LoongSuite attributes
-            attributes = {
-                "modelName": self._get_model_name(invocation),
-                "spanKind": self._get_span_kind(invocation),
-                "statusCode": self._get_span_status_code(span),
-            }
+            attributes = self._build_base_attributes(span, invocation)
 
             # 1. Record call count
             self._calls_count.add(1, attributes=attributes)
@@ -360,11 +350,11 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
             
             # 5. Record token usage (Agent supports tokens)
             if invocation.input_tokens is not None and invocation.input_tokens > 0:
-                token_attrs = {**attributes, "usageType": "input"}
+                token_attrs = {**attributes, "usageType": GenAI.GenAiTokenTypeValues.INPUT.value}
                 self._llm_usage_tokens.add(invocation.input_tokens, attributes=token_attrs)
             
             if invocation.output_tokens is not None and invocation.output_tokens > 0:
-                token_attrs = {**attributes, "usageType": "output"}
+                token_attrs = {**attributes, "usageType": GenAI.GenAiTokenTypeValues.OUTPUT.value}
                 self._llm_usage_tokens.add(invocation.output_tokens, attributes=token_attrs)
             
             # 6. Record first token latency (Agent supports first_token)
@@ -392,11 +382,7 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """Record LoongSuite metrics for agent creation."""
         try:
             # Build LoongSuite attributes
-            attributes = {
-                "modelName": self._get_model_name(invocation),
-                "spanKind": self._get_span_kind(invocation),
-                "statusCode": self._get_span_status_code(span),
-            }
+            attributes = self._build_base_attributes(span, invocation)
 
             # 1. Record call count
             self._calls_count.add(1, attributes=attributes)
@@ -434,11 +420,7 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """Record LoongSuite metrics for document retrieval."""
         try:
             # Build LoongSuite attributes
-            attributes = {
-                "modelName": self._get_model_name(invocation),
-                "spanKind": self._get_span_kind(invocation),
-                "statusCode": self._get_span_status_code(span),
-            }
+            attributes = self._build_base_attributes(span, invocation)
 
             # 1. Record call count
             self._calls_count.add(1, attributes=attributes)
@@ -476,16 +458,12 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """Record LoongSuite metrics for document reranking."""
         try:
             # Build LoongSuite attributes
-            attributes = {
-                "modelName": self._get_model_name(invocation),
-                "spanKind": self._get_span_kind(invocation),
-                "statusCode": self._get_span_status_code(span),
-            }
+            attributes = self._build_base_attributes(span, invocation)
 
-            # 1. 记录调用次数
+            # 1. Record call count
             self._calls_count.add(1, attributes=attributes)
             
-            # 2. 记录时延
+            # 2. Record duration
             duration_seconds = self._calculate_duration(invocation)
             if duration_seconds is not None:
                 span_context = set_span_in_context(span)
@@ -495,11 +473,11 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
                     context=span_context,
                 )
                 
-                # 3. 判断并记录慢调用
+                # 3. Check and record slow calls
                 if duration_seconds > self._slow_threshold:
                     self._calls_slow_count.add(1, attributes=attributes)
 
-            # 4. 如果有错误，记录错误次数
+            # 4. Record error count if error occurred
             if error_type:
                 self._calls_error_count.add(1, attributes=attributes)
 
@@ -508,71 +486,60 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         except Exception as e:
             _logger.exception(f"Error recording rerank metrics: {e}")
 
-    def _get_span_status_code(self, span: Span) -> str:
+    def _build_base_attributes(
+        self,
+        span: Span,
+        invocation: any,
+    ) -> dict:
         """
-        Extract status code from span for LoongSuite metrics.
+        Build base LoongSuite attributes for metrics.
         
         Returns:
-            Status code string (OK, ERROR, UNSET)
+            Dictionary with spanKind and optionally modelName
+        """
+        attributes = {}
+        
+        span_kind = self._get_span_kind_from_span(span)
+        if span_kind:
+            attributes["spanKind"] = span_kind
+        
+        model_name = self._get_model_name(invocation)
+        if model_name:
+            attributes["modelName"] = model_name
+        
+        return attributes
+
+    def _get_span_kind_from_span(self, span: Span) -> Optional[str]:
+        """
+        Extract spanKind from span attributes.
+        
+        Returns:
+            spanKind string or None if not found
         """
         if span is None:
-            return "UNSET"
+            return None
         try:
-            if hasattr(span, "status") and span.status is not None:
-                status_code = span.status.status_code
-                if status_code == StatusCode.OK:
-                    return "OK"
-                elif status_code == StatusCode.ERROR:
-                    return "ERROR"
-                else:
-                    return "UNSET"
+            if hasattr(span, "attributes") and span.attributes is not None:
+                return span.attributes.get(GEN_AI_SPAN_KIND)
         except Exception as e:
-            _logger.debug(f"Error extracting status code from span: {e}")
-        return "UNSET"
+            _logger.debug(f"Error extracting span kind from span: {e}")
+        return None
 
-    def _get_span_kind(self, invocation: any) -> str:
-        """
-        Map invocation type to spanKind for LoongSuite metrics.
-        
-        Returns:
-            spanKind string (LLM, AGENT, TOOL, EMBEDDING, RETRIEVE, RERANK)
-        """
-        if isinstance(invocation, LLMInvocation):
-            return "LLM"
-        elif isinstance(invocation, (InvokeAgentInvocation, CreateAgentInvocation)):
-            return "AGENT"
-        elif isinstance(invocation, ExecuteToolInvocation):
-            return "TOOL"
-        elif isinstance(invocation, EmbeddingInvocation):
-            return "EMBEDDING"
-        elif isinstance(invocation, RetrieveInvocation):
-            return "RETRIEVE"
-        elif isinstance(invocation, RerankInvocation):
-            return "RERANK"
-        else:
-            return "UNKNOWN"
-
-    def _get_model_name(self, invocation: any) -> str:
+    def _get_model_name(self, invocation: any) -> Optional[str]:
         """
         Extract model name from invocation for LoongSuite metrics.
         
         Returns:
-            Model name string, or "UNKNOWN" if not available
+            Model name string, or None if not applicable
         """
-        # LLM and Embedding - use request_model
+
         if hasattr(invocation, "request_model") and invocation.request_model:
             return invocation.request_model
-        # Agent - use agent_name
-        elif hasattr(invocation, "agent_name") and invocation.agent_name:
-            return invocation.agent_name
-        # Tool - use tool_name
-        elif hasattr(invocation, "tool_name") and invocation.tool_name:
-            return invocation.tool_name
         # Response model as fallback
-        elif hasattr(invocation, "response_model_name") and invocation.response_model_name:
+        if hasattr(invocation, "response_model_name") and invocation.response_model_name:
             return invocation.response_model_name
-        else:
-            return "UNKNOWN"
+
+        return None
 
     def _calculate_duration(self, invocation: any) -> Optional[float]:
         """
