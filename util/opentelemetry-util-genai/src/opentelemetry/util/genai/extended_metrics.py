@@ -27,7 +27,6 @@ from __future__ import annotations
 import logging
 from typing import Optional, Union
 
-from opentelemetry.metrics import Meter
 from opentelemetry.trace import Span
 from opentelemetry.util.genai.extended_types import (
     CreateAgentInvocation,
@@ -57,10 +56,6 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
     - Retrieve documents operations
     - Rerank documents operations
     """
-
-    def __init__(self, meter: Meter):
-        """Initialize extended metrics recorder with LoongSuite GenAI metrics."""
-        # TODO: Implement extended metrics recorder
 
     def record_extended(
         self,
