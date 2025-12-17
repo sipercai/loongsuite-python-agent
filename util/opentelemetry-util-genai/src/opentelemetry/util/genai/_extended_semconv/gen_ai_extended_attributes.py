@@ -105,27 +105,6 @@ GEN_AI_RERANK_OUTPUT_DOCUMENTS: Final = "gen_ai.rerank.output_documents"
 The reranked documents returned by the reranking operation.
 """
 
-
-class GenAiExtendedOperationNameValues(Enum):
-    RETRIEVE_DOCUMENTS = "retrieve_documents"
-    """Retrieve documents operation."""
-
-    RERANK_DOCUMENTS = "rerank_documents"
-    """Rerank documents operation."""
-
-
-class GenAiExtendedProviderNameValues(Enum):
-    DASHSCOPE = "dashscope"
-    """DashScope."""
-
-    OLLAMA = "ollama"
-    """Ollama."""
-
-    MOONSHOT = "moonshot"
-    """Moonshot."""
-
-
-# LoongSuite Extension: GenAI operation kind attribute
 GEN_AI_SPAN_KIND: Final = "gen_ai.span.kind"
 """
 The semantic type of GenAI operation (e.g., LLM, AGENT, EMBEDDING).
@@ -154,3 +133,22 @@ class GenAiSpanKindValues(Enum):
 
     RERANKER = "RERANKER"
     """Document reranking operation."""
+
+
+class GenAiExtendedOperationNameValues(Enum):
+    RETRIEVE_DOCUMENTS = "retrieve_documents"
+    """Retrieve documents operation."""
+
+    RERANK_DOCUMENTS = "rerank_documents"
+    """Rerank documents operation."""
+
+
+class GenAiExtendedProviderNameValues(Enum):
+    DASHSCOPE = "dashscope"
+    """DashScope."""
+
+    OLLAMA = "ollama"
+    """Ollama."""
+
+    MOONSHOT = "moonshot"
+    """Moonshot."""

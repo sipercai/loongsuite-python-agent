@@ -60,7 +60,6 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
 
     def __init__(self, meter: Meter):
         """Initialize extended metrics recorder with LoongSuite GenAI metrics."""
-        super().__init__(meter)
         # TODO: Implement extended metrics recorder
 
     def record_extended(

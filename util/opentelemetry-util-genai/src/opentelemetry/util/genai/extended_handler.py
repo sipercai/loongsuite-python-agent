@@ -82,7 +82,7 @@ from opentelemetry.util.genai._extended_memory import (
     _apply_memory_finish_attributes,
     _maybe_emit_memory_event,
 )
-from opentelemetry.util.genai.extended_metrics import (
+from opentelemetry.util.genai.extended_metrics import (  # pylint: disable=no-name-in-module
     ExtendedInvocationMetricsRecorder,
 )
 from opentelemetry.util.genai.extended_span_utils import (

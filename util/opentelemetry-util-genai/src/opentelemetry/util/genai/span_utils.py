@@ -33,7 +33,7 @@ from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util.genai._extended_semconv import (
     gen_ai_extended_attributes as GenAIExtended,  # LoongSuite Extension
 )
-from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
+from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (  # pylint: disable=no-name-in-module
     GEN_AI_SPAN_KIND,  # LoongSuite Extension
     GenAiSpanKindValues,  # LoongSuite Extension
 )
