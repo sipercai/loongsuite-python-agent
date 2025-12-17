@@ -59,7 +59,6 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.util.genai.extended_handler import (
     ExtendedTelemetryHandler,
-    get_extended_telemetry_handler,
 )
 
 logger = logging.getLogger(__name__)
@@ -97,14 +96,19 @@ class DashScopeInstrumentor(BaseInstrumentor):
         """
         logger.info("Instrumenting DashScope SDK")
 
-        # Get tracer_provider from kwargs and create handler instance
+        # Get providers from kwargs
         tracer_provider = kwargs.get("tracer_provider")
-        if tracer_provider is not None:
-            # Create handler instance with provided tracer_provider
-            handler = ExtendedTelemetryHandler(tracer_provider=tracer_provider)
-        else:
-            # Use singleton handler
-            handler = get_extended_telemetry_handler()
+        meter_provider = kwargs.get("meter_provider")
+        event_logger_provider = kwargs.get("logger_provider")
+
+        # Create handler instance with provided providers
+        # ExtendedTelemetryHandler inherits from TelemetryHandler which accepts
+        # tracer_provider, meter_provider, and logger_provider
+        handler = ExtendedTelemetryHandler(
+            tracer_provider=tracer_provider,
+            meter_provider=meter_provider,
+            logger_provider=event_logger_provider,
+        )
 
         # Create wrapper functions with handler closure
         def wrap_generation_call_with_provider(
