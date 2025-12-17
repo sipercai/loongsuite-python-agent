@@ -129,8 +129,9 @@ class GenAiExtendedProviderNameValues(Enum):
 GEN_AI_SPAN_KIND: Final = "gen_ai.span.kind"
 """
 The semantic type of GenAI operation (e.g., LLM, AGENT, EMBEDDING).
-This attribute extends OpenTelemetry semantics to classify GenAI-specific operations 
+This attribute extends OpenTelemetry semantics to classify GenAI-specific operations
 for scenarios like Completion, Chat, RAG, Agent, and Tool execution.
+
 Note: This is an Attribute, distinct from OpenTelemetry's Span kind field.
 """
 
@@ -148,8 +149,8 @@ class GenAiSpanKindValues(Enum):
     TOOL = "TOOL"
     """Tool execution operation."""
 
-    RETRIEVAL = "RETRIEVAL"
+    RETRIEVER = "RETRIEVER"
     """Document retrieval operation."""
 
-    RERANK = "RERANK"
+    RERANKER = "RERANKER"
     """Document reranking operation."""

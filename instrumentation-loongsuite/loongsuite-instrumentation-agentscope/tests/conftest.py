@@ -7,10 +7,13 @@ import os
 import pytest
 import yaml
 
+# Set up DASHSCOPE_API_KEY environment variable BEFORE any dashscope modules are imported
+# This is critical because dashscope SDK reads environment variables at module import time
+# and caches them in module-level variables
+if "DASHSCOPE_API_KEY" not in os.environ:
+    os.environ["DASHSCOPE_API_KEY"] = "test_api_key"
+
 from opentelemetry.instrumentation.agentscope import AgentScopeInstrumentor
-from opentelemetry.util.genai.environment_variables import (
-    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT,
-)
 from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import (
     InMemoryLogExporter,
@@ -24,9 +27,15 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
 from opentelemetry.sdk.trace.sampling import ALWAYS_OFF
+from opentelemetry.util.genai.environment_variables import (
+    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT,
+)
 
 
 def pytest_configure(config: pytest.Config):
+    # Configure pytest-asyncio to auto-detect async test functions
+    config.option.asyncio_mode = "auto"
+
     # Set necessary environment variables
     os.environ["JUPYTER_PLATFORM_DIRS"] = "1"
 
@@ -102,7 +111,7 @@ def fixture_meter_provider(metric_reader):
 @pytest.fixture(scope="function")
 def dashscope_model(request):
     """Create a DashScopeChatModel for testing"""
-    from agentscope.model import DashScopeChatModel
+    from agentscope.model import DashScopeChatModel  # noqa: PLC0415
 
     model = DashScopeChatModel(
         api_key=request.config.option.api_key,
@@ -165,7 +174,9 @@ def instrument_with_content(tracer_provider, logger_provider, meter_provider):
 
 
 @pytest.fixture(scope="function")
-def instrument_with_content_and_events(tracer_provider, logger_provider, meter_provider):
+def instrument_with_content_and_events(
+    tracer_provider, logger_provider, meter_provider
+):
     """Instrument with capturing message content in both spans and events"""
     os.environ.update(
         {OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: "SPAN_AND_EVENT"}

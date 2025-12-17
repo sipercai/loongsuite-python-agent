@@ -33,6 +33,7 @@ def dashscope_model(request):
 class TestAgentBasic:
     """Agent basic tests"""
 
+    @pytest.mark.vcr()
     def test_agent_simple_call(
         self,
         span_exporter,
@@ -82,6 +83,7 @@ class TestAgentBasic:
         chat_spans = find_spans_by_name_prefix(spans, "chat ")
         assert len(chat_spans) > 0, "Expected at least one chat model span"
 
+    @pytest.mark.vcr()
     def test_agent_with_tool(
         self,
         span_exporter,
@@ -136,13 +138,17 @@ class TestAgentBasic:
 
         # May have tool spans (depending on whether tools were actually called)
         tool_spans = [
-            s for s in spans
-            if "tool" in s.name.lower() or
-            (hasattr(s, "attributes") and
-             s.attributes.get("gen_ai.span.kind") == "TOOL")
+            s
+            for s in spans
+            if "tool" in s.name.lower()
+            or (
+                hasattr(s, "attributes")
+                and s.attributes.get("gen_ai.span.kind") == "TOOL"
+            )
         ]
         print(f"Found {len(tool_spans)} tool spans")
 
+    @pytest.mark.vcr()
     def test_agent_multiple_turns(
         self,
         span_exporter,
@@ -181,17 +187,23 @@ class TestAgentBasic:
         # In recording mode should have multiple model call spans
         # In replay mode may not have (VCR intercepts HTTP requests)
         chat_spans = [
-            s for s in spans
-            if s.attributes and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME) == "chat"
+            s
+            for s in spans
+            if s.attributes
+            and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)
+            == "chat"
         ]
         # Should have at least some spans (even if no chat spans, should have agent spans)
-        assert len(spans) >= 3, f"Expected at least 3 spans total, got {len(spans)}"
+        assert len(spans) >= 3, (
+            f"Expected at least 3 spans total, got {len(spans)}"
+        )
         print(f"Chat spans: {len(chat_spans)}")
 
 
 class TestAgentAttributes:
     """Agent attribute tests"""
 
+    @pytest.mark.vcr()
     def test_agent_span_attributes(
         self,
         span_exporter,
@@ -236,6 +248,7 @@ class TestAgentAttributes:
         assert GenAIAttributes.GEN_AI_REQUEST_MODEL in attrs
         assert "gen_ai.provider.name" in attrs
 
+    @pytest.mark.vcr()
     def test_agent_with_formatter(
         self,
         span_exporter,
@@ -271,10 +284,13 @@ class TestAgentAttributes:
 
         # May have formatter spans
         formatter_spans = [
-            s for s in spans
-            if "format" in s.name.lower() or
-            (hasattr(s, "attributes") and
-             s.attributes.get("gen_ai.span.kind") == "FORMATTER")
+            s
+            for s in spans
+            if "format" in s.name.lower()
+            or (
+                hasattr(s, "attributes")
+                and s.attributes.get("gen_ai.span.kind") == "FORMATTER"
+            )
         ]
         print(f"Found {len(formatter_spans)} formatter spans")
 
@@ -282,6 +298,7 @@ class TestAgentAttributes:
 class TestAgentError:
     """Agent error handling tests"""
 
+    @pytest.mark.vcr()
     def test_agent_with_invalid_model(
         self,
         span_exporter,
@@ -323,4 +340,3 @@ class TestAgentError:
         # Verify spans are created even on error
         spans = span_exporter.get_finished_spans()
         print(f"\nError test found {len(spans)} spans")
-

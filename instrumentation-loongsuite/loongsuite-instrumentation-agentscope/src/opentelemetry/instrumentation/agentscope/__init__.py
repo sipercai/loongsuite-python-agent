@@ -24,7 +24,7 @@ Usage
     import agentscope
 
     AgentScopeInstrumentor().instrument()
-    
+
     model = DashScopeChatModel(model_name="qwen-max")
 
     messages = [{"role": "user", "content": "Hello, how are you?"}]
@@ -37,7 +37,7 @@ Usage
                 result.append(chunk)
             return result[-1] if result else response
         return response
-    
+
     result = asyncio.run(call_model())
 
     AgentScopeInstrumentor().uninstrument()
@@ -85,7 +85,9 @@ class AgentScopeInstrumentor(BaseInstrumentor):
     def __init__(self):
         super().__init__()
         self._tracer = None  # Only used for Formatter instrumentation
-        self._handler = None  # ExtendedTelemetryHandler handles all other operations
+        self._handler = (
+            None  # ExtendedTelemetryHandler handles all other operations
+        )
 
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
@@ -141,7 +143,9 @@ class AgentScopeInstrumentor(BaseInstrumentor):
 
         # Instrument EmbeddingModelBase
         try:
-            embedding_wrapper = AgentScopeEmbeddingModelWrapper(handler=self._handler)
+            embedding_wrapper = AgentScopeEmbeddingModelWrapper(
+                handler=self._handler
+            )
             wrap_function_wrapper(
                 module=_EMBEDDING_MODULE,
                 name="EmbeddingModelBase.__init__",
@@ -153,6 +157,7 @@ class AgentScopeInstrumentor(BaseInstrumentor):
 
         # Instrument Toolkit
         try:
+
             def wrap_tool_with_handler(wrapped, instance, args, kwargs):
                 return wrap_tool_call(
                     wrapped, instance, args, kwargs, handler=self._handler
@@ -169,6 +174,7 @@ class AgentScopeInstrumentor(BaseInstrumentor):
 
         # Instrument Formatter
         try:
+
             def wrap_formatter_with_tracer(wrapped, instance, args, kwargs):
                 return wrap_formatter_format(
                     wrapped, instance, args, kwargs, tracer=self._tracer
@@ -215,7 +221,7 @@ class AgentScopeInstrumentor(BaseInstrumentor):
             logger.warning(f"Failed to restore EmbeddingModelBase: {e}")
 
         try:
-            import agentscope.model
+            import agentscope.model  # noqa: PLC0415
 
             unwrap(agentscope.model.ChatModelBase, "__init__")
             logger.debug("Uninstrumented ChatModelBase")
@@ -223,7 +229,7 @@ class AgentScopeInstrumentor(BaseInstrumentor):
             logger.warning(f"Failed to uninstrument ChatModelBase: {e}")
 
         try:
-            import agentscope.agent
+            import agentscope.agent  # noqa: PLC0415
 
             unwrap(agentscope.agent.AgentBase, "__init__")
             logger.debug("Uninstrumented AgentBase")
@@ -231,7 +237,7 @@ class AgentScopeInstrumentor(BaseInstrumentor):
             logger.warning(f"Failed to uninstrument AgentBase: {e}")
 
         try:
-            import agentscope.embedding
+            import agentscope.embedding  # noqa: PLC0415
 
             unwrap(agentscope.embedding.EmbeddingModelBase, "__init__")
             logger.debug("Uninstrumented EmbeddingModelBase")
@@ -239,7 +245,7 @@ class AgentScopeInstrumentor(BaseInstrumentor):
             logger.warning(f"Failed to uninstrument EmbeddingModelBase: {e}")
 
         try:
-            import agentscope.tool
+            import agentscope.tool  # noqa: PLC0415
 
             unwrap(agentscope.tool.Toolkit, "call_tool_function")
             logger.debug("Uninstrumented Toolkit")
@@ -247,15 +253,17 @@ class AgentScopeInstrumentor(BaseInstrumentor):
             logger.warning(f"Failed to uninstrument Toolkit: {e}")
 
         try:
-            import agentscope.formatter
+            import agentscope.formatter  # noqa: PLC0415
 
             unwrap(agentscope.formatter.TruncatedFormatterBase, "format")
             logger.debug("Uninstrumented TruncatedFormatterBase")
         except Exception as e:
-            logger.warning(f"Failed to uninstrument TruncatedFormatterBase: {e}")
+            logger.warning(
+                f"Failed to uninstrument TruncatedFormatterBase: {e}"
+            )
 
         try:
-            import agentscope.tracing
+            import agentscope.tracing  # noqa: PLC0415
 
             unwrap(agentscope.tracing, "setup_tracing")
             logger.debug("Uninstrumented setup_tracing")

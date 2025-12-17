@@ -198,7 +198,9 @@ def test_model_call_basic(instrument_no_content, span_exporter, request):
 
 
 @pytest.mark.vcr()
-def test_model_call_with_messages(instrument_no_content, span_exporter, request):
+def test_model_call_with_messages(
+    instrument_no_content, span_exporter, request
+):
     """Test model call with multiple messages"""
     agentscope.init(project="test_messages")
 

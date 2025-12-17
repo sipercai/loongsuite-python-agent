@@ -64,3 +64,6 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/opentelemetry"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

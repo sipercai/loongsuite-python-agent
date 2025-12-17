@@ -114,7 +114,9 @@ class TestBasicInteraction:
         chat_spans = [span for span in spans if span.name.startswith("chat ")]
 
         # Should have at least 2 chat spans
-        assert len(chat_spans) >= 2, f"Expected at least 2 chat spans, got {len(chat_spans)}"
+        assert len(chat_spans) >= 2, (
+            f"Expected at least 2 chat spans, got {len(chat_spans)}"
+        )
 
         print("✓ Multi-turn conversation test completed successfully")
 
@@ -245,7 +247,9 @@ class TestStructuredOutput:
             formatter=DashScopeChatFormatter(),
         )
 
-        msg = Msg("user", "Tell me about Einstein in structured format", "user")
+        msg = Msg(
+            "user", "Tell me about Einstein in structured format", "user"
+        )
 
         async def call_agent():
             response = await agent(msg)
@@ -271,7 +275,10 @@ class TestStructuredOutput:
 
         chat_span = chat_spans[0]
         assert GenAIAttributes.GEN_AI_OPERATION_NAME in chat_span.attributes
-        assert chat_span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "chat"
+        assert (
+            chat_span.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME]
+            == "chat"
+        )
         assert GenAIAttributes.GEN_AI_REQUEST_MODEL in chat_span.attributes
 
         # Since content capture is enabled, should have input/output messages
@@ -317,8 +324,12 @@ class TestSpanContentCapture:
 
         chat_span = chat_spans[0]
         # Should not have input/output messages
-        assert GenAIAttributes.GEN_AI_INPUT_MESSAGES not in chat_span.attributes
-        assert GenAIAttributes.GEN_AI_OUTPUT_MESSAGES not in chat_span.attributes
+        assert (
+            GenAIAttributes.GEN_AI_INPUT_MESSAGES not in chat_span.attributes
+        )
+        assert (
+            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES not in chat_span.attributes
+        )
 
         print("✓ Content capture disabled test completed successfully")
 
@@ -362,7 +373,11 @@ class TestSpanContentCapture:
 
     @pytest.mark.vcr()
     def test_span_content_with_span_and_event(
-        self, instrument_with_content_and_events, span_exporter, log_exporter, request
+        self,
+        instrument_with_content_and_events,
+        span_exporter,
+        log_exporter,
+        request,
     ):
         """Test capturing content in both span and event"""
         agentscope.init(project="test_span_and_event")
@@ -401,4 +416,3 @@ class TestSpanContentCapture:
         print(f"Found {len(logs)} log events")
 
         print("✓ Content capture (span and event) test completed successfully")
-

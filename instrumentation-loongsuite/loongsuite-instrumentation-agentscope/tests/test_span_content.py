@@ -58,8 +58,11 @@ class TestSpanContentCapture:
 
         # Find chat span
         chat_spans = [
-            s for s in spans
-            if s.attributes and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME) == "chat"
+            s
+            for s in spans
+            if s.attributes
+            and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)
+            == "chat"
         ]
 
         assert len(chat_spans) > 0, "Expected at least one chat span"
@@ -70,16 +73,23 @@ class TestSpanContentCapture:
 
         print("\n=== Chat Span Attributes ===")
         for key, value in sorted(attrs.items()):
-            if "message" in key.lower() or "input" in key.lower() or "output" in key.lower():
-                print(f"{key}: {value[:100] if isinstance(value, str) and len(value) > 100 else value}")
+            if (
+                "message" in key.lower()
+                or "input" in key.lower()
+                or "output" in key.lower()
+            ):
+                print(
+                    f"{key}: {value[:100] if isinstance(value, str) and len(value) > 100 else value}"
+                )
 
         # Verify if input/output is captured
         has_input = any(
-            "input" in k.lower() or "prompt" in k.lower()
-            for k in attrs.keys()
+            "input" in k.lower() or "prompt" in k.lower() for k in attrs.keys()
         )
         has_output = any(
-            "output" in k.lower() or "completion" in k.lower() or "response" in k.lower()
+            "output" in k.lower()
+            or "completion" in k.lower()
+            or "response" in k.lower()
             for k in attrs.keys()
         )
 
@@ -96,11 +106,15 @@ class TestSpanContentCapture:
         # Check if there are input messages or output messages
         if GenAIAttributes.GEN_AI_INPUT_MESSAGES in attrs:
             print("\n✓ Found GEN_AI_INPUT_MESSAGES")
-            print(f"  Value: {attrs[GenAIAttributes.GEN_AI_INPUT_MESSAGES][:200]}...")
+            print(
+                f"  Value: {attrs[GenAIAttributes.GEN_AI_INPUT_MESSAGES][:200]}..."
+            )
 
         if GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in attrs:
             print("\n✓ Found GEN_AI_OUTPUT_MESSAGES")
-            print(f"  Value: {attrs[GenAIAttributes.GEN_AI_OUTPUT_MESSAGES][:200]}...")
+            print(
+                f"  Value: {attrs[GenAIAttributes.GEN_AI_OUTPUT_MESSAGES][:200]}..."
+            )
 
     @pytest.mark.vcr()
     def test_span_content_with_span_and_event(
@@ -144,8 +158,11 @@ class TestSpanContentCapture:
 
         # Find chat span
         chat_spans = [
-            s for s in spans
-            if s.attributes and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME) == "chat"
+            s
+            for s in spans
+            if s.attributes
+            and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)
+            == "chat"
         ]
 
         if len(chat_spans) > 0:
@@ -169,7 +186,8 @@ class TestSpanContentCapture:
 
                     # Check if there is content
                     has_content = any(
-                        "content" in str(k).lower() or "message" in str(k).lower()
+                        "content" in str(k).lower()
+                        or "message" in str(k).lower()
                         for k in attrs.keys()
                     )
                     if has_content:
@@ -209,8 +227,11 @@ class TestSpanContentCapture:
         # Verify spans
         spans = span_exporter.get_finished_spans()
         chat_spans = [
-            s for s in spans
-            if s.attributes and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME) == "chat"
+            s
+            for s in spans
+            if s.attributes
+            and s.attributes.get(GenAIAttributes.GEN_AI_OPERATION_NAME)
+            == "chat"
         ]
 
         if len(chat_spans) > 0:
@@ -220,7 +241,9 @@ class TestSpanContentCapture:
             print("\n=== Content capture disabled ===")
             # Content should not be captured
             has_input_messages = GenAIAttributes.GEN_AI_INPUT_MESSAGES in attrs
-            has_output_messages = GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in attrs
+            has_output_messages = (
+                GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in attrs
+            )
 
             print(f"Has input messages: {has_input_messages}")
             print(f"Has output messages: {has_output_messages}")
@@ -228,4 +251,3 @@ class TestSpanContentCapture:
             # But basic attributes should exist
             assert GenAIAttributes.GEN_AI_OPERATION_NAME in attrs
             assert GenAIAttributes.GEN_AI_REQUEST_MODEL in attrs
-

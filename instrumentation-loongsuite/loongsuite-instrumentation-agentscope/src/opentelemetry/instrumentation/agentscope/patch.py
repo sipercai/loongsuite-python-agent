@@ -17,12 +17,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
-from opentelemetry.trace import SpanKind, Status, StatusCode, Tracer
+from opentelemetry.trace import SpanKind, Status, StatusCode
 from opentelemetry.util.genai.extended_span_utils import (
     _apply_execute_tool_finish_attributes,
 )
@@ -35,13 +34,17 @@ logger = logging.getLogger(__name__)
 
 def _get_tool_description(instance, tool_name):
     """Get tool description from toolkit."""
-    if not tool_name or not hasattr(instance, "tools") or not isinstance(instance.tools, dict):
+    if (
+        not tool_name
+        or not hasattr(instance, "tools")
+        or not isinstance(instance.tools, dict)
+    ):
         return None
-    
+
     tool_obj = instance.tools.get(tool_name)
     if not tool_obj:
         return None
-    
+
     # First try to get from json_schema (the correct way for AgentScope tools)
     json_schema = getattr(tool_obj, "json_schema", None)
     if isinstance(json_schema, dict):
@@ -50,7 +53,7 @@ def _get_tool_description(instance, tool_name):
             description = func_dict.get("description")
             if description:
                 return description
-    
+
     # Fallback to direct description attribute
     return getattr(tool_obj, "description", None)
 
@@ -64,13 +67,15 @@ def _get_tool_result(chunk):
     return chunk
 
 
-async def _trace_async_generator_wrapper(result_generator, invocation, span, handler):
+async def _trace_async_generator_wrapper(
+    result_generator, invocation, span, handler
+):
     """
     Async generator wrapper that traces tool execution.
-    
+
     This function wraps the async generator returned by call_tool_function,
     collects the last chunk, and applies handler's logic without context management.
-    
+
     Args:
         result_generator: The async generator to wrap (yields ToolResponse objects)
         invocation: ExecuteToolInvocation object to track tool execution data
@@ -80,7 +85,7 @@ async def _trace_async_generator_wrapper(result_generator, invocation, span, han
     has_error = False
     last_chunk = None
     error_obj = None
-    
+
     try:
         async for chunk in result_generator:
             last_chunk = chunk
@@ -89,7 +94,7 @@ async def _trace_async_generator_wrapper(result_generator, invocation, span, han
         has_error = True
         error_obj = Error(message=str(e), type=type(e))
         raise e from None
-    
+
     finally:
         # Update invocation with result data
         if not has_error and last_chunk:
@@ -99,17 +104,19 @@ async def _trace_async_generator_wrapper(result_generator, invocation, span, han
                     invocation.tool_call_result = result_content
             except Exception:
                 pass
-        
+
         # Apply handler's attribute logic (without context management)
         try:
             _apply_execute_tool_finish_attributes(span, invocation)
-            
+
             if has_error and error_obj:
                 _apply_error_attributes(span, error_obj)
                 # Record metrics with error
                 if handler._metrics_recorder is not None:
                     handler._metrics_recorder.record(
-                        span, invocation, error_type=error_obj.type.__qualname__
+                        span,
+                        invocation,
+                        error_type=error_obj.type.__qualname__,
                     )
             else:
                 # Record metrics without error
@@ -118,7 +125,7 @@ async def _trace_async_generator_wrapper(result_generator, invocation, span, han
         except Exception:
             # Don't let finalization errors break the generator
             pass
-        
+
         # End the span (we manage it, not handler)
         span.end()
 
@@ -126,7 +133,7 @@ async def _trace_async_generator_wrapper(result_generator, invocation, span, han
 async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
     """
     Async wrapper for Toolkit.call_tool_function.
-    
+
     Args:
         wrapped: The original async generator function being wrapped
         instance: The Toolkit instance
@@ -136,13 +143,19 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
     """
     # Extract tool call information
     tool_call = args[0] if args else kwargs.get("tool_call", {})
-    tool_name = tool_call.get("name", "unknown_tool") if isinstance(tool_call, dict) else "unknown_tool"
+    tool_name = (
+        tool_call.get("name", "unknown_tool")
+        if isinstance(tool_call, dict)
+        else "unknown_tool"
+    )
     tool_id = tool_call.get("id") if isinstance(tool_call, dict) else None
-    tool_args = tool_call.get("input", {}) if isinstance(tool_call, dict) else {}
-    
+    tool_args = (
+        tool_call.get("input", {}) if isinstance(tool_call, dict) else {}
+    )
+
     # Get tool description from AgentScope's toolkit
     tool_description = _get_tool_description(instance, tool_name)
-    
+
     # Create invocation object with all tool data
     invocation = ExecuteToolInvocation(
         tool_name=tool_name,
@@ -150,7 +163,7 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
         tool_description=tool_description,
         tool_call_arguments=tool_args,
     )
-    
+
     span_name = f"{GenAIAttributes.GenAiOperationNameValues.EXECUTE_TOOL.value} {tool_name}"
     with handler._tracer.start_as_current_span(
         name=span_name,
@@ -160,19 +173,21 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
         try:
             result_generator = await wrapped(*args, **kwargs)
             # Wrap the async generator to collect results and end span when done
-            return _trace_async_generator_wrapper(result_generator, invocation, span, handler)
+            return _trace_async_generator_wrapper(
+                result_generator, invocation, span, handler
+            )
         except Exception as error:
             # Handle errors before returning the generator
             error_obj = Error(message=str(error), type=type(error))
             _apply_execute_tool_finish_attributes(span, invocation)
             _apply_error_attributes(span, error_obj)
-            
+
             # Record metrics with error
             if handler._metrics_recorder is not None:
                 handler._metrics_recorder.record(
                     span, invocation, error_type=error_obj.type.__qualname__
                 )
-            
+
             span.end()
             raise error from None
 
@@ -198,10 +213,10 @@ async def wrap_formatter_format(wrapped, instance, args, kwargs, tracer=None):
         try:
             # Record only basic information
             span.set_attribute("gen_ai.operation.name", "format")
-            
+
             # Execute the wrapped async call
             result = await wrapped(*args, **kwargs)
-            
+
             return result
 
         except Exception as e:

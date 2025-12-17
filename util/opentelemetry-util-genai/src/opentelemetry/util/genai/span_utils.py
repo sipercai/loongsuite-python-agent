@@ -64,7 +64,7 @@ def _get_llm_common_attributes(
     """
     attributes: dict[str, Any] = {}
     attributes[GenAI.GEN_AI_OPERATION_NAME] = invocation.operation_name
-    
+
     # LoongSuite Extension: Logical span kind
     attributes[GEN_AI_SPAN_KIND] = GenAiSpanKindValues.LLM.value
 

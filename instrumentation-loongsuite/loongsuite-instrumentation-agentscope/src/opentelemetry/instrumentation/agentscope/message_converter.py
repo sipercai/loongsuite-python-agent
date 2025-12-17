@@ -31,6 +31,7 @@ from opentelemetry.semconv._incubating.attributes import (
 
 logger = logging.getLogger(__name__)
 
+
 def _create_text_part_dict(content: str) -> Dict[str, Any]:
     """Create text part as dict"""
     return {"type": "text", "content": content}
@@ -66,6 +67,8 @@ def _create_generic_part_dict(part_type: str, **kwargs: Any) -> Dict[str, Any]:
     part = {"type": part_type}
     part.update(kwargs)
     return part
+
+
 class BaseMessageParser(ABC):
     """Base class for message parsers"""
 
@@ -105,6 +108,8 @@ class BaseMessageParser(ABC):
             return json.loads(text) if isinstance(text, str) else {}
         except json.JSONDecodeError:
             return {}
+
+
 class OpenAIMessageParser(BaseMessageParser):
     """OpenAIformat message parser"""
 
@@ -339,7 +344,9 @@ class GeminiMessageParser(BaseMessageParser):
                 parts.append(_create_text_part_dict(item))
         return parts
 
-    def _parse_inline_data(self, inline_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _parse_inline_data(
+        self, inline_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Parse inline data"""
         mime_type = inline_data.get("mime_type", "")
         data = inline_data.get("data", "")
@@ -660,11 +667,15 @@ def get_message_converter(
         provide_name == GenAIAttributes.GenAiProviderNameValues.DEEPSEEK.value
     ):
         parser = DeepSeekMessageParser()
-    elif provide_name == "dashscope":  # AgentScopeGenAiProviderName.DASHSCOPE.value
+    elif (
+        provide_name == "dashscope"
+    ):  # AgentScopeGenAiProviderName.DASHSCOPE.value
         parser = DashScopeMessageParser()
     elif provide_name == "ollama":  # AgentScopeGenAiProviderName.OLLAMA.value
         parser = OllamaMessageParser()
-    elif provide_name == "moonshot":  # AgentScopeGenAiProviderName.MOONSHOT.value
+    elif (
+        provide_name == "moonshot"
+    ):  # AgentScopeGenAiProviderName.MOONSHOT.value
         # Moonshot uses OpenAI-compatible API format
         parser = OpenAIMessageParser()
     else:

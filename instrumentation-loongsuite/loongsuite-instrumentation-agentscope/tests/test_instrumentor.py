@@ -138,7 +138,6 @@ class TestAgentScopeInstrumentor(unittest.TestCase):
         """Tests that instrument can be called multiple times safely."""
         # First instrumentation
         self.instrumentor.instrument(tracer_provider=self.tracer_provider)
-        first_tracer = self.instrumentor._tracer
 
         # Second instrumentation (should be safe)
         self.instrumentor.instrument(tracer_provider=self.tracer_provider)
@@ -153,9 +152,10 @@ class TestAgentScopeInstrumentor(unittest.TestCase):
         try:
             self.instrumentor.uninstrument()
         except Exception as e:
-            self.fail(f"uninstrument() raised an exception when not instrumented: {e}")
+            self.fail(
+                f"uninstrument() raised an exception when not instrumented: {e}"
+            )
 
 
 if __name__ == "__main__":
     unittest.main()
-
