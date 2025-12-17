@@ -106,6 +106,7 @@ async def _trace_async_generator_wrapper(
                 pass
 
         # Apply handler's attribute logic (without context management)
+        # TODO: Fix the context management logic in genai util
         try:
             _apply_execute_tool_finish_attributes(span, invocation)
 
