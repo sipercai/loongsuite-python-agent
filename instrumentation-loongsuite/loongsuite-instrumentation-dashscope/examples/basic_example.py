@@ -13,7 +13,7 @@ Before running this example:
 import os
 
 from dashscope import Generation, TextEmbedding
-from loongsuite.instrumentation.dashscope import DashScopeInstrumentor
+from opentelemetry.instrumentation.dashscope import DashScopeInstrumentor
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider

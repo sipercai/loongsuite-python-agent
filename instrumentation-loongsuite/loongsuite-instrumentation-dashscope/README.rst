@@ -25,7 +25,7 @@ Usage
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 
-    from loongsuite.instrumentation.dashscope import DashScopeInstrumentor
+    from opentelemetry.instrumentation.dashscope import DashScopeInstrumentor
 
     # Initialize tracing
     trace.set_tracer_provider(TracerProvider())

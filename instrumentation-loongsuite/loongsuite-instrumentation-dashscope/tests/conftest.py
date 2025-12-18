@@ -12,7 +12,7 @@ import yaml
 if "DASHSCOPE_API_KEY" not in os.environ:
     os.environ["DASHSCOPE_API_KEY"] = "test_dashscope_api_key"
 
-from loongsuite.instrumentation.dashscope import DashScopeInstrumentor
+from opentelemetry.instrumentation.dashscope import DashScopeInstrumentor
 
 from opentelemetry.instrumentation._semconv import (
     OTEL_SEMCONV_STABILITY_OPT_IN,
