@@ -134,6 +134,9 @@ class GenAiSpanKindValues(Enum):
     RERANKER = "RERANKER"
     """Document reranking operation."""
 
+    MEMORY = "MEMORY"
+    """Memory operation."""
+
 
 class GenAiExtendedOperationNameValues(Enum):
     RETRIEVE_DOCUMENTS = "retrieve_documents"

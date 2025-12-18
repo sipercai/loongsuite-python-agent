@@ -12,12 +12,11 @@ import yaml
 if "DASHSCOPE_API_KEY" not in os.environ:
     os.environ["DASHSCOPE_API_KEY"] = "test_dashscope_api_key"
 
-from opentelemetry.instrumentation.dashscope import DashScopeInstrumentor
-
 from opentelemetry.instrumentation._semconv import (
     OTEL_SEMCONV_STABILITY_OPT_IN,
     _OpenTelemetrySemanticConventionStability,
 )
+from opentelemetry.instrumentation.dashscope import DashScopeInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (

@@ -63,6 +63,7 @@ Usage:
 
 from __future__ import annotations
 
+import timeit
 from contextlib import contextmanager
 from typing import Iterator, Optional
 
@@ -150,6 +151,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             name=span_name,
             kind=SpanKind.CLIENT,
         )
+        # Record a monotonic start timestamp (seconds) for duration
+        # calculation using timeit.default_timer.
+        invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
             set_span_in_context(span)
@@ -224,6 +228,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             name=f"{GenAI.GenAiOperationNameValues.EMBEDDINGS.value} {invocation.request_model}",
             kind=SpanKind.CLIENT,
         )
+        # Record a monotonic start timestamp (seconds) for duration
+        # calculation using timeit.default_timer.
+        invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
             set_span_in_context(span)
@@ -298,6 +305,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             name=f"{GenAI.GenAiOperationNameValues.EXECUTE_TOOL.value} {invocation.tool_name}",
             kind=SpanKind.INTERNAL,
         )
+        # Record a monotonic start timestamp (seconds) for duration
+        # calculation using timeit.default_timer.
+        invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
             set_span_in_context(span)
@@ -379,6 +389,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             name=span_name,
             kind=SpanKind.INTERNAL,
         )
+        # Record a monotonic start timestamp (seconds) for duration
+        # calculation using timeit.default_timer.
+        invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
             set_span_in_context(span)
@@ -458,6 +471,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             name="retrieve_documents",
             kind=SpanKind.INTERNAL,
         )
+        # Record a monotonic start timestamp (seconds) for duration
+        # calculation using timeit.default_timer.
+        invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
             set_span_in_context(span)
@@ -530,6 +546,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             name="rerank_documents",
             kind=SpanKind.INTERNAL,
         )
+        # Record a monotonic start timestamp (seconds) for duration
+        # calculation using timeit.default_timer.
+        invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
             set_span_in_context(span)
@@ -603,6 +622,9 @@ class ExtendedTelemetryHandler(TelemetryHandler):  # pylint: disable=too-many-pu
             name=span_name,
             kind=SpanKind.CLIENT,
         )
+        # Record a monotonic start timestamp (seconds) for duration
+        # calculation using timeit.default_timer.
+        invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
             set_span_in_context(span)
