@@ -30,7 +30,7 @@ DashScope SDK where Completions.create references a non-existent attribute
 completion functionality.
 
 Usage:
-    from loongsuite.instrumentation.dashscope import DashScopeInstrumentor
+    from opentelemetry.instrumentation.dashscope import DashScopeInstrumentor
 
     DashScopeInstrumentor().instrument()
 
@@ -42,8 +42,10 @@ Usage:
 import logging
 from typing import Collection
 
-from loongsuite.instrumentation.dashscope.package import _instruments
-from loongsuite.instrumentation.dashscope.patch import (
+from wrapt import wrap_function_wrapper
+
+from opentelemetry.instrumentation.dashscope.package import _instruments
+from opentelemetry.instrumentation.dashscope.patch import (
     wrap_aio_generation_call,
     wrap_generation_call,
     wrap_image_synthesis_async_call,
@@ -52,9 +54,7 @@ from loongsuite.instrumentation.dashscope.patch import (
     wrap_text_embedding_call,
     wrap_text_rerank_call,
 )
-from loongsuite.instrumentation.dashscope.version import __version__
-from wrapt import wrap_function_wrapper
-
+from opentelemetry.instrumentation.dashscope.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.util.genai.extended_handler import (

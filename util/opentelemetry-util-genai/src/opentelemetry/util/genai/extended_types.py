@@ -82,6 +82,7 @@ class EmbeddingInvocation:
     encoding_formats: List[str] | None = None
     server_address: str | None = None
     server_port: int | None = None
+    monotonic_start_s: float | None = None
 
 
 @dataclass
@@ -103,6 +104,7 @@ class ExecuteToolInvocation:
     tool_type: str | None = None  # function, extension, datastore
     tool_call_arguments: Any = None
     tool_call_result: Any = None
+    monotonic_start_s: float | None = None
 
 
 @dataclass
@@ -125,6 +127,7 @@ class CreateAgentInvocation:
     # Server information
     server_address: str | None = None
     server_port: int | None = None
+    monotonic_start_s: float | None = None
 
 
 @dataclass
@@ -176,6 +179,7 @@ class InvokeAgentInvocation:
     # Server information
     server_address: str | None = None
     server_port: int | None = None
+    monotonic_start_s: float | None = None
 
 
 @dataclass
@@ -196,6 +200,7 @@ class RetrieveInvocation:
     )
     server_address: str | None = None
     server_port: int | None = None
+    monotonic_start_s: float | None = None
 
 
 @dataclass
@@ -229,3 +234,4 @@ class RerankInvocation:
     output_documents: Any = (
         None  # gen_ai.rerank.output_documents (optional, sensitive)
     )
+    monotonic_start_s: float | None = None
