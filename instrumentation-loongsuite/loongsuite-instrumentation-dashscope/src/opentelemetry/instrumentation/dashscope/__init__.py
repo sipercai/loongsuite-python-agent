@@ -42,6 +42,8 @@ Usage:
 import logging
 from typing import Collection
 
+from wrapt import wrap_function_wrapper
+
 from opentelemetry.instrumentation.dashscope.package import _instruments
 from opentelemetry.instrumentation.dashscope.patch import (
     wrap_aio_generation_call,
@@ -53,8 +55,6 @@ from opentelemetry.instrumentation.dashscope.patch import (
     wrap_text_rerank_call,
 )
 from opentelemetry.instrumentation.dashscope.version import __version__
-from wrapt import wrap_function_wrapper
-
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.util.genai.extended_handler import (
