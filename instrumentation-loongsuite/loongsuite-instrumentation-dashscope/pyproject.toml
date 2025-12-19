@@ -52,5 +52,5 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/loongsuite"]
+packages = ["src/opentelemetry"]
 
