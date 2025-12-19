@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- **LLM Content Capture**: Fixed critical bug where LLM layer input/output messages were not being captured in spans
+  - Removed duplicate message conversion in `convert_agentscope_messages_to_genai_format` that was causing content loss
+  - Dict messages are already in parts format from `extract_llm_attributes`, no need to re-convert with `get_message_converter`
+  - Simplified message conversion logic to avoid redundant transformations
+  - Enhanced test coverage with comprehensive LLM I/O content verification
+
 ### Breaking Changes
 - **Minimum AgentScope version requirement**: Only supports AgentScope 1.0.0 and above. Previous 0.x versions are not supported.
 
