@@ -65,9 +65,7 @@ class TestSpanContentCapture:
             == "invoke_agent"
         ]
 
-        assert (
-            len(agent_spans) > 0
-        ), "Expected at least one invoke_agent span"
+        assert len(agent_spans) > 0, "Expected at least one invoke_agent span"
 
         agent_span = agent_spans[0]
         agent_attrs = dict(agent_span.attributes)
@@ -76,31 +74,35 @@ class TestSpanContentCapture:
         print(f"Agent name: {agent_attrs.get('gen_ai.agent.name')}")
 
         # Verify Agent input content
-        assert (
-            GenAIAttributes.GEN_AI_INPUT_MESSAGES in agent_attrs
-        ), "Agent span missing GEN_AI_INPUT_MESSAGES"
+        assert GenAIAttributes.GEN_AI_INPUT_MESSAGES in agent_attrs, (
+            "Agent span missing GEN_AI_INPUT_MESSAGES"
+        )
 
         agent_input = agent_attrs[GenAIAttributes.GEN_AI_INPUT_MESSAGES]
-        print(f"\nAgent input content captured (first 200 chars):")
-        print(f"  {agent_input[:200] if isinstance(agent_input, str) else agent_input}")
+        print("\nAgent input content captured (first 200 chars):")
+        print(
+            f"  {agent_input[:200] if isinstance(agent_input, str) else agent_input}"
+        )
 
         # Verify input content contains user message
         if isinstance(agent_input, str):
             try:
                 input_data = json.loads(agent_input)
-                assert "Hello" in str(
-                    input_data
-                ), "Agent input should contain 'Hello'"
+                assert "Hello" in str(input_data), (
+                    "Agent input should contain 'Hello'"
+                )
             except json.JSONDecodeError:
-                assert "Hello" in agent_input, "Agent input should contain 'Hello'"
+                assert "Hello" in agent_input, (
+                    "Agent input should contain 'Hello'"
+                )
 
         # Verify Agent output content
-        assert (
-            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in agent_attrs
-        ), "Agent span missing GEN_AI_OUTPUT_MESSAGES"
+        assert GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in agent_attrs, (
+            "Agent span missing GEN_AI_OUTPUT_MESSAGES"
+        )
 
         agent_output = agent_attrs[GenAIAttributes.GEN_AI_OUTPUT_MESSAGES]
-        print(f"\nAgent output content captured (first 200 chars):")
+        print("\nAgent output content captured (first 200 chars):")
         print(
             f"  {agent_output[:200] if isinstance(agent_output, str) else agent_output}"
         )
@@ -124,19 +126,23 @@ class TestSpanContentCapture:
         print(f"Model: {chat_attrs.get(GenAIAttributes.GEN_AI_REQUEST_MODEL)}")
 
         # Verify LLM input content
-        assert (
-            GenAIAttributes.GEN_AI_INPUT_MESSAGES in chat_attrs
-        ), "LLM chat span missing GEN_AI_INPUT_MESSAGES - this is a critical issue"
+        assert GenAIAttributes.GEN_AI_INPUT_MESSAGES in chat_attrs, (
+            "LLM chat span missing GEN_AI_INPUT_MESSAGES - this is a critical issue"
+        )
 
         llm_input = chat_attrs[GenAIAttributes.GEN_AI_INPUT_MESSAGES]
-        print(f"\nLLM input content captured (first 200 chars):")
-        print(f"  {llm_input[:200] if isinstance(llm_input, str) else llm_input}")
+        print("\nLLM input content captured (first 200 chars):")
+        print(
+            f"  {llm_input[:200] if isinstance(llm_input, str) else llm_input}"
+        )
 
         # Verify input content structure and content
         if isinstance(llm_input, str):
             try:
                 input_msgs = json.loads(llm_input)
-                assert isinstance(input_msgs, list), "LLM input should be a list"
+                assert isinstance(input_msgs, list), (
+                    "LLM input should be a list"
+                )
                 assert len(input_msgs) > 0, "LLM input should not be empty"
 
                 # Check if there's a user message (content is in parts array)
@@ -145,28 +151,33 @@ class TestSpanContentCapture:
                     if msg.get("role") == "user":
                         parts = msg.get("parts", [])
                         for part in parts:
-                            if part.get("type") == "text" and "Hello" in part.get("content", ""):
+                            if part.get(
+                                "type"
+                            ) == "text" and "Hello" in part.get("content", ""):
                                 has_user_msg = True
                                 break
-                
-                assert has_user_msg, "LLM input should contain user message with 'Hello'"
+
+                assert has_user_msg, (
+                    "LLM input should contain user message with 'Hello'"
+                )
                 print("  LLM input contains user message")
             except json.JSONDecodeError as e:
                 pytest.fail(f"LLM input is not valid JSON: {e}")
 
         # Verify LLM output content
-        assert (
-            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in chat_attrs
-        ), "LLM chat span missing GEN_AI_OUTPUT_MESSAGES - this is a critical issue"
+        assert GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in chat_attrs, (
+            "LLM chat span missing GEN_AI_OUTPUT_MESSAGES - this is a critical issue"
+        )
 
         llm_output = chat_attrs[GenAIAttributes.GEN_AI_OUTPUT_MESSAGES]
-
 
         # Verify output content structure
         if isinstance(llm_output, str):
             try:
                 output_msgs = json.loads(llm_output)
-                assert isinstance(output_msgs, list), "LLM output should be a list"
+                assert isinstance(output_msgs, list), (
+                    "LLM output should be a list"
+                )
                 assert len(output_msgs) > 0, "LLM output should not be empty"
                 print("  LLM output structure is correct")
             except json.JSONDecodeError as e:
@@ -176,14 +187,13 @@ class TestSpanContentCapture:
 
         # Verify that chat span is part of the same trace
         if agent_span and chat_span:
-            assert (
-                chat_span.parent
-            ), "Chat span should have a parent"
-            assert (
-                chat_span.context.trace_id == agent_span.context.trace_id
-            ), "Chat span should be in the same trace as agent span"
-            print("LLM chat span is in the same trace as agent invoke_agent span")
-
+            assert chat_span.parent, "Chat span should have a parent"
+            assert chat_span.context.trace_id == agent_span.context.trace_id, (
+                "Chat span should be in the same trace as agent span"
+            )
+            print(
+                "LLM chat span is in the same trace as agent invoke_agent span"
+            )
 
     @pytest.mark.vcr()
     def test_span_content_with_span_and_event(
@@ -239,12 +249,12 @@ class TestSpanContentCapture:
             agent_attrs = dict(agent_span.attributes)
 
             print("\n=== Agent Span Content ===")
-            assert (
-                GenAIAttributes.GEN_AI_INPUT_MESSAGES in agent_attrs
-            ), "Agent span missing input content"
-            assert (
-                GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in agent_attrs
-            ), "Agent span missing output content"
+            assert GenAIAttributes.GEN_AI_INPUT_MESSAGES in agent_attrs, (
+                "Agent span missing input content"
+            )
+            assert GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in agent_attrs, (
+                "Agent span missing output content"
+            )
 
             print("Agent span has input messages")
             print("Agent span has output messages")
@@ -264,12 +274,12 @@ class TestSpanContentCapture:
         chat_attrs = dict(chat_span.attributes)
 
         print("\n=== LLM Chat Span Content ===")
-        assert (
-            GenAIAttributes.GEN_AI_INPUT_MESSAGES in chat_attrs
-        ), "LLM chat span missing GEN_AI_INPUT_MESSAGES"
-        assert (
-            GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in chat_attrs
-        ), "LLM chat span missing GEN_AI_OUTPUT_MESSAGES"
+        assert GenAIAttributes.GEN_AI_INPUT_MESSAGES in chat_attrs, (
+            "LLM chat span missing GEN_AI_INPUT_MESSAGES"
+        )
+        assert GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in chat_attrs, (
+            "LLM chat span missing GEN_AI_OUTPUT_MESSAGES"
+        )
 
         print("LLM span has input messages")
         print("LLM span has output messages")
@@ -365,7 +375,9 @@ class TestSpanContentCapture:
             print("\n=== Agent Span (Content capture disabled) ===")
 
             # Content should not be captured
-            has_input_messages = GenAIAttributes.GEN_AI_INPUT_MESSAGES in agent_attrs
+            has_input_messages = (
+                GenAIAttributes.GEN_AI_INPUT_MESSAGES in agent_attrs
+            )
             has_output_messages = (
                 GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in agent_attrs
             )
@@ -373,16 +385,18 @@ class TestSpanContentCapture:
             print(f"Has input messages: {has_input_messages}")
             print(f"Has output messages: {has_output_messages}")
 
-            assert (
-                not has_input_messages
-            ), "Agent span should NOT have input messages when content capture is disabled"
-            assert (
-                not has_output_messages
-            ), "Agent span should NOT have output messages when content capture is disabled"
+            assert not has_input_messages, (
+                "Agent span should NOT have input messages when content capture is disabled"
+            )
+            assert not has_output_messages, (
+                "Agent span should NOT have output messages when content capture is disabled"
+            )
 
             # But basic attributes should exist
             assert GenAIAttributes.GEN_AI_OPERATION_NAME in agent_attrs
-            print("Agent span correct: no content captured, but has basic attributes")
+            print(
+                "Agent span correct: no content captured, but has basic attributes"
+            )
 
         # ==================== Verify LLM Layer ====================
         chat_spans = [
@@ -400,7 +414,9 @@ class TestSpanContentCapture:
             print("\n=== LLM Chat Span (Content capture disabled) ===")
 
             # Content should not be captured
-            has_input_messages = GenAIAttributes.GEN_AI_INPUT_MESSAGES in chat_attrs
+            has_input_messages = (
+                GenAIAttributes.GEN_AI_INPUT_MESSAGES in chat_attrs
+            )
             has_output_messages = (
                 GenAIAttributes.GEN_AI_OUTPUT_MESSAGES in chat_attrs
             )
@@ -408,17 +424,20 @@ class TestSpanContentCapture:
             print(f"Has input messages: {has_input_messages}")
             print(f"Has output messages: {has_output_messages}")
 
-            assert (
-                not has_input_messages
-            ), "LLM chat span should NOT have input messages when content capture is disabled"
-            assert (
-                not has_output_messages
-            ), "LLM chat span should NOT have output messages when content capture is disabled"
+            assert not has_input_messages, (
+                "LLM chat span should NOT have input messages when content capture is disabled"
+            )
+            assert not has_output_messages, (
+                "LLM chat span should NOT have output messages when content capture is disabled"
+            )
 
             # But basic attributes should exist
             assert GenAIAttributes.GEN_AI_OPERATION_NAME in chat_attrs
             assert GenAIAttributes.GEN_AI_REQUEST_MODEL in chat_attrs
-            print("LLM span correct: no content captured, but has basic attributes")
+            print(
+                "LLM span correct: no content captured, but has basic attributes"
+            )
 
-        print("\nNO_CONTENT mode test passed: Neither Agent nor LLM layer captured content")
-
+        print(
+            "\nNO_CONTENT mode test passed: Neither Agent nor LLM layer captured content"
+        )
