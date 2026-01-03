@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import base64
 from contextvars import Token
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, is_dataclass
 from enum import Enum
 from typing import Any, Dict, Literal, Optional, Protocol, Type, Union
 
@@ -119,7 +119,7 @@ class Blob:
         mime_type: Optional[str] = None,
         content: Optional[bytes] = None,
         base64_content: Optional[str] = None,
-        type: Literal["blob"] = "blob",
+        type: Literal["blob"] = "blob",  # noqa: A002
     ):
         """Initialize Blob.
 
@@ -132,7 +132,8 @@ class Blob:
         """
         if content is None and base64_content is None:
             raise ValueError(
-                "either content or base64_content must be provided")
+                "either content or base64_content must be provided"
+            )
 
         self.modality = modality
         self.mime_type = mime_type
@@ -147,7 +148,8 @@ class Blob:
             if self._base64_content is None:
                 raise ValueError("content is not set")
             self._content = base64.b64decode(
-                self._base64_content, validate=True)
+                self._base64_content, validate=True
+            )
         return self._content
 
     @content.setter
@@ -162,8 +164,9 @@ class Blob:
         if self._base64_content is None:
             if self._content is None:
                 raise ValueError("content is not set")
-            self._base64_content = base64.b64encode(
-                self._content).decode("utf-8")
+            self._base64_content = base64.b64encode(self._content).decode(
+                "utf-8"
+            )
         return self._base64_content
 
     @base64_content.setter
@@ -344,3 +347,12 @@ class LLMInvocation:
 class Error:
     message: str
     type: Type[BaseException]
+
+
+def obj_to_dict(obj: object) -> dict[str, Any]:
+    """Convert object to dict, handling both dataclass and custom types."""
+    if hasattr(obj, "to_serializable_object"):
+        return obj.to_serializable_object()  # type: ignore[no-any-return, union-attr]
+    if is_dataclass(obj) and not isinstance(obj, type):
+        return asdict(obj)
+    return obj  # type: ignore[return-value]

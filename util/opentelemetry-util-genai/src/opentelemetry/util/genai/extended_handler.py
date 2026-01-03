@@ -99,7 +99,7 @@ from opentelemetry.util.genai.types import Error, LLMInvocation
 class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):
     """
     Extended Telemetry Handler that supports additional GenAI operations.
-    
+
     This class extends the base TelemetryHandler to support:
     - Create agent operations
     - Embedding operations
@@ -124,7 +124,7 @@ class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):
         # Replace the base metrics recorder with extended one
         meter = get_meter(__name__, meter_provider=meter_provider)
         self._metrics_recorder = ExtendedInvocationMetricsRecorder(meter)
-        
+
         # Initialize multimodal processing (from Mixin)
         self._init_multimodal()
 
@@ -134,42 +134,44 @@ class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):
 
     def stop_llm(self, invocation: LLMInvocation) -> LLMInvocation:
         """Stop an LLM invocation, with async multimodal processing if needed.
-        
+
         For invocations with multimodal data, this method:
         1. Records the actual end time
         2. Detaches context immediately (non-blocking)
         3. Queues the multimodal processing for async execution
-        
+
         Principle: Never block the user application.
         """
         if invocation.context_token is None or invocation.span is None:
             return invocation
-        
+
         # Record actual end time
         invocation.monotonic_end_s = timeit.default_timer()
-        
+
         # Try async multimodal processing
         if self.process_multimodal_stop(invocation):
             return invocation
-        
+
         # No multimodal: use parent's sync path
         return super().stop_llm(invocation)
 
-    def fail_llm(self, invocation: LLMInvocation, error: Error) -> LLMInvocation:
+    def fail_llm(
+        self, invocation: LLMInvocation, error: Error
+    ) -> LLMInvocation:
         """Fail an LLM invocation, with async multimodal processing if needed.
-        
+
         Similar to stop_llm but includes error handling.
         Principle: Never block the user application.
         """
         if invocation.context_token is None or invocation.span is None:
             return invocation
-        
+
         invocation.monotonic_end_s = timeit.default_timer()
-        
+
         # Try async multimodal processing
         if self.process_multimodal_fail(invocation, error):
             return invocation
-        
+
         # No multimodal: use parent's sync path
         return super().fail_llm(invocation, error)
 

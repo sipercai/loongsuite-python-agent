@@ -24,54 +24,64 @@
 注意：本模块不创建具体实例，只管理单例。
 具体实例由 ARMS storage.py 等外部模块创建并通过 set_*() 注册。
 """
+
 from __future__ import annotations
 
 from typing import Optional
 
 from opentelemetry.util._once import Once
-from opentelemetry.util.genai._multimodal_upload._base import (PreUploader,
-                                                               PreUploadItem,
-                                                               Uploader,
-                                                               UploadItem)
-try:
-    from opentelemetry.util.genai._multimodal_upload.fs_uploader import FsUploader
-    from opentelemetry.util.genai._multimodal_upload.pre_uploader import MultimodalPreUploader
-except ImportError:
-    FsUploader = None  # type: ignore
-    MultimodalPreUploader = None  # type: ignore
+from opentelemetry.util.genai._multimodal_upload._base import (
+    PreUploader,
+    PreUploadItem,
+    Uploader,
+    UploadItem,
+)
 
-_UPLOADER: Optional[Uploader] = None
-_UPLOADER_SET_ONCE = Once()
-_PREUPLOADER: Optional[PreUploader] = None
-_PREUPLOADER_SET_ONCE = Once()
+try:
+    from opentelemetry.util.genai._multimodal_upload.fs_uploader import (
+        FsUploader,
+    )
+    from opentelemetry.util.genai._multimodal_upload.pre_uploader import (
+        MultimodalPreUploader,
+    )
+except ImportError:
+    FsUploader = None
+    MultimodalPreUploader = None
+
+_uploader: Optional[Uploader] = None
+_uploader_set_once = Once()
+_preuploader: Optional[PreUploader] = None
+_preuploader_set_once = Once()
 
 
 def set_uploader(uploader: Uploader) -> None:
     """设置全局 Uploader 实例（只能设置一次）"""
-    def _set() -> None:
-        global _UPLOADER  # pylint: disable=global-statement
-        _UPLOADER = uploader
 
-    _UPLOADER_SET_ONCE.do_once(_set)
+    def _set() -> None:
+        global _uploader  # pylint: disable=global-statement
+        _uploader = uploader
+
+    _uploader_set_once.do_once(_set)
 
 
 def get_uploader() -> Optional[Uploader]:
     """获取全局 Uploader 实例"""
-    return _UPLOADER
+    return _uploader
 
 
 def set_pre_uploader(pre_uploader: PreUploader) -> None:
     """设置全局 PreUploader 实例（只能设置一次）"""
-    def _set() -> None:
-        global _PREUPLOADER  # pylint: disable=global-statement
-        _PREUPLOADER = pre_uploader
 
-    _PREUPLOADER_SET_ONCE.do_once(_set)
+    def _set() -> None:
+        global _preuploader  # pylint: disable=global-statement
+        _preuploader = pre_uploader
+
+    _preuploader_set_once.do_once(_set)
 
 
 def get_pre_uploader() -> Optional[PreUploader]:
     """获取全局 PreUploader 实例"""
-    return _PREUPLOADER
+    return _preuploader
 
 
 __all__ = [
@@ -86,4 +96,3 @@ __all__ = [
     "set_pre_uploader",
     "get_pre_uploader",
 ]
-

@@ -16,6 +16,7 @@
 
 支持 fsspec 协议（本地、OSS、SLS等）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -33,11 +34,15 @@ from typing import Any, Deque, Dict, Optional, Tuple, cast
 
 import fsspec
 import httpx
+
 from opentelemetry.instrumentation.utils import suppress_http_instrumentation
-from opentelemetry.util.genai._multimodal_upload._base import (Uploader,
-                                                               UploadItem)
-from opentelemetry.util.genai.extended_environment_variables import \
-    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_SSL_VERIFY
+from opentelemetry.util.genai._multimodal_upload._base import (
+    Uploader,
+    UploadItem,
+)
+from opentelemetry.util.genai.extended_environment_variables import (
+    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_SSL_VERIFY,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -65,9 +70,9 @@ class _Task:
 
 class FsUploader(Uploader):
     """基于 fsspec 的通用文件上传器。
-    
+
     支持多种后端存储：本地文件系统、OSS、SLS 等。
-    
+
     - Enqueue via upload(path, content, skip_if_exists=True)
     - Background pool writes to fsspec filesystem.
     - LRU cache avoids re-upload when filename already derived from content hash.
@@ -88,7 +93,10 @@ class FsUploader(Uploader):
         upload_retry_delay: float = 1.0,
     ) -> None:
         # allow passing credentials/endpoint to fsspec
-        fs, fs_base = cast(Tuple[Any, Any], fsspec.url_to_fs(base_path, **(storage_options or {})))  # type: ignore[reportUnknownVariableType]
+        fs, fs_base = cast(
+            Tuple[Any, Any],
+            fsspec.url_to_fs(base_path, **(storage_options or {})),
+        )
         self._fs = fs
         self._base_path = self._fs.unstrip_protocol(fs_base)
         self._raw_base_path = base_path
@@ -113,7 +121,9 @@ class FsUploader(Uploader):
         self._auto_mkdirs = auto_mkdirs
         self._content_type = content_type
         self._storage_options = storage_options or {}
-        self._max_upload_retries = max_upload_retries  # 0 means infinite retries
+        self._max_upload_retries = (
+            max_upload_retries  # 0 means infinite retries
+        )
         self._upload_retry_delay = upload_retry_delay
         self._max_workers = max_workers  # 保存以便 fork 后重建
         self._shutdown_called = False  # 幂等标志
@@ -123,10 +133,12 @@ class FsUploader(Uploader):
 
         # background dispatcher
         self._dispatcher_thread = threading.Thread(
-            target=self._dispatcher_loop, name="FsUploader-Dispatcher", daemon=True
+            target=self._dispatcher_loop,
+            name="FsUploader-Dispatcher",
+            daemon=True,
         )
         self._dispatcher_thread.start()
-        
+
         # register_at_fork: 在子进程中重置状态
         # 使用弱引用避免阻止实例被 GC 回收
         if hasattr(os, "register_at_fork"):
@@ -160,12 +172,14 @@ class FsUploader(Uploader):
         """
         if self._shutdown_event.is_set():
             return False
-        
+
         # 验证参数
         if item.data is None and item.source_uri is None:
-            _logger.error("Either data or source_uri must be provided in UploadItem")
+            _logger.error(
+                "Either data or source_uri must be provided in UploadItem"
+            )
             return False
-        
+
         data = item.data
         if isinstance(data, str):
             data = data.encode("utf-8")
@@ -185,7 +199,10 @@ class FsUploader(Uploader):
                 return False
             # Check bytes limit
             if self._max_queue_bytes > 0 and content_size > 0:
-                if self._current_queue_bytes + content_size > self._max_queue_bytes:
+                if (
+                    self._current_queue_bytes + content_size
+                    > self._max_queue_bytes
+                ):
                     _logger.warning(
                         "upload queue bytes limit exceeded (current=%d, incoming=%d, max=%d), dropping: %s",
                         self._current_queue_bytes,
@@ -197,14 +214,22 @@ class FsUploader(Uploader):
             self._queue_count += 1
             self._current_queue_bytes += content_size
             self._queue.append(
-                _Task(full_path, data, skip_if_exists, item.meta, item.content_type, item.source_uri, item.expected_size)
+                _Task(
+                    full_path,
+                    data,
+                    skip_if_exists,
+                    item.meta,
+                    item.content_type,
+                    item.source_uri,
+                    item.expected_size,
+                )
             )
         return True
 
     def shutdown(self, timeout: float = 10.0) -> None:
         """
         优雅关闭上传器。
-        
+
         设计原则：
         1. 幂等设计：可被多次调用
         2. 先等待队列清空
@@ -216,12 +241,12 @@ class FsUploader(Uploader):
         if self._shutdown_called:
             return
         self._shutdown_called = True
-        
+
         # 如果 shutdown_event 已设置（异常情况），直接返回
         if self._shutdown_event.is_set():
             _logger.warning("Uploader already shutdown")
             return
-            
+
         deadline = time.time() + timeout
 
         # 阶段 1: 等待队列清空（有限时间）
@@ -231,18 +256,18 @@ class FsUploader(Uploader):
                 if remaining <= 0:
                     _logger.warning(
                         "shutdown timeout, %d tasks remaining in queue",
-                        self._queue_count
+                        self._queue_count,
                     )
                     break
                 self._queue_cond.wait(timeout=remaining)
 
         # 阶段 2: 设置 shutdown 标志，停止 dispatcher
         self._shutdown_event.set()
-        
+
         # 阶段 3: 等待 dispatcher 线程退出
         remaining = max(0.0, deadline - time.time())
         self._dispatcher_thread.join(timeout=remaining)
-        
+
         # 阶段 4: 关闭线程池
         # 使用 wait=False，超时后直接退出
         # 设计原则：以 _queue_count 为核心等待条件
@@ -250,7 +275,7 @@ class FsUploader(Uploader):
         # - 超时情况：超时后直接退出，daemon 线程会在进程退出时自动终止
         # 这样既能尽量不丢数据，又能保证有限时间内退出
         self._executor.shutdown(wait=False)
-    
+
     def _at_fork_reinit(self) -> None:
         """Fork 后在子进程中重建资源"""
         _logger.debug("[_at_fork_reinit] FsUploader reinitializing after fork")
@@ -263,15 +288,15 @@ class FsUploader(Uploader):
         self._queue_count = 0
         self._current_queue_bytes = 0
         self._lru_uploaded.clear()
-        
+
         # 重建线程池
         self._executor = ThreadPoolExecutor(max_workers=self._max_workers)
-        
+
         # 重启 dispatcher
         self._dispatcher_thread = threading.Thread(
             target=self._dispatcher_loop,
             name="FsUploader-Dispatcher",
-            daemon=True
+            daemon=True,
         )
         self._dispatcher_thread.start()
         self._pid = os.getpid()
@@ -304,12 +329,16 @@ class FsUploader(Uploader):
 
             # 如果是下载-上传任务，先下载
             if task.source_uri and task.content is None:
-                content = self._download_content(task.source_uri, max_size=30 * 1024 * 1024)
+                content = self._download_content(
+                    task.source_uri, max_size=30 * 1024 * 1024
+                )
                 if content is None:
-                    _logger.warning(f"Failed to download, skip: {task.source_uri}")
+                    _logger.warning(
+                        f"Failed to download, skip: {task.source_uri}"
+                    )
                     return
                 task.content = content
-                
+
                 # 更新队列字节数（实际大小 - 预估大小）
                 size_diff = len(content) - task.expected_size
                 if size_diff != 0:
@@ -319,6 +348,11 @@ class FsUploader(Uploader):
             # ensure dir
             if self._auto_mkdirs:
                 self._ensure_parent(task.path)
+
+            # 确保 content 存在
+            if task.content is None:
+                _logger.warning(f"No content for task: {task.path}")
+                return
 
             while True:
                 attempt += 1
@@ -341,7 +375,9 @@ class FsUploader(Uploader):
                     # Check if we should retry (max_retries=0 means infinite)
                     if max_retries > 0 and attempt >= max_retries:
                         _logger.exception(
-                            "upload failed after %d attempts: %s", attempt, task.path
+                            "upload failed after %d attempts: %s",
+                            attempt,
+                            task.path,
                         )
                         return
                     _logger.warning(
@@ -360,23 +396,33 @@ class FsUploader(Uploader):
         with self._queue_cond:
             self._queue_count -= 1
             # 使用实际大小或预估大小
-            size_to_release = len(task.content) if task.content else task.expected_size
+            size_to_release = (
+                len(task.content) if task.content else task.expected_size
+            )
             self._current_queue_bytes -= size_to_release
             self._queue_cond.notify_all()
 
-    def _download_content(self, uri: str, max_size: int, timeout: float = 30.0) -> Optional[bytes]:
+    def _download_content(
+        self, uri: str, max_size: int, timeout: float = 30.0
+    ) -> Optional[bytes]:
         """下载 URI 内容，使用 stream + BytesIO 避免内存翻倍"""
         # 使用 suppress_http_instrumentation 避免内部 HTTP 请求被探针捕获
         with suppress_http_instrumentation():
             try:
-                with httpx.Client(timeout=timeout, verify=self._ssl_verify) as client:
+                with httpx.Client(
+                    timeout=timeout, verify=self._ssl_verify
+                ) as client:
                     with client.stream("GET", uri) as response:
                         response.raise_for_status()
                         buffer = io.BytesIO()
                         try:
-                            for chunk in response.iter_bytes(chunk_size=64 * 1024):
+                            for chunk in response.iter_bytes(
+                                chunk_size=64 * 1024
+                            ):
                                 if buffer.tell() + len(chunk) > max_size:
-                                    _logger.warning(f"Download exceeds max size {max_size}, abort: {uri}")
+                                    _logger.warning(
+                                        f"Download exceeds max size {max_size}, abort: {uri}"
+                                    )
                                     return None
                                 buffer.write(chunk)
                             return buffer.getvalue()
@@ -471,7 +517,8 @@ class FsUploader(Uploader):
                 return bool(headers)
             except Exception:
                 _logger.exception(
-                    "OSS pipe_file failed, falling back to standard write: %s", path
+                    "OSS pipe_file failed, falling back to standard write: %s",
+                    path,
                 )
                 # fall through to generic write
 
@@ -488,7 +535,8 @@ class FsUploader(Uploader):
                 return bool(sls_headers)
             except Exception:
                 _logger.exception(
-                    "SLS pipe_file failed, falling back to standard write: %s", path
+                    "SLS pipe_file failed, falling back to standard write: %s",
+                    path,
                 )
                 # fall through to generic write
 
@@ -497,9 +545,7 @@ class FsUploader(Uploader):
         if content_type:
             base_kwargs["content_type"] = content_type
         try:
-            with self._fs.open(
-                path, "wb", **base_kwargs
-            ) as f:
+            with self._fs.open(path, "wb", **base_kwargs) as f:
                 f.write(content)
         except TypeError:
             with self._fs.open(path, "wb") as f:
@@ -517,8 +563,5 @@ class FsUploader(Uploader):
             ) as f:
                 f.write(data)
         except TypeError:
-            with self._fs.open(
-                sidecar, "w"
-            ) as f:
+            with self._fs.open(sidecar, "w") as f:
                 f.write(data)
-
