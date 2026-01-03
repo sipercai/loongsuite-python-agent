@@ -47,7 +47,7 @@ from opentelemetry.semconv._incubating.attributes import (
 )
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.util.genai.completion_hook import CompletionHook
-from opentelemetry.util.genai.types import (
+from opentelemetry.util.genai.types import (  # pylint: disable=no-name-in-module
     ContentCapturingMode,
     InputMessage,
     OutputMessage,
