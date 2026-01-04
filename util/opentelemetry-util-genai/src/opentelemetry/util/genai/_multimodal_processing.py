@@ -63,6 +63,7 @@ from opentelemetry.util.genai.span_utils import (
     _maybe_emit_llm_event,
 )
 from opentelemetry.util.genai.types import (
+    Base64Blob,
     Blob,
     Error,
     InputMessage,
@@ -288,12 +289,7 @@ class MultimodalProcessingMixin:
                 if not hasattr(msg, "parts") or not msg.parts:
                     continue
                 for part in msg.parts:
-                    # 检测 BlobPart, Blob, UriPart, Uri
-                    if isinstance(part, (Blob, Uri)):
-                        return True
-                    # 延迟导入检测 aliyun 类型
-                    part_type = type(part).__name__
-                    if part_type in ("BlobPart", "UriPart"):
+                    if isinstance(part, (Base64Blob, Blob, Uri)):
                         return True
             return False
 
@@ -384,12 +380,12 @@ class MultimodalProcessingMixin:
             )
             if input_metadata:
                 span.set_attribute(
-                    GenAIEx.GEN_AI_INPUT_MULTIMODAL_METADATA,  # type: ignore[arg-type]
+                    GenAIEx.GEN_AI_INPUT_MULTIMODAL_METADATA,
                     json.dumps(input_metadata),
                 )
             if output_metadata:
                 span.set_attribute(
-                    GenAIEx.GEN_AI_OUTPUT_MULTIMODAL_METADATA,  # type: ignore[arg-type]
+                    GenAIEx.GEN_AI_OUTPUT_MULTIMODAL_METADATA,
                     json.dumps(output_metadata),
                 )
 
@@ -425,12 +421,12 @@ class MultimodalProcessingMixin:
             )
             if input_metadata:
                 span.set_attribute(
-                    GenAIEx.GEN_AI_INPUT_MULTIMODAL_METADATA,  # type: ignore[arg-type]
+                    GenAIEx.GEN_AI_INPUT_MULTIMODAL_METADATA,
                     json.dumps(input_metadata),
                 )
             if output_metadata:
                 span.set_attribute(
-                    GenAIEx.GEN_AI_OUTPUT_MULTIMODAL_METADATA,  # type: ignore[arg-type]
+                    GenAIEx.GEN_AI_OUTPUT_MULTIMODAL_METADATA,
                     json.dumps(output_metadata),
                 )
 

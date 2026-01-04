@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import asdict
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -47,11 +48,10 @@ from opentelemetry.semconv._incubating.attributes import (
 )
 from opentelemetry.trace import SpanKind, Tracer
 from opentelemetry.util.genai.completion_hook import CompletionHook
-from opentelemetry.util.genai.types import (  # pylint: disable=no-name-in-module
+from opentelemetry.util.genai.types import (
     ContentCapturingMode,
     InputMessage,
     OutputMessage,
-    obj_to_dict,  # type: ignore[attr-defined]
 )
 from opentelemetry.util.genai.utils import gen_ai_json_dumps
 
@@ -214,8 +214,8 @@ class MethodWrappers:
                     span=span,
                     log_record=event,
                 )
-                content_attributes: dict[str, list[dict[str, Any]]] = {
-                    k: [obj_to_dict(x) for x in v]
+                content_attributes = {
+                    k: [asdict(x) for x in v]
                     for k, v in [
                         (
                             GenAI.GEN_AI_SYSTEM_INSTRUCTIONS,

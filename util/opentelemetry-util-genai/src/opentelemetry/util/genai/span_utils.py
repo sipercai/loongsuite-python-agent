@@ -45,7 +45,6 @@ from opentelemetry.util.genai.types import (
     MessagePart,
     OutputMessage,
     ToolDefinition,
-    obj_to_dict  # type: ignore[attr-defined]
 )
 from opentelemetry.util.genai.utils import (
     ContentCapturingMode,
@@ -99,15 +98,15 @@ def _get_llm_messages_attributes_for_span(
         return attributes
     if input_messages:
         attributes[GenAI.GEN_AI_INPUT_MESSAGES] = gen_ai_json_dumps(
-            [obj_to_dict(message) for message in input_messages]
+            [asdict(message) for message in input_messages]
         )
     if output_messages:
         attributes[GenAI.GEN_AI_OUTPUT_MESSAGES] = gen_ai_json_dumps(
-            [obj_to_dict(message) for message in output_messages]
+            [asdict(message) for message in output_messages]
         )
     if system_instruction:
         attributes[GenAI.GEN_AI_SYSTEM_INSTRUCTIONS] = gen_ai_json_dumps(
-            [obj_to_dict(part) for part in system_instruction]
+            [asdict(part) for part in system_instruction]
         )
     return attributes
 
@@ -129,15 +128,15 @@ def _get_llm_messages_attributes_for_event(
         return attributes
     if input_messages:
         attributes[GenAI.GEN_AI_INPUT_MESSAGES] = [
-            obj_to_dict(message) for message in input_messages
+            asdict(message) for message in input_messages
         ]
     if output_messages:
         attributes[GenAI.GEN_AI_OUTPUT_MESSAGES] = [
-            obj_to_dict(message) for message in output_messages
+            asdict(message) for message in output_messages
         ]
     if system_instruction:
         attributes[GenAI.GEN_AI_SYSTEM_INSTRUCTIONS] = [
-            obj_to_dict(part) for part in system_instruction
+            asdict(part) for part in system_instruction
         ]
     return attributes
 

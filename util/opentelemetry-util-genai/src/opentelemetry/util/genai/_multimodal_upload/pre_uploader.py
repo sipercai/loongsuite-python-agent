@@ -14,13 +14,14 @@
 
 """MultimodalPreUploader - 多模态数据预处理器
 
-处理 Blob/Uri，生成 PreUploadItem 列表。
+处理 Base64Blob/Blob/Uri，生成 PreUploadItem 列表。
 实际上传由 Uploader 实现类完成。
 """
 
 from __future__ import annotations
 
 import asyncio
+import base64
 import concurrent.futures
 import hashlib
 import io
@@ -47,7 +48,7 @@ from opentelemetry.util.genai.extended_environment_variables import (
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_SSL_VERIFY,
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE,
 )
-from opentelemetry.util.genai.types import Blob, Modality, Uri
+from opentelemetry.util.genai.types import Base64Blob, Blob, Modality, Uri
 
 _logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ except ImportError:
 class MultimodalPreUploader(PreUploader):
     """多模态数据预处理器
 
-    处理 Blob/Uri，生成 PreUploadItem 列表。
+    处理 Base64Blob/Blob/Uri，生成 PreUploadItem 列表。
     实际上传由 Uploader 实现类完成。
 
     注意：只有一个 PreUploader 实现，因为预处理逻辑是通用的。
@@ -659,7 +660,7 @@ class MultimodalPreUploader(PreUploader):
         """处理消息中的多模态 parts（限制最多 10 个）"""
 
         # 第一步：遍历提取潜在的多模态 parts（最多 10 个）
-        blob_parts: List[Tuple[int, Blob]] = []
+        blob_parts: List[Tuple[int, Union[Base64Blob, Blob]]] = []
         uri_parts: List[Tuple[int, Uri]] = []
 
         for i, part in enumerate(parts):
@@ -669,7 +670,7 @@ class MultimodalPreUploader(PreUploader):
                 )
                 break
 
-            if isinstance(part, Blob):
+            if isinstance(part, (Base64Blob, Blob)):
                 blob_parts.append((i, part))
             elif isinstance(part, Uri) and self._download_enabled:
                 # 仅当启用下载功能时才处理 Uri
@@ -681,15 +682,23 @@ class MultimodalPreUploader(PreUploader):
         for i, part in blob_parts:
             try:
                 mime_type = part.mime_type or "application/octet-stream"
-                # Blob 支持 .data 和 .content 两种访问方式
-                data = part.content
-
                 # 大小限制检查
-                if len(data) > _MAX_MULTIMODAL_DATA_SIZE:
-                    _logger.debug(
-                        f"Skip Blob: size {len(data)} exceeds limit {_MAX_MULTIMODAL_DATA_SIZE}"
-                    )
-                    continue
+                if isinstance(part, Base64Blob):
+                    b64data = part.content
+                    datalen = len(b64data) * 3 // 4 - b64data.count('=', -2)
+                    if datalen > _MAX_MULTIMODAL_DATA_SIZE:
+                        _logger.debug(
+                            f"Skip Base64Blob: decoded size {datalen} exceeds limit {_MAX_MULTIMODAL_DATA_SIZE}"
+                        )
+                        continue
+                    data = base64.b64decode(b64data)
+                else:
+                    data = part.content
+                    if len(data) > _MAX_MULTIMODAL_DATA_SIZE:
+                        _logger.debug(
+                            f"Skip Blob: size {len(data)} exceeds limit {_MAX_MULTIMODAL_DATA_SIZE}, mime_type: {mime_type}"
+                        )
+                        continue
 
                 # 如果是 audio/unknown 或其他未知音频格式，尝试自动检测格式
                 if mime_type in ("audio/unknown", "audio/*", "audio"):
@@ -729,7 +738,7 @@ class MultimodalPreUploader(PreUploader):
                 parts[i] = uri_part
             except Exception as e:
                 _logger.error(
-                    f"Failed to process Blob/Blob, skip: {e}, trace_id: {trace_id}"
+                    f"Failed to process Base64Blob/Blob, skip: {e}, trace_id: {trace_id}"
                 )
                 # 保持原样，不替换
 
@@ -802,7 +811,7 @@ class MultimodalPreUploader(PreUploader):
                         if self._is_http_uri(part.uri):
                             uris.append(part.uri)
                         count += 1
-                elif isinstance(part, Blob):
+                elif isinstance(part, (Base64Blob, Blob)):
                     count += 1
 
         return uris
@@ -816,7 +825,7 @@ class MultimodalPreUploader(PreUploader):
     ) -> List[PreUploadItem]:
         """
         Preprocess multimodal data in messages:
-        - Process Blob/Blob (base64 inline data) and Uri/Uri (external references)
+        - Process Base64Blob/Blob and Uri (external references)
         - Generate complete URL: {base_path}/{date}/{md5}.{ext}
         - Replace the original part with Uri pointing to uploaded URL
         - Return the list of data to be uploaded
