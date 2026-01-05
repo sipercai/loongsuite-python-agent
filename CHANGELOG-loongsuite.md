@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `loongsuite-instrumentation-mem0`: fix unittest
+  ([#98](https://github.com/alibaba/loongsuite-python-agent/pull/98))
+
 - `loongsuite-instrumentation-mem0`: use memory handler
   ([#89](https://github.com/alibaba/loongsuite-python-agent/pull/89))
 
