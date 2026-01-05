@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""FsUploader - 基于 fsspec 的通用文件上传器
+"""FsUploader - fsspec-based generic file uploader
 
-支持 fsspec 协议（本地、OSS、SLS等）。
+Supports fsspec protocols (local, OSS, SLS, etc.).
 """
 
 from __future__ import annotations
@@ -60,18 +60,18 @@ def hash_content(content: bytes | str) -> str:
 @dataclass
 class _Task:
     path: str
-    content: Optional[bytes]  # 改为可选，DOWNLOAD_AND_UPLOAD 类型时为 None
+    content: Optional[bytes]  # Made optional, None for DOWNLOAD_AND_UPLOAD type
     skip_if_exists: bool
     meta: Optional[dict[str, str]]
     content_type: Optional[str]
-    source_uri: Optional[str] = None  # 源 URI，用于 DOWNLOAD_AND_UPLOAD 类型
-    expected_size: int = 0  # 预估大小，用于队列管理
+    source_uri: Optional[str] = None  # Source URI for DOWNLOAD_AND_UPLOAD type
+    expected_size: int = 0  # Estimated size for queue management
 
 
 class FsUploader(Uploader):
-    """基于 fsspec 的通用文件上传器。
+    """fsspec-based generic file uploader.
 
-    支持多种后端存储：本地文件系统、OSS、SLS 等。
+    Supports multiple storage backends: local filesystem, OSS, SLS, etc.
 
     - Enqueue via upload(path, content, skip_if_exists=True)
     - Background pool writes to fsspec filesystem.
@@ -116,7 +116,7 @@ class FsUploader(Uploader):
         self._queue_cond = threading.Condition(self._lock)  # for shutdown wait
         self._shutdown_event = threading.Event()
         self._lru_uploaded: OrderedDict[str, bool] = OrderedDict()
-        self._lru_lock = threading.Lock()  # 保护 LRU cache 的独立锁
+        self._lru_lock = threading.Lock()  # Dedicated lock to protect LRU cache
         self._lru_capacity = lru_cache_max_size
         self._auto_mkdirs = auto_mkdirs
         self._content_type = content_type
@@ -125,8 +125,8 @@ class FsUploader(Uploader):
             max_upload_retries  # 0 means infinite retries
         )
         self._upload_retry_delay = upload_retry_delay
-        self._max_workers = max_workers  # 保存以便 fork 后重建
-        self._shutdown_called = False  # 幂等标志
+        self._max_workers = max_workers  # Save for rebuild after fork
+        self._shutdown_called = False  # Idempotent flag
         self._ssl_verify = os.environ.get(
             OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_SSL_VERIFY, "true"
         ).lower() not in ("false", "0", "no")
@@ -139,8 +139,8 @@ class FsUploader(Uploader):
         )
         self._dispatcher_thread.start()
 
-        # register_at_fork: 在子进程中重置状态
-        # 使用弱引用避免阻止实例被 GC 回收
+        # register_at_fork: Reset state in child process
+        # Use weak reference to avoid preventing instance from being GC'd
         if hasattr(os, "register_at_fork"):
             weak_reinit = weakref.WeakMethod(self._at_fork_reinit)
             os.register_at_fork(
@@ -165,15 +165,15 @@ class FsUploader(Uploader):
         """Enqueue a file upload.
 
         Args:
-            item: 上传任务项，包含 url、data/source_uri、content_type、meta 等
-            skip_if_exists: 如果文件已存在则跳过
+            item: Upload task item containing url, data/source_uri, content_type, meta, etc.
+            skip_if_exists: Skip if file already exists
 
         Returns False if the queue is full or uploader is shutting down.
         """
         if self._shutdown_event.is_set():
             return False
 
-        # 验证参数
+        # Validate parameters
         if item.data is None and item.source_uri is None:
             _logger.error(
                 "Either data or source_uri must be provided in UploadItem"
@@ -189,7 +189,7 @@ class FsUploader(Uploader):
         if skip_if_exists and self._uploaded_cached(full_path):
             return True
 
-        # 使用实际大小或预估大小
+        # Use actual size or estimated size
         content_size = len(data) if data else item.expected_size
 
         with self._lock:
@@ -228,28 +228,28 @@ class FsUploader(Uploader):
 
     def shutdown(self, timeout: float = 10.0) -> None:
         """
-        优雅关闭上传器。
+        Gracefully shutdown the uploader.
 
-        设计原则：
-        1. 幂等设计：可被多次调用
-        2. 先等待队列清空
-        3. 设置 shutdown 标志
-        4. 等待正在执行的任务完成
-        5. 关闭线程池
+        Design principles:
+        1. Idempotent design: can be called multiple times
+        2. Wait for queue to clear first
+        3. Set shutdown flag
+        4. Wait for running tasks to complete
+        5. Shutdown thread pool
         """
-        # 幂等检查：已经关闭过则直接返回
+        # Idempotent check: return if already shut down
         if self._shutdown_called:
             return
         self._shutdown_called = True
 
-        # 如果 shutdown_event 已设置（异常情况），直接返回
+        # If shutdown_event already set (exceptional case), return directly
         if self._shutdown_event.is_set():
             _logger.warning("Uploader already shutdown")
             return
 
         deadline = time.time() + timeout
 
-        # 阶段 1: 等待队列清空（有限时间）
+        # Phase 1: Wait for queue to clear (limited time)
         with self._queue_cond:
             while self._queue_count > 0:
                 remaining = deadline - time.time()
@@ -261,38 +261,38 @@ class FsUploader(Uploader):
                     break
                 self._queue_cond.wait(timeout=remaining)
 
-        # 阶段 2: 设置 shutdown 标志，停止 dispatcher
+        # Phase 2: Set shutdown flag, stop dispatcher
         self._shutdown_event.set()
 
-        # 阶段 3: 等待 dispatcher 线程退出
+        # Phase 3: Wait for dispatcher thread to exit
         remaining = max(0.0, deadline - time.time())
         self._dispatcher_thread.join(timeout=remaining)
 
-        # 阶段 4: 关闭线程池
-        # 使用 wait=False，超时后直接退出
-        # 设计原则：以 _queue_count 为核心等待条件
-        # - 正常情况：阶段 1 等待 _queue_count == 0，所有任务完成后退出
-        # - 超时情况：超时后直接退出，daemon 线程会在进程退出时自动终止
-        # 这样既能尽量不丢数据，又能保证有限时间内退出
+        # Phase 4: Shutdown thread pool
+        # Use wait=False, exit directly after timeout
+        # Design principle: use _queue_count as core wait condition
+        # - Normal case: Phase 1 waits for _queue_count == 0, exit after all tasks complete
+        # - Timeout case: exit directly after timeout, daemon threads will terminate on process exit
+        # This ensures minimal data loss while guaranteeing exit within limited time
         self._executor.shutdown(wait=False)
 
     def _at_fork_reinit(self) -> None:
-        """Fork 后在子进程中重建资源"""
+        """Rebuild resources in child process after fork"""
         _logger.debug("[_at_fork_reinit] FsUploader reinitializing after fork")
         self._lock = threading.Lock()
         self._queue_cond = threading.Condition(self._lock)
         self._lru_lock = threading.Lock()
         self._shutdown_event = threading.Event()
-        self._shutdown_called = False  # 重置幂等标志
+        self._shutdown_called = False  # Reset idempotent flag
         self._queue.clear()
         self._queue_count = 0
         self._current_queue_bytes = 0
         self._lru_uploaded.clear()
 
-        # 重建线程池
+        # Rebuild thread pool
         self._executor = ThreadPoolExecutor(max_workers=self._max_workers)
 
-        # 重启 dispatcher
+        # Restart dispatcher
         self._dispatcher_thread = threading.Thread(
             target=self._dispatcher_loop,
             name="FsUploader-Dispatcher",
@@ -323,23 +323,23 @@ class FsUploader(Uploader):
         retry_delay = self._upload_retry_delay
 
         try:
-            # 统一在最前面检查缓存，避免不必要的下载和上传
+            # Check cache at the very beginning to avoid unnecessary download and upload
             if task.skip_if_exists and self._file_exists_or_cached(task.path):
                 return
 
-            # 如果是下载-上传任务，先下载
+            # If this is a download-upload task, download first
             if task.source_uri and task.content is None:
                 content = self._download_content(
                     task.source_uri, max_size=30 * 1024 * 1024
                 )
                 if content is None:
                     _logger.warning(
-                        f"Failed to download, skip: {task.source_uri}"
+                        "Failed to download, skip: %s", task.source_uri
                     )
                     return
                 task.content = content
 
-                # 更新队列字节数（实际大小 - 预估大小）
+                # Update queue bytes (actual size - estimated size)
                 size_diff = len(content) - task.expected_size
                 if size_diff != 0:
                     with self._lock:
@@ -349,9 +349,9 @@ class FsUploader(Uploader):
             if self._auto_mkdirs:
                 self._ensure_parent(task.path)
 
-            # 确保 content 存在
+            # Ensure content exists
             if task.content is None:
-                _logger.warning(f"No content for task: {task.path}")
+                _logger.warning("No content for task: %s", task.path)
                 return
 
             while True:
@@ -371,9 +371,11 @@ class FsUploader(Uploader):
                     # mark cache
                     self._mark_uploaded(task.path)
                     return  # success
-                except Exception as e:  # pylint: disable=broad-except
+                except (OSError, IOError, RuntimeError) as exc:
+                    # OSError/IOError: File system error (network storage, local disk)
+                    # RuntimeError: fsspec underlying error (e.g., OSS/SLS auth failure)
                     # Check if we should retry (max_retries=0 means infinite)
-                    if max_retries > 0 and attempt >= max_retries:
+                    if 0 < max_retries <= attempt:
                         _logger.exception(
                             "upload failed after %d attempts: %s",
                             attempt,
@@ -384,7 +386,7 @@ class FsUploader(Uploader):
                         "upload attempt %d failed for %s: %s, retrying in %.1fs...",
                         attempt,
                         task.path,
-                        str(e),
+                        str(exc),
                         retry_delay,
                     )
                     time.sleep(retry_delay)
@@ -395,7 +397,7 @@ class FsUploader(Uploader):
         """Release task resources and notify shutdown waiter."""
         with self._queue_cond:
             self._queue_count -= 1
-            # 使用实际大小或预估大小
+            # Use actual size or estimated size
             size_to_release = (
                 len(task.content) if task.content else task.expected_size
             )
@@ -405,8 +407,8 @@ class FsUploader(Uploader):
     def _download_content(
         self, uri: str, max_size: int, timeout: float = 30.0
     ) -> Optional[bytes]:
-        """下载 URI 内容，使用 stream + BytesIO 避免内存翻倍"""
-        # 使用 suppress_http_instrumentation 避免内部 HTTP 请求被探针捕获
+        """Download URI content using stream + BytesIO to avoid memory doubling"""
+        # Use suppress_http_instrumentation to avoid internal HTTP requests being captured by probe
         with suppress_http_instrumentation():
             try:
                 with httpx.Client(
@@ -428,15 +430,20 @@ class FsUploader(Uploader):
                             ):
                                 if buffer.tell() + len(chunk) > max_size:
                                     _logger.warning(
-                                        f"Download exceeds max size {max_size}, abort: {uri}"
+                                        "Download exceeds max size %d, abort: %s",
+                                        max_size,
+                                        uri,
                                     )
                                     return None
                                 buffer.write(chunk)
                             return buffer.getvalue()
                         finally:
                             buffer.close()
-            except Exception as e:
-                _logger.warning(f"Failed to download: {uri}, error: {e}")
+            except (httpx.HTTPError, OSError, ValueError) as exc:
+                # httpx.HTTPError: HTTP request failure (timeout, connection error, HTTP error)
+                # OSError: Low-level network/system error
+                # ValueError: Data parsing error
+                _logger.warning("Failed to download: %s, error: %s", uri, exc)
                 return None
 
     def _join(self, path: str) -> str:
@@ -455,7 +462,10 @@ class FsUploader(Uploader):
                 makedirs = getattr(self._fs, "makedirs", None)
                 if callable(makedirs):
                     makedirs(parent, exist_ok=True)
-            except Exception:  # pylint: disable=broad-except
+            except (OSError, RuntimeError, AttributeError):
+                # OSError: File system error
+                # RuntimeError: fsspec underlying error
+                # AttributeError: _fs doesn't have makedirs method (some fsspec implementations)
                 # Best effort; race-safe for remote fs
                 pass
 
@@ -485,16 +495,20 @@ class FsUploader(Uploader):
     def _is_oss(self) -> bool:
         return self._protocol == "oss"
 
-    def _build_oss_headers(self, meta: dict[str, str]) -> dict[str, str]:
+    @staticmethod
+    def _build_oss_headers(meta: dict[str, str]) -> dict[str, str]:
+        """Build OSS metadata headers"""
         headers: Dict[str, str] = {}
-        for k, v in meta.items():
-            headers[f"x-oss-meta-{k}"] = str(v)
+        for key, value in meta.items():
+            headers[f"x-oss-meta-{key}"] = str(value)
         return headers
 
-    def _build_sls_meta(self, meta: dict[str, str]) -> dict[str, str]:
+    @staticmethod
+    def _build_sls_meta(meta: dict[str, str]) -> dict[str, str]:
+        """Build SLS metadata"""
         sls_meta: Dict[str, str] = {}
-        for k, v in (meta or {}).items():
-            sls_meta[f"x-log-meta-{k}"] = str(v)
+        for key, value in (meta or {}).items():
+            sls_meta[f"x-log-meta-{key}"] = str(value)
         return sls_meta
 
     def _is_sls(self) -> bool:
@@ -522,7 +536,10 @@ class FsUploader(Uploader):
                 # pipe_file delegates to put_object(..., headers=...)
                 self._fs.pipe_file(path, content, headers=headers)
                 return bool(headers)
-            except Exception:
+            except (OSError, RuntimeError, AttributeError):
+                # OSError: File system error
+                # RuntimeError: OSS SDK error
+                # AttributeError: _fs doesn't have pipe_file method
                 _logger.exception(
                     "OSS pipe_file failed, falling back to standard write: %s",
                     path,
@@ -540,7 +557,10 @@ class FsUploader(Uploader):
                 # pipe_file delegates to put_object(..., headers=...)
                 self._fs.pipe_file(path, content, headers=sls_headers)
                 return bool(sls_headers)
-            except Exception:
+            except (OSError, RuntimeError, AttributeError):
+                # OSError: File system error
+                # RuntimeError: SLS SDK error
+                # AttributeError: _fs doesn't have pipe_file method
                 _logger.exception(
                     "SLS pipe_file failed, falling back to standard write: %s",
                     path,
@@ -552,11 +572,11 @@ class FsUploader(Uploader):
         if content_type:
             base_kwargs["content_type"] = content_type
         try:
-            with self._fs.open(path, "wb", **base_kwargs) as f:
-                f.write(content)
+            with self._fs.open(path, "wb", **base_kwargs) as file_obj:
+                file_obj.write(content)
         except TypeError:
-            with self._fs.open(path, "wb") as f:
-                f.write(content)
+            with self._fs.open(path, "wb") as file_obj:
+                file_obj.write(content)
 
         return False
 
@@ -567,8 +587,8 @@ class FsUploader(Uploader):
         try:
             with self._fs.open(
                 sidecar, "w", content_type="application/json; charset=utf-8"
-            ) as f:
-                f.write(data)
+            ) as file_obj:
+                file_obj.write(data)
         except TypeError:
-            with self._fs.open(sidecar, "w") as f:
-                f.write(data)
+            with self._fs.open(sidecar, "w") as file_obj:
+                file_obj.write(data)

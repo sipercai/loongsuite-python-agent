@@ -107,7 +107,7 @@ from opentelemetry.util.genai.span_utils import _apply_error_attributes
 from opentelemetry.util.genai.types import Error, LLMInvocation
 
 
-class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):
+class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):  # pylint: disable=too-many-public-methods
     """
     Extended Telemetry Handler that supports additional GenAI operations.
 
@@ -190,7 +190,7 @@ class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):
 
     @classmethod
     def shutdown_async_worker(cls, timeout: float = 5.0) -> None:
-        """优雅关闭 async worker"""
+        """Gracefully shutdown async worker"""
         cls.shutdown_multimodal_worker(timeout)
 
     # ==================== Create Agent Operations ====================

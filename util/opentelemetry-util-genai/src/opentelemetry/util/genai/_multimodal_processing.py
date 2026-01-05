@@ -80,13 +80,13 @@ if TYPE_CHECKING:
 
 _logger = logging.getLogger(__name__)
 
-# 异步队列最大长度
+# Async queue maximum length
 _MAX_ASYNC_QUEUE_SIZE = 1000
 
 
 @dataclass
 class _MultimodalAsyncTask:
-    """异步多模态处理任务"""
+    """Async multimodal processing task"""
 
     invocation: LLMInvocation
     method: Literal["stop", "fail"]
@@ -106,7 +106,7 @@ class MultimodalProcessingMixin:
     handler instances in the process.
     """
 
-    # 类级别共享的异步处理资源
+    # Class-level shared async processing resources
     _async_queue: ClassVar[
         Optional["queue.Queue[Optional[_MultimodalAsyncTask]]"]
     ] = None
@@ -114,11 +114,11 @@ class MultimodalProcessingMixin:
     _async_lock: ClassVar[threading.Lock] = threading.Lock()
     _atexit_handler: ClassVar[Optional[object]] = None
 
-    # 实例级别属性（由 _init_multimodal 初始化）
+    # Instance-level attributes (initialized by _init_multimodal)
     _multimodal_enabled: bool
 
     def _init_multimodal(self) -> None:
-        """初始化多模态相关的实例属性，在子类 __init__ 中调用"""
+        """Initialize multimodal-related instance attributes, called in subclass __init__"""
         upload_mode = os.getenv(
             OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE, "both"
         ).lower()
@@ -133,13 +133,13 @@ class MultimodalProcessingMixin:
     # ==================== Public Methods ====================
 
     def process_multimodal_stop(self, invocation: LLMInvocation) -> bool:
-        """处理多模态 stop_llm 请求
+        """Process multimodal stop_llm request
 
         Args:
-            invocation: LLM 调用对象
+            invocation: LLM invocation object
 
         Returns:
-            bool: 是否已处理（True 表示已异步处理，调用方无需继续；False 表示无多模态，需走同步路径）
+            bool: Whether handled (True means async processed, caller doesn't need to continue; False means no multimodal, need sync path)
         """
         if invocation.context_token is None or invocation.span is None:
             return False
@@ -147,13 +147,13 @@ class MultimodalProcessingMixin:
         if not self._should_async_process(invocation):
             return False
 
-        # 1. 先 detach context（让用户代码继续执行）
+        # 1. First detach context (let user code continue execution)
         otel_context.detach(invocation.context_token)
 
-        # 2. 确保 worker 已启动
+        # 2. Ensure worker is started
         self._ensure_async_worker()
 
-        # 3. 尝试放入队列（非阻塞）
+        # 3. Try to put into queue (non-blocking)
         async_queue = self.__class__._async_queue
         if async_queue is None:
             self._fallback_end_span(invocation)
@@ -165,7 +165,7 @@ class MultimodalProcessingMixin:
                 )
             )
         except queue.Full:
-            # 队列满：同步降级，跳过多模态处理
+            # Queue full: sync degradation, skip multimodal processing
             _logger.warning(
                 "Multimodal queue full, skipping multimodal processing"
             )
@@ -176,14 +176,14 @@ class MultimodalProcessingMixin:
     def process_multimodal_fail(
         self, invocation: LLMInvocation, error: Error
     ) -> bool:
-        """处理多模态 fail_llm 请求
+        """Process multimodal fail_llm request
 
         Args:
-            invocation: LLM 调用对象
-            error: 错误信息
+            invocation: LLM invocation object
+            error: Error information
 
         Returns:
-            bool: 是否已处理
+            bool: Whether handled
         """
         if invocation.context_token is None or invocation.span is None:
             return False
@@ -217,14 +217,14 @@ class MultimodalProcessingMixin:
 
     @classmethod
     def shutdown_multimodal_worker(cls, timeout: float = 5.0) -> None:
-        """优雅关闭 async worker
+        """Gracefully shutdown async worker
 
-        由 ArmsShutdownProcessor 调用，不需要内部调用其他组件的 shutdown。
+        Called by ArmsShutdownProcessor, no need to call other components' shutdown internally.
 
-        策略：
-        1. 尝试在 timeout 时间内向队列发送 None 信号
-        2. 如果发送成功，等待剩余时间让 worker 处理完队列中的任务
-        3. 如果发送超时，worker 可能有未处理数据（但不会阻塞调用方）
+        Strategy:
+        1. Try to send None signal to queue within timeout
+        2. If send succeeds, wait remaining time for worker to process queue tasks
+        3. If send times out, worker may have unprocessed data (but won't block caller)
         """
         if cls._async_worker is None or not cls._async_worker.is_alive():
             return
@@ -234,29 +234,29 @@ class MultimodalProcessingMixin:
 
         start_time = time.monotonic()
         try:
-            # 尝试在 timeout 时间内发送 shutdown 信号
+            # Try to send shutdown signal within timeout
             cls._async_queue.put(None, timeout=timeout)
         except queue.Full:
-            # 队列满，超时了，无法发送信号
+            # Queue full, timed out, cannot send signal
             _logger.warning(
                 "Async worker shutdown: queue full, timeout waiting to send signal"
             )
             return
 
-        # 计算剩余超时时间
+        # Calculate remaining timeout
         elapsed = time.monotonic() - start_time
         remaining = max(0.0, timeout - elapsed)
 
-        # 等待 worker 完成剩余任务
+        # Wait for worker to complete remaining tasks
         cls._async_worker.join(timeout=remaining)
 
-        # 清理状态
+        # Clean up state
         cls._async_worker = None
         cls._async_queue = None
 
     @classmethod
     def _at_fork_reinit(cls) -> None:
-        """Fork 后在子进程中重置类级别状态"""
+        """Reset class-level state in child process after fork"""
         _logger.debug(
             "[_at_fork_reinit] MultimodalProcessingMixin reinitializing after fork"
         )
@@ -268,17 +268,18 @@ class MultimodalProcessingMixin:
     # ==================== Internal Methods ====================
 
     def _should_async_process(self, invocation: LLMInvocation) -> bool:
-        """判断是否需要异步处理
+        """Determine whether async processing is needed
 
-        条件：有多模态数据 且 多模态上传开关不为 'none'
+        Condition: Has multimodal data and multimodal upload switch is not 'none'
         """
         if not self._multimodal_enabled:
             return False
 
-        return self._quick_has_multimodal(invocation)
+        return MultimodalProcessingMixin._quick_has_multimodal(invocation)
 
-    def _quick_has_multimodal(self, invocation: LLMInvocation) -> bool:
-        """快速检测是否有多模态数据（O(n)，无网络）"""
+    @staticmethod
+    def _quick_has_multimodal(invocation: LLMInvocation) -> bool:
+        """Quick detection of multimodal data (O(n), no network)"""
 
         def _check_messages(
             messages: Optional[List[InputMessage] | List[OutputMessage]],
@@ -299,7 +300,7 @@ class MultimodalProcessingMixin:
 
     @classmethod
     def _ensure_async_worker(cls) -> None:
-        """确保 worker 线程已启动（双重检查锁）"""
+        """Ensure worker thread is started (double-checked locking)"""
         if cls._async_worker is not None and cls._async_worker.is_alive():
             return
 
@@ -319,22 +320,25 @@ class MultimodalProcessingMixin:
 
     @classmethod
     def _async_worker_loop(cls) -> None:
-        """Worker 线程主循环
+        """Worker thread main loop
 
-        循环直到收到 None 信号退出。使用阻塞 get() 避免 CPU 空转。
+        Loop until None signal received to exit. Use blocking get() to avoid CPU spinning.
         """
         while True:
-            # 保存队列引用，防止 shutdown 期间被置为 None
+            # Save queue reference to prevent being set to None during shutdown
             async_queue = cls._async_queue
             if async_queue is None:
                 break
 
             try:
-                task = async_queue.get()  # 阻塞等待
-            except Exception:
-                break  # 队列异常，退出循环
+                task = async_queue.get()  # Blocking wait
+            except (EOFError, OSError) as exc:
+                # EOFError: Queue closed or broken pipe
+                # OSError: Low-level system error in queue operations
+                _logger.warning("Queue error in async worker: %s", exc)
+                break  # Queue exception, exit loop
 
-            if task is None:  # shutdown 信号
+            if task is None:  # shutdown signal
                 async_queue.task_done()
                 break
 
@@ -347,34 +351,50 @@ class MultimodalProcessingMixin:
                     handler._async_stop_llm(task)
                 elif task.method == "fail":
                     handler._async_fail_llm(task)
-            except Exception as e:
-                _logger.warning("Multimodal async processing error: %s", e)
-                # 确保 span 被结束
+            except (
+                AttributeError,
+                TypeError,
+                RuntimeError,
+                OSError,
+                ValueError,
+            ) as exc:
+                # AttributeError: Handler method or attribute missing
+                # TypeError: Method call argument type error
+                # RuntimeError: Upload or span operation runtime error
+                # OSError: Network or file system error from upload
+                # ValueError: Data validation error
+                _logger.warning("Multimodal async processing error: %s", exc)
+                # Ensure span is ended
                 try:
-                    end_time_ns = handler._compute_end_time_ns(task.invocation)
+                    end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(
+                        task.invocation
+                    )
                     span = task.invocation.span
                     if span is not None:
                         span.end(end_time=end_time_ns)
-                except Exception:
-                    pass
+                except (AttributeError, TypeError, RuntimeError) as cleanup_exc:
+                    # AttributeError: Span object missing end method
+                    # TypeError: end_time parameter type error
+                    # RuntimeError: Span already ended or invalid state
+                    _logger.debug("Failed to cleanup span: %s", cleanup_exc)
             finally:
-                # 使用局部变量避免竞态条件
+                # Use local variable to avoid race condition
                 async_queue.task_done()
 
     def _async_stop_llm(self, task: _MultimodalAsyncTask) -> None:
-        """异步停止 LLM 调用（在 worker 线程中执行）"""
+        """Async stop LLM invocation (executed in worker thread)"""
         invocation = task.invocation
         span = invocation.span
         if span is None:
             return
 
-        # 1. 获取 uploader 并处理多模态数据
+        # 1. Get uploader and process multimodal data
         uploader, pre_uploader = self._get_uploader_and_pre_uploader()
         if uploader is not None and pre_uploader is not None:
             self._separate_and_upload(span, invocation, uploader, pre_uploader)
-            # 提取并设置多模态元数据
+            # Extract and set multimodal metadata
             input_metadata, output_metadata = (
-                self._extract_multimodal_metadata(
+                MultimodalProcessingMixin._extract_multimodal_metadata(
                     invocation.input_messages, invocation.output_messages
                 )
             )
@@ -389,33 +409,33 @@ class MultimodalProcessingMixin:
                     json.dumps(output_metadata),
                 )
 
-        # 2. 执行原有的属性设置
+        # 2. Execute original attribute setting
         _apply_llm_finish_attributes(span, invocation)
 
-        # 3. 记录指标（使用 TelemetryHandler 的方法）
+        # 3. Record metrics (using TelemetryHandler's method)
         self._record_llm_metrics(invocation, span)  # type: ignore[attr-defined]
 
-        # 4. 发送事件
+        # 4. Send event
         _maybe_emit_llm_event(self._logger, span, invocation)  # type: ignore[attr-defined]
 
-        # 5. 计算正确的结束时间并结束 span
-        end_time_ns = self._compute_end_time_ns(invocation)
+        # 5. Calculate correct end time and end span
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
         span.end(end_time=end_time_ns)
 
     def _async_fail_llm(self, task: _MultimodalAsyncTask) -> None:
-        """异步失败 LLM 调用（在 worker 线程中执行）"""
+        """Async fail LLM invocation (executed in worker thread)"""
         invocation = task.invocation
         error = task.error
         span = invocation.span
         if span is None or error is None:
             return
 
-        # 1. 获取 uploader 并处理多模态数据
+        # 1. Get uploader and process multimodal data
         uploader, pre_uploader = self._get_uploader_and_pre_uploader()
         if uploader is not None and pre_uploader is not None:
             self._separate_and_upload(span, invocation, uploader, pre_uploader)
             input_metadata, output_metadata = (
-                self._extract_multimodal_metadata(
+                MultimodalProcessingMixin._extract_multimodal_metadata(
                     invocation.input_messages, invocation.output_messages
                 )
             )
@@ -430,36 +450,36 @@ class MultimodalProcessingMixin:
                     json.dumps(output_metadata),
                 )
 
-        # 2. 设置属性
+        # 2. Set attributes
         _apply_llm_finish_attributes(span, invocation)
         _apply_error_attributes(span, error)
 
-        # 3. 记录指标
+        # 3. Record metrics
         error_type = getattr(error.type, "__qualname__", None)
         self._record_llm_metrics(invocation, span, error_type=error_type)  # type: ignore[attr-defined]
 
-        # 4. 发送事件
+        # 4. Send event
         _maybe_emit_llm_event(self._logger, span, invocation, error)  # type: ignore[attr-defined]
 
-        # 5. 结束 span
-        end_time_ns = self._compute_end_time_ns(invocation)
+        # 5. End span
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
         span.end(end_time=end_time_ns)
 
     def _fallback_end_span(self, invocation: LLMInvocation) -> None:
-        """同步降级处理：跳过多模态，走原有逻辑结束 span"""
+        """Sync degradation: skip multimodal, follow original logic to end span"""
         span = invocation.span
         if span is None:
             return
         _apply_llm_finish_attributes(span, invocation)
         self._record_llm_metrics(invocation, span)  # type: ignore[attr-defined]
         _maybe_emit_llm_event(self._logger, span, invocation)  # type: ignore[attr-defined]
-        end_time_ns = self._compute_end_time_ns(invocation)
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
         span.end(end_time=end_time_ns)
 
     def _fallback_fail_span(
         self, invocation: LLMInvocation, error: Error
     ) -> None:
-        """同步降级处理：跳过多模态，走原有逻辑结束 span（带错误）"""
+        """Sync degradation: skip multimodal, follow original logic to end span (with error)"""
         span = invocation.span
         if span is None:
             return
@@ -468,20 +488,21 @@ class MultimodalProcessingMixin:
         error_type = getattr(error.type, "__qualname__", None)
         self._record_llm_metrics(invocation, span, error_type=error_type)  # type: ignore[attr-defined]
         _maybe_emit_llm_event(self._logger, span, invocation, error)  # type: ignore[attr-defined]
-        end_time_ns = self._compute_end_time_ns(invocation)
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
         span.end(end_time=end_time_ns)
 
-    def _compute_end_time_ns(self, invocation: LLMInvocation) -> int:
-        """根据 monotonic 时间计算绝对时间（纳秒）"""
+    @staticmethod
+    def _compute_end_time_ns(invocation: LLMInvocation) -> int:
+        """Calculate absolute time (nanoseconds) based on monotonic time"""
         if not invocation.monotonic_end_s or not invocation.monotonic_start_s:
             return time_ns()
 
-        # 从 span 获取 start_time（已经是 ns）
+        # Get start_time from span (already in ns)
         start_time_ns = getattr(invocation.span, "_start_time", None)
         if not start_time_ns:
             return time_ns()
 
-        # 计算 duration（ns）
+        # Calculate duration (ns)
         duration_ns = int(
             (invocation.monotonic_end_s - invocation.monotonic_start_s) * 1e9
         )
@@ -489,10 +510,15 @@ class MultimodalProcessingMixin:
 
     # ==================== Multimodal Helper Methods ====================
 
-    def _get_uploader_and_pre_uploader(self) -> Tuple[Any, Any]:
-        """延迟获取 uploader 和 pre_uploader，避免循环导入"""
+    def _get_uploader_and_pre_uploader(  # pylint: disable=no-self-use
+        self,
+    ) -> Tuple[Any, Any]:
+        """Lazily get uploader and pre_uploader to avoid circular imports
+        
+        Note: Keep as instance method for consistency with other methods in this mixin
+        """
         try:
-            from opentelemetry.util.genai._multimodal_upload import (  # noqa: PLC0415
+            from opentelemetry.util.genai._multimodal_upload import (  # pylint: disable=import-outside-toplevel
                 get_pre_uploader,
                 get_uploader,
             )
@@ -501,14 +527,14 @@ class MultimodalProcessingMixin:
         except ImportError:
             return None, None
 
-    def _separate_and_upload(
+    def _separate_and_upload(  # pylint: disable=no-self-use
         self,
         span: Span,
         invocation: LLMInvocation,
         uploader: "Uploader",
         pre_uploader: "PreUploader",
     ) -> None:
-        """分离多模态数据并提交上传"""
+        """Separate multimodal data and submit for upload"""
         try:
             span_context = span.get_span_context()
             start_time_ns = getattr(span, "_start_time", None) or int(
@@ -524,15 +550,26 @@ class MultimodalProcessingMixin:
 
             for item in upload_items:
                 uploader.upload(item)
-        except Exception as e:
-            _logger.debug(f"Error in _separate_and_upload: {e}")
+        except (
+            AttributeError,
+            TypeError,
+            OSError,
+            RuntimeError,
+            ValueError,
+        ) as exc:
+            # AttributeError: Uploader/pre_uploader method missing
+            # TypeError: Method argument type error
+            # OSError: File system or network error
+            # RuntimeError: Upload operation failed
+            # ValueError: Data validation error
+            _logger.debug("Error in _separate_and_upload: %s", exc)
 
+    @staticmethod
     def _extract_multimodal_metadata(
-        self,
         input_messages: Optional[List[InputMessage]],
         output_messages: Optional[List[OutputMessage]],
     ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-        """从消息中提取多模态元数据"""
+        """Extract multimodal metadata from messages"""
 
         def _extract_from_messages(
             messages: Optional[List[InputMessage] | List[OutputMessage]],
@@ -561,7 +598,7 @@ class MultimodalProcessingMixin:
         )
 
 
-# 模块级别注册 fork 处理
+# Module-level fork handler registration
 if hasattr(os, "register_at_fork"):
     os.register_at_fork(
         after_in_child=MultimodalProcessingMixin._at_fork_reinit

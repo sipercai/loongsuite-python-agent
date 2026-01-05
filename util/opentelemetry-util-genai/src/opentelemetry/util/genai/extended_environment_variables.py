@@ -35,8 +35,8 @@ Defaults to ``span-attributes``.
 # ============================================================================
 # Multimodal Upload Environment Variables
 #
-# 类似于 _upload/completion_hook.py 中的 OTEL_INSTRUMENTATION_GENAI_UPLOAD_BASE_PATH，
-# 多模态上传也需要配置基础路径和行为控制。
+# Similar to OTEL_INSTRUMENTATION_GENAI_UPLOAD_BASE_PATH in _upload/completion_hook.py,
+# multimodal upload also needs base path configuration and behavior control.
 # ============================================================================
 
 OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_STORAGE_BASE_PATH = (

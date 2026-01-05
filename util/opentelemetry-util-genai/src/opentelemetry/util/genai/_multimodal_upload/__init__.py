@@ -14,15 +14,15 @@
 
 """Multimodal Upload Module
 
-提供多模态数据（图片、音频、视频）的上传支持。
+Provides upload support for multimodal data (images, audio, video).
 
-职责：
-1. 定义并管理全局 Uploader/PreUploader 单例
-2. 提供 set_*/get_* 接口供外部初始化和获取
-3. extended_handler.py 通过 get_uploader()/get_pre_uploader() 获取实例
+Responsibilities:
+1. Define and manage global Uploader/PreUploader singletons
+2. Provide set_*/get_* interfaces for external initialization and retrieval
+3. extended_handler.py retrieves instances via get_uploader()/get_pre_uploader()
 
-注意：本模块不创建具体实例，只管理单例。
-具体实例由 ARMS storage.py 等外部模块创建并通过 set_*() 注册。
+Note: This module does not create concrete instances, only manages singletons.
+Concrete instances are created by external modules like ARMS storage.py and registered via set_*().
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ _preuploader_set_once = Once()
 
 
 def set_uploader(uploader: Uploader) -> None:
-    """设置全局 Uploader 实例（只能设置一次）"""
+    """Set global Uploader instance (can only be set once)"""
 
     def _set() -> None:
         global _uploader  # pylint: disable=global-statement
@@ -65,12 +65,12 @@ def set_uploader(uploader: Uploader) -> None:
 
 
 def get_uploader() -> Optional[Uploader]:
-    """获取全局 Uploader 实例"""
+    """Get global Uploader instance"""
     return _uploader
 
 
 def set_pre_uploader(pre_uploader: PreUploader) -> None:
-    """设置全局 PreUploader 实例（只能设置一次）"""
+    """Set global PreUploader instance (can only be set once)"""
 
     def _set() -> None:
         global _preuploader  # pylint: disable=global-statement
@@ -80,7 +80,7 @@ def set_pre_uploader(pre_uploader: PreUploader) -> None:
 
 
 def get_pre_uploader() -> Optional[PreUploader]:
-    """获取全局 PreUploader 实例"""
+    """Get global PreUploader instance"""
     return _preuploader
 
 

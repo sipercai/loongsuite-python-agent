@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MultimodalPreUploader - 多模态数据预处理器
+"""MultimodalPreUploader - Multimodal data preprocessor
 
-处理 Base64Blob/Blob/Uri，生成 PreUploadItem 列表。
-实际上传由 Uploader 实现类完成。
+Processes Base64Blob/Blob/Uri, generates PreUploadItem list.
+Actual upload is completed by Uploader implementation class.
 """
 
 from __future__ import annotations
@@ -52,22 +52,22 @@ from opentelemetry.util.genai.types import Base64Blob, Blob, Modality, Uri
 
 _logger = logging.getLogger(__name__)
 
-# 支持预上传的 modality 类型
+# Supported modality types for pre-upload
 _SUPPORTED_MODALITIES = ("image", "video", "audio")
 
-# 每类消息（input/output）最多处理的多模态 parts 数量
+# Maximum number of multimodal parts to process per message category (input/output)
 _MAX_MULTIMODAL_PARTS = 10
 
-# 元数据请求超时（秒）
+# Metadata fetch timeout (seconds)
 _METADATA_FETCH_TIMEOUT = 0.2
 
-# 单个多模态数据最大大小 (30MB)
+# Maximum multimodal data size (30MB)
 _MAX_MULTIMODAL_DATA_SIZE = 30 * 1024 * 1024
 
 
 @dataclass
 class UriMetadata:
-    """URI 元数据"""
+    """URI metadata"""
 
     content_type: str
     content_length: int
@@ -75,7 +75,7 @@ class UriMetadata:
     last_modified: Optional[str] = None
 
 
-# 尝试导入音频处理库
+# Try importing audio processing libraries
 try:
     import numpy as np
     import soundfile as sf  # pyright: ignore[reportMissingImports]
@@ -91,25 +91,25 @@ except ImportError:
 
 
 class MultimodalPreUploader(PreUploader):
-    """多模态数据预处理器
+    """Multimodal data preprocessor
 
-    处理 Base64Blob/Blob/Uri，生成 PreUploadItem 列表。
-    实际上传由 Uploader 实现类完成。
+    Processes Base64Blob/Blob/Uri, generates PreUploadItem list.
+    Actual upload is completed by Uploader implementation class.
 
-    注意：只有一个 PreUploader 实现，因为预处理逻辑是通用的。
-    ARMS 特有的 extra_meta 通过构造函数注入。
+    Note: Only one PreUploader implementation exists, as preprocessing logic is universal.
+    ARMS-specific extra_meta is injected via constructor.
 
     Args:
         base_path: Complete base path including protocol (e.g., 'sls://project/logstore', 'file:///path')
         extra_meta: Additional metadata to include in each upload item (e.g., workspaceId, serviceId for ARMS)
     """
 
-    # 类级别的事件循环和专用线程
+    # Class-level event loop and dedicated thread
     _loop: ClassVar[Optional[asyncio.AbstractEventLoop]] = None
     _loop_thread: ClassVar[Optional[threading.Thread]] = None
     _loop_lock: ClassVar[threading.Lock] = threading.Lock()
     _shutdown_called: ClassVar[bool] = False
-    # 活跃任务计数器（用于优雅退出等待）
+    # Active task counter (for graceful shutdown wait)
     _active_tasks: ClassVar[int] = 0
     _active_cond: ClassVar[threading.Condition] = threading.Condition()
 
@@ -119,7 +119,7 @@ class MultimodalPreUploader(PreUploader):
         self._base_path = base_path
         self._extra_meta = extra_meta or {}
 
-        # 读取多模态上传配置（静态配置，只需读取一次）
+        # Read multimodal upload configuration (static config, read once only)
         upload_mode = os.getenv(
             OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE, "both"
         ).lower()
@@ -138,8 +138,8 @@ class MultimodalPreUploader(PreUploader):
 
     @classmethod
     def _ensure_loop(cls) -> asyncio.AbstractEventLoop:
-        """确保事件循环存在且正在运行（线程安全）"""
-        # 快速路径：循环存在且线程存活
+        """Ensure event loop exists and is running (thread-safe)"""
+        # Fast path: loop exists and thread is alive
         if (
             cls._loop is not None
             and cls._loop_thread is not None
@@ -147,9 +147,9 @@ class MultimodalPreUploader(PreUploader):
         ):
             return cls._loop
 
-        # 慢路径：需要创建或重建（在锁内）
+        # Slow path: need to create or rebuild (within lock)
         with cls._loop_lock:
-            # 双重检查：检查循环是否存在且线程存活
+            # Double check: check if loop exists and thread is alive
             if (
                 cls._loop is not None
                 and cls._loop_thread is not None
@@ -157,16 +157,16 @@ class MultimodalPreUploader(PreUploader):
             ):
                 return cls._loop
 
-            # 清理旧的循环（如果线程已死）
+            # Clean up old loop (if thread is dead)
             if cls._loop is not None:
                 try:
                     cls._loop.call_soon_threadsafe(cls._loop.stop)
                 except RuntimeError:
-                    pass  # 循环已停止
+                    pass  # Loop already stopped
                 cls._loop = None
                 cls._loop_thread = None
 
-            # 创建新的事件循环
+            # Create new event loop
             loop = asyncio.new_event_loop()
 
             def run_loop():
@@ -181,8 +181,8 @@ class MultimodalPreUploader(PreUploader):
             )
             thread.start()
 
-            # 等待循环开始运行
-            for _ in range(100):  # 最多等待 100ms
+            # Wait for loop to start running
+            for _ in range(100):  # Wait up to 100ms
                 if loop.is_running():
                     break
                 threading.Event().wait(0.001)
@@ -194,12 +194,12 @@ class MultimodalPreUploader(PreUploader):
     @classmethod
     def shutdown(cls, timeout: float = 5.0) -> None:
         """
-        优雅关闭事件循环。
+        Gracefully shutdown event loop.
 
-        设计原则：
-        1. 幂等设计：可被多次调用
-        2. 先等待活跃任务完成（以 _active_tasks == 0 为等待条件）
-        3. 超时后停止事件循环并退出
+        Design principles:
+        1. Idempotent design: can be called multiple times
+        2. Wait for active tasks to complete first (wait for _active_tasks == 0)
+        3. Stop event loop and exit after timeout
         """
         if cls._shutdown_called:
             return
@@ -207,7 +207,7 @@ class MultimodalPreUploader(PreUploader):
 
         deadline = time.time() + timeout
 
-        # 阶段 1: 等待活跃任务完成
+        # Phase 1: Wait for active tasks to complete
         with cls._active_cond:
             while cls._active_tasks > 0:
                 remaining = deadline - time.time()
@@ -223,23 +223,23 @@ class MultimodalPreUploader(PreUploader):
             if cls._loop is None or cls._loop_thread is None:
                 return
 
-            # 阶段 2: 停止事件循环
+            # Phase 2: Stop event loop
             try:
                 cls._loop.call_soon_threadsafe(cls._loop.stop)
             except RuntimeError:
-                pass  # 循环已停止
+                pass  # Loop already stopped
 
-            # 阶段 3: 等待线程退出
+            # Phase 3: Wait for thread to exit
             remaining = max(0.0, deadline - time.time())
             cls._loop_thread.join(timeout=remaining)
 
-            # 阶段 4: 清理状态
+            # Phase 4: Clean up state
             cls._loop = None
             cls._loop_thread = None
 
     @classmethod
     def _at_fork_reinit(cls) -> None:
-        """Fork 后在子进程中重置类级别状态"""
+        """Reset class-level state in child process after fork"""
         _logger.debug(
             "[_at_fork_reinit] MultimodalPreUploader reinitializing after fork"
         )
@@ -253,10 +253,10 @@ class MultimodalPreUploader(PreUploader):
     def _run_async(
         self, coro: Any, timeout: float = 0.3
     ) -> Dict[str, UriMetadata]:
-        """在类级别事件循环中执行协程（线程安全）"""
+        """Execute coroutine in class-level event loop (thread-safe)"""
         cls = self.__class__
 
-        # 增加活跃任务计数
+        # Increase active task count
         with cls._active_cond:
             cls._active_tasks += 1
 
@@ -268,16 +268,16 @@ class MultimodalPreUploader(PreUploader):
                 return result
             except concurrent.futures.TimeoutError:
                 future.cancel()
-                return {}  # 超时返回空结果
+                return {}  # Return empty result on timeout
         finally:
-            # 减少活跃任务计数并通知
+            # Decrease active task count and notify
             with cls._active_cond:
                 cls._active_tasks -= 1
                 cls._active_cond.notify_all()
 
     @staticmethod
     def _strip_query_params(uri: str) -> str:
-        """去掉 URL 的 query params"""
+        """Strip query params from URL"""
         idx = uri.find("?")
         return uri[:idx] if idx != -1 else uri
 
@@ -289,7 +289,7 @@ class MultimodalPreUploader(PreUploader):
         etag: Optional[str] = None,
         last_modified: Optional[str] = None,
     ) -> str:
-        """基于远程资源元数据生成 key"""
+        """Generate key based on remote resource metadata"""
         url_base = MultimodalPreUploader._strip_query_params(uri)
         combined = f"{etag or ''}|{last_modified or ''}|{content_type}|{content_length}|{url_base}"
         return hashlib.md5(
@@ -299,15 +299,15 @@ class MultimodalPreUploader(PreUploader):
     @staticmethod
     def _ext_from_content_type(content_type: str) -> str:
         """
-        从 MIME type 提取文件扩展名
+        Extract file extension from MIME type
 
         Args:
-            content_type: MIME type (如 'audio/wav', 'image/jpeg')
+            content_type: MIME type (e.g., 'audio/wav', 'image/jpeg')
 
         Returns:
-            文件扩展名 (如 'wav', 'jpg')
+            File extension (e.g., 'wav', 'jpg')
         """
-        # 特殊格式映射
+        # Special format mappings
         special_mappings = {
             "image/jpeg": "jpg",
             "audio/mpeg": "mp3",
@@ -321,7 +321,7 @@ class MultimodalPreUploader(PreUploader):
 
         if "/" in content_type:
             ext = content_type.split("/", 1)[1]
-            if ext == "*" or ext == "" or ext == "unknown":
+            if ext in ("*", "", "unknown"):
                 ext = "bin"
             return ext
         return "bin"
@@ -330,12 +330,15 @@ class MultimodalPreUploader(PreUploader):
     def _hash_md5(data: bytes) -> str:
         return hashlib.md5(data, usedforsecurity=False).hexdigest()
 
-    async def _fetch_one_metadata_async(
+    async def _fetch_one_metadata_async(  # pylint: disable=no-self-use
         self,
         client: httpx.AsyncClient,
         uri: str,
     ) -> Tuple[str, Optional[UriMetadata]]:
-        """异步获取单个 URI 的元数据"""
+        """Asynchronously fetch metadata for a single URI
+        
+        Note: Keep as instance method rather than staticmethod for future extensibility
+        """
         try:
             response = await client.get(uri, headers={"Range": "bytes=0-0"})
             content_type = response.headers.get("Content-Type", "")
@@ -343,7 +346,7 @@ class MultimodalPreUploader(PreUploader):
             etag = response.headers.get("ETag")
             last_modified = response.headers.get("Last-Modified")
 
-            # 解析 Content-Range: bytes 0-0/{total_size}
+            # Parse Content-Range: bytes 0-0/{total_size}
             content_length = 0
             if content_range:
                 match = re.search(r"/(\d+)$", content_range)
@@ -354,7 +357,7 @@ class MultimodalPreUploader(PreUploader):
                 if cl:
                     content_length = int(cl)
 
-            # 必须有 Content-Type
+            # Must have Content-Type
             if not content_type:
                 return (uri, None)
 
@@ -367,8 +370,11 @@ class MultimodalPreUploader(PreUploader):
                     last_modified=last_modified,
                 ),
             )
-        except Exception as e:
-            _logger.debug("Failed to fetch metadata: %s, error: %s", uri, e)
+        except (httpx.HTTPError, OSError, ValueError) as exc:
+            # httpx.HTTPError: Network request failure (timeout, connection error, HTTP error, etc.)
+            # OSError: Low-level network/system error
+            # ValueError: Data parsing error (e.g., int() conversion failure)
+            _logger.debug("Failed to fetch metadata: %s, error: %s", uri, exc)
             return (uri, None)
 
     async def _fetch_metadata_batch_async(
@@ -376,10 +382,10 @@ class MultimodalPreUploader(PreUploader):
         uris: List[str],
         timeout: float = _METADATA_FETCH_TIMEOUT,
     ) -> Dict[str, UriMetadata]:
-        """异步并行获取多个 URI 的元数据"""
+        """Asynchronously fetch metadata for multiple URIs in parallel"""
         results: Dict[str, UriMetadata] = {}
 
-        # 使用 suppress_http_instrumentation 避免这些内部 HTTP 请求被探针捕获
+        # Use suppress_http_instrumentation to avoid internal HTTP requests being captured by probe
         with suppress_http_instrumentation():
             try:
                 async with httpx.AsyncClient(
@@ -399,8 +405,10 @@ class MultimodalPreUploader(PreUploader):
                             uri, metadata = response
                             if metadata is not None:
                                 results[uri] = metadata
-            except Exception as e:
-                _logger.debug(f"Batch fetch failed: {e}")
+            except (RuntimeError, asyncio.TimeoutError) as exc:
+                # RuntimeError: Event loop related errors
+                # asyncio.TimeoutError: Async operation timeout
+                _logger.debug("Batch fetch failed: %s", exc)
 
         return results
 
@@ -409,7 +417,7 @@ class MultimodalPreUploader(PreUploader):
         uris: List[str],
         timeout: float = _METADATA_FETCH_TIMEOUT,
     ) -> Dict[str, UriMetadata]:
-        """同步接口：并行获取多个 URI 的元数据"""
+        """Synchronous interface: fetch metadata for multiple URIs in parallel"""
         if not uris:
             return {}
         return self._run_async(
@@ -418,13 +426,13 @@ class MultimodalPreUploader(PreUploader):
         )
 
     @staticmethod
-    def _detect_audio_format(data: bytes) -> Optional[str]:
+    def _detect_audio_format(data: bytes) -> Optional[str]:  # pylint: disable=too-many-return-statements,too-many-branches
         """
-        通过检测音频文件头自动识别音频格式
+        Auto-detect audio format by examining file header
 
-        支持的格式：
+        Supported formats:
         - AMR (AMR-NB, AMR-WB)
-        - WAV (PCM, GSM_MS 等)
+        - WAV (PCM, GSM_MS, etc.)
         - MP3 (ID3, MPEG)
         - AAC (ADTS)
         - 3GP/3GPP
@@ -434,15 +442,15 @@ class MultimodalPreUploader(PreUploader):
         - WebM
 
         Args:
-            data: 音频数据的字节流
+            data: Audio data byte stream
 
         Returns:
-            检测到的 MIME type (如 'audio/wav', 'audio/mp3')，无法识别返回 None
+            Detected MIME type (e.g., 'audio/wav', 'audio/mp3'), None if unrecognized
         """
         if len(data) < 12:
             return None
 
-        # AMR 格式检测
+        # AMR format detection
         # AMR-NB (Narrowband): #!AMR\n
         if data[:6] == b"#!AMR\n":
             return "audio/amr"
@@ -450,52 +458,48 @@ class MultimodalPreUploader(PreUploader):
         if data[:9] == b"#!AMR-WB\n":
             return "audio/amr-wb"
 
-        # 3GP/3GPP 格式: ftyp3gp 或 ftyp3g2
+        # 3GP/3GPP format: ftyp3gp or ftyp3g2
         if len(data) >= 12:
             if data[4:8] == b"ftyp":
                 ftyp_brand = data[8:11]
-                # 3GP 格式
-                if (
-                    ftyp_brand == b"3gp"
-                    or ftyp_brand == b"3gr"
-                    or ftyp_brand == b"3gs"
-                ):
+                # 3GP format
+                if ftyp_brand in (b"3gp", b"3gr", b"3gs"):
                     return "audio/3gpp"
-                # 3GP2 格式
+                # 3GP2 format
                 if ftyp_brand == b"3g2":
                     return "audio/3gpp2"
 
-        # WAV 格式: RIFF....WAVE
+        # WAV format: RIFF....WAVE
         if data[:4] == b"RIFF" and data[8:12] == b"WAVE":
             return "audio/wav"
 
-        # MP3 格式: ID3 标签
+        # MP3 format: ID3 tag
         if data[:3] == b"ID3":
             return "audio/mp3"
 
-        # AAC 格式: ADTS 帧头 (必须在 MP3 MPEG 检测之前)
-        # ADTS: 0xFF 0xFx (x 的高4位为1111)
+        # AAC format: ADTS frame header (must be before MP3 MPEG detection)
+        # ADTS: 0xFF 0xFx (high 4 bits of x are 1111)
         if len(data) >= 2 and data[0] == 0xFF and (data[1] & 0xF6) == 0xF0:
             return "audio/aac"
 
-        # MP3 格式: MPEG 帧头
-        # MPEG audio frame sync: 0xFF 0xEx or 0xFF 0xFx (但排除 AAC)
+        # MP3 format: MPEG frame header
+        # MPEG audio frame sync: 0xFF 0xEx or 0xFF 0xFx (but exclude AAC)
         if len(data) >= 2 and data[0] == 0xFF and (data[1] & 0xE0) == 0xE0:
-            # 需要排除已经被 AAC 检测到的情况（已在上面处理）
+            # Need to exclude cases already detected by AAC (already handled above)
             return "audio/mp3"
 
-        # OGG 格式: OggS
+        # OGG format: OggS
         if data[:4] == b"OggS":
             return "audio/ogg"
 
-        # FLAC 格式: fLaC
+        # FLAC format: fLaC
         if data[:4] == b"fLaC":
             return "audio/flac"
 
-        # M4A/AAC 格式: ftypM4A 或其他 ftyp 变体
+        # M4A/AAC format: ftypM4A or other ftyp variants
         if len(data) >= 8 and data[4:8] == b"ftyp":
             ftyp_brand = data[8:12]
-            # M4A 格式
+            # M4A format
             if ftyp_brand in (
                 b"M4A ",
                 b"M4B ",
@@ -506,7 +510,7 @@ class MultimodalPreUploader(PreUploader):
             ):
                 return "audio/m4a"
 
-        # WebM 格式: EBML header 0x1A 0x45 0xDF 0xA3
+        # WebM format: EBML header 0x1A 0x45 0xDF 0xA3
         if len(data) >= 4 and data[:4] == b"\x1a\x45\xdf\xa3":
             return "audio/webm"
 
@@ -517,14 +521,14 @@ class MultimodalPreUploader(PreUploader):
         pcm_data: bytes, sample_rate: int = 24000
     ) -> Optional[bytes]:
         """
-        将 PCM16 格式的音频数据转换为 WAV 格式
+        Convert PCM16 format audio data to WAV format
 
         Args:
-            pcm_data: PCM16 格式的原始音频字节数据
-            sample_rate: 采样率，默认 24000 (OpenAI audio API 默认值)
+            pcm_data: Raw audio byte data in PCM16 format
+            sample_rate: Sample rate, default 24000 (OpenAI audio API default)
 
         Returns:
-            WAV 格式的字节数据，转换失败返回 None
+            Byte data in WAV format, None if conversion fails
         """
         if not _audio_libs_available or np is None or sf is None:
             _logger.warning(
@@ -533,10 +537,10 @@ class MultimodalPreUploader(PreUploader):
             return None
 
         try:
-            # 将 PCM16 字节数据转换为 numpy int16 数组
-            audio_np = np.frombuffer(pcm_data, dtype=np.int16)  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+            # Convert PCM16 byte data to numpy int16 array
+            audio_np = np.frombuffer(pcm_data, dtype=np.int16)
 
-            # 使用内存缓冲区写入 WAV 数据
+            # Write WAV data to memory buffer
             buffer = io.BytesIO()
             try:
                 sf.write(  # pyright: ignore[reportUnknownMemberType]
@@ -546,11 +550,14 @@ class MultimodalPreUploader(PreUploader):
                 return buffer.read()
             finally:
                 buffer.close()
-        except Exception as e:
-            _logger.error(f"Failed to convert PCM16 to WAV: {e}")
+        except (OSError, ValueError, AttributeError) as exc:
+            # OSError: File system error (numpy/soundfile low-level error)
+            # ValueError: Audio data format incorrect
+            # AttributeError: numpy/soundfile not properly installed or imported
+            _logger.error("Failed to convert PCM16 to WAV: %s", exc)
             return None
 
-    def _create_upload_item(
+    def _create_upload_item(  # pylint: disable=too-many-positional-arguments
         self,
         data: bytes,
         mime_type: str,
@@ -560,18 +567,18 @@ class MultimodalPreUploader(PreUploader):
         span_id: Optional[str],
     ) -> Tuple[PreUploadItem, Uri]:
         """
-        创建 PreUploadItem 和对应的 Uri
+        Create PreUploadItem and corresponding Uri
 
         Args:
-            data: 要上传的数据
-            mime_type: MIME 类型
-            modality: 内容模态（image/video/audio）
-            timestamp: 时间戳（秒）
-            trace_id: 跟踪 ID
+            data: Data to upload
+            mime_type: MIME type
+            modality: Content modality (image/video/audio)
+            timestamp: Timestamp (seconds)
+            trace_id: Trace ID
             span_id: Span ID
 
         Returns:
-            (PreUploadItem, Uri) 元组
+            (PreUploadItem, Uri) tuple
         """
         ext = self._ext_from_content_type(mime_type)
         data_md5 = self._hash_md5(data)
@@ -599,7 +606,7 @@ class MultimodalPreUploader(PreUploader):
         uri_part = Uri(modality=modality, mime_type=mime_type, uri=full_url)
         return upload_item, uri_part
 
-    def _create_download_upload_item(
+    def _create_download_upload_item(  # pylint: disable=too-many-positional-arguments
         self,
         source_uri: str,
         metadata: UriMetadata,
@@ -608,7 +615,7 @@ class MultimodalPreUploader(PreUploader):
         trace_id: Optional[str],
         span_id: Optional[str],
     ) -> Tuple[PreUploadItem, Uri]:
-        """创建下载-上传类型的 PreUploadItem"""
+        """Create download-upload type PreUploadItem"""
         ext = self._ext_from_content_type(metadata.content_type)
 
         data_key = self._generate_remote_key(
@@ -645,10 +652,10 @@ class MultimodalPreUploader(PreUploader):
 
     @staticmethod
     def _is_http_uri(uri: str) -> bool:
-        """检查 URI 是否为 http:// 或 https:// 开头"""
+        """Check if URI starts with http:// or https://"""
         return uri.startswith("http://") or uri.startswith("https://")
 
-    def _process_message_parts(
+    def _process_message_parts(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements,too-many-positional-arguments
         self,
         parts: List[Any],
         trace_id: Optional[str],
@@ -657,38 +664,41 @@ class MultimodalPreUploader(PreUploader):
         uri_to_metadata: Dict[str, UriMetadata],
         uploads: List[PreUploadItem],
     ) -> None:
-        """处理消息中的多模态 parts（限制最多 10 个）"""
+        """Process multimodal parts in messages (limited to 10 parts)"""
 
-        # 第一步：遍历提取潜在的多模态 parts（最多 10 个）
+        # Step 1: Traverse and extract potential multimodal parts (max 10)
         blob_parts: List[Tuple[int, Union[Base64Blob, Blob]]] = []
         uri_parts: List[Tuple[int, Uri]] = []
 
-        for i, part in enumerate(parts):
+        for idx, part in enumerate(parts):
             if len(blob_parts) + len(uri_parts) >= _MAX_MULTIMODAL_PARTS:
                 _logger.debug(
-                    f"Reached max multimodal parts limit ({_MAX_MULTIMODAL_PARTS}), skipping remaining"
+                    "Reached max multimodal parts limit (%d), skipping remaining",
+                    _MAX_MULTIMODAL_PARTS,
                 )
                 break
 
             if isinstance(part, (Base64Blob, Blob)):
-                blob_parts.append((i, part))
+                blob_parts.append((idx, part))
             elif isinstance(part, Uri) and self._download_enabled:
-                # 仅当启用下载功能时才处理 Uri
+                # Only process Uri when download feature is enabled
                 modality_str = part.modality
                 if modality_str in _SUPPORTED_MODALITIES:
-                    uri_parts.append((i, part))
+                    uri_parts.append((idx, part))
 
-        # 第二步：处理 Blob（数据已在内存）
-        for i, part in blob_parts:
+        # Step 2: Process Blob (data already in memory)
+        for idx, part in blob_parts:
             try:
                 mime_type = part.mime_type or "application/octet-stream"
-                # 大小限制检查
+                # Size limit check
                 if isinstance(part, Base64Blob):
                     b64data = part.content
                     datalen = len(b64data) * 3 // 4 - b64data.count("=", -2)
                     if datalen > _MAX_MULTIMODAL_DATA_SIZE:
                         _logger.debug(
-                            f"Skip Base64Blob: decoded size {datalen} exceeds limit {_MAX_MULTIMODAL_DATA_SIZE}"
+                            "Skip Base64Blob: decoded size %d exceeds limit %d",
+                            datalen,
+                            _MAX_MULTIMODAL_DATA_SIZE,
                         )
                         continue
                     data = base64.b64decode(b64data)
@@ -696,11 +706,14 @@ class MultimodalPreUploader(PreUploader):
                     data = part.content
                     if len(data) > _MAX_MULTIMODAL_DATA_SIZE:
                         _logger.debug(
-                            f"Skip Blob: size {len(data)} exceeds limit {_MAX_MULTIMODAL_DATA_SIZE}, mime_type: {mime_type}"
+                            "Skip Blob: size %d exceeds limit %d, mime_type: %s",
+                            len(data),
+                            _MAX_MULTIMODAL_DATA_SIZE,
+                            mime_type,
                         )
                         continue
 
-                # 如果是 audio/unknown 或其他未知音频格式，尝试自动检测格式
+                # If audio/unknown or other unknown audio formats, try auto-detection
                 if mime_type in ("audio/unknown", "audio/*", "audio"):
                     detected_mime = self._detect_audio_format(data)
                     if detected_mime:
@@ -710,7 +723,7 @@ class MultimodalPreUploader(PreUploader):
                             detected_mime,
                         )
                         mime_type = detected_mime
-                # 如果是 PCM16 音频格式，转换为 WAV
+                # If PCM16 audio format, convert to WAV
                 if mime_type in ("audio/pcm16", "audio/l16", "audio/pcm"):
                     wav_data = self._convert_pcm16_to_wav(data)
                     if wav_data:
@@ -735,34 +748,44 @@ class MultimodalPreUploader(PreUploader):
                     span_id,
                 )
                 uploads.append(upload_item)
-                parts[i] = uri_part
-            except Exception as e:
+                parts[idx] = uri_part
+            except (ValueError, TypeError, KeyError) as exc:
+                # ValueError: Data format error (e.g., base64 decoding failure)
+                # TypeError: Type error (e.g., accessing wrong type attribute)
+                # KeyError: Accessing non-existent dictionary key
                 _logger.error(
-                    f"Failed to process Base64Blob/Blob, skip: {e}, trace_id: {trace_id}"
+                    "Failed to process Base64Blob/Blob, skip: %s, trace_id: %s",
+                    exc,
+                    trace_id,
                 )
-                # 保持原样，不替换
+                # Keep original, don't replace
 
-        # 第三步：处理 Uri（基于元数据创建下载任务）
-        for i, part in uri_parts:
-            # 非 http/https URI（如已处理过的 file:// 等）直接跳过
+        # Step 3: Process Uri (create download task based on metadata)
+        for idx, part in uri_parts:
+            # Non-http/https URIs (like already processed file://, etc.) skip directly
             if not self._is_http_uri(part.uri):
                 _logger.debug(
-                    f"Skip non-http URI (already processed or local): {part.uri}"
+                    "Skip non-http URI (already processed or local): %s",
+                    part.uri,
                 )
                 continue
 
             metadata = uri_to_metadata.get(part.uri)
-            # 获取失败/超时/缺失必要信息 -> 保持原样
+            # Fetch failed/timeout/missing required info -> keep original
             if metadata is None:
                 _logger.debug(
-                    f"No metadata for URI (timeout/error/missing), skip: {part.uri}"
+                    "No metadata for URI (timeout/error/missing), skip: %s",
+                    part.uri,
                 )
                 continue
 
-            # 大小限制检查
+            # Size limit check
             if metadata.content_length > _MAX_MULTIMODAL_DATA_SIZE:
                 _logger.debug(
-                    f"Skip Uri: size {metadata.content_length} exceeds limit {_MAX_MULTIMODAL_DATA_SIZE}, uri: {part.uri}"
+                    "Skip Uri: size %d exceeds limit %d, uri: %s",
+                    metadata.content_length,
+                    _MAX_MULTIMODAL_DATA_SIZE,
+                    part.uri,
                 )
                 continue
 
@@ -776,21 +799,27 @@ class MultimodalPreUploader(PreUploader):
                     span_id,
                 )
                 uploads.append(upload_item)
-                parts[i] = uri_part
+                parts[idx] = uri_part
                 _logger.debug(
-                    f"Uri processed: {part.uri} -> {uri_part.uri}, expected_size: {metadata.content_length}"
+                    "Uri processed: %s -> %s, expected_size: %d",
+                    part.uri,
+                    uri_part.uri,
+                    metadata.content_length,
                 )
-            except Exception as e:
+            except (ValueError, TypeError, KeyError) as exc:
+                # ValueError: Data format error
+                # TypeError: Type error
+                # KeyError: Metadata missing
                 _logger.error(
-                    f"Failed to process Uri, skip: {e}, uri: {part.uri}"
+                    "Failed to process Uri, skip: %s, uri: %s", exc, part.uri
                 )
-                # 保持原样，不替换
+                # Keep original, don't replace
 
     def _collect_http_uris(
         self,
         messages: Optional[List[Any]],
     ) -> List[str]:
-        """从消息列表中收集需要 fetch 的 HTTP/HTTPS URI（每个消息最多 10 个）"""
+        """Collect HTTP/HTTPS URIs to fetch from message list (max 10 per message)"""
         uris: List[str] = []
         if not messages:
             return uris
@@ -807,7 +836,7 @@ class MultimodalPreUploader(PreUploader):
                 if isinstance(part, Uri):
                     modality_str = part.modality
                     if modality_str in _SUPPORTED_MODALITIES:
-                        # 只收集 http/https 开头的 URI
+                        # Only collect URIs starting with http/https
                         if self._is_http_uri(part.uri):
                             uris.append(part.uri)
                         count += 1
@@ -816,7 +845,7 @@ class MultimodalPreUploader(PreUploader):
 
         return uris
 
-    def pre_upload(
+    def pre_upload(  # pylint: disable=too-many-branches
         self,
         span_context: Optional[SpanContext],
         start_time_utc_nano: int,
@@ -841,7 +870,7 @@ class MultimodalPreUploader(PreUploader):
         """
         uploads: List[PreUploadItem] = []
 
-        # 如果都不处理，直接返回（使用 __init__ 时读取的配置）
+        # If not processing either, return directly (use config read in __init__)
         if not self._process_input and not self._process_output:
             return uploads
 
@@ -851,14 +880,16 @@ class MultimodalPreUploader(PreUploader):
             if span_context is not None:
                 trace_id = ot_trace.format_trace_id(span_context.trace_id)
                 span_id = ot_trace.format_span_id(span_context.span_id)
-        except Exception:
+        except (AttributeError, TypeError):
+            # AttributeError: span_context object doesn't have trace_id/span_id attribute
+            # TypeError: format_trace_id/format_span_id parameter type error
             trace_id = None
             span_id = None
 
         timestamp = int(start_time_utc_nano / 1_000_000_000)
 
-        # 第一步：从 input 和 output 并发收集所有需要 fetch 的 HTTP URI
-        # 只有启用下载功能时才收集 URI
+        # Step 1: Concurrently collect all HTTP URIs needing fetch from input and output
+        # Only collect URIs when download feature is enabled
         all_uris: List[str] = []
         if self._download_enabled:
             if self._process_input:
@@ -866,14 +897,14 @@ class MultimodalPreUploader(PreUploader):
             if self._process_output:
                 all_uris.extend(self._collect_http_uris(output_messages))
 
-        # 第二步：一次性批量 fetch 所有 URI 的元数据（并发请求）
+        # Step 2: Batch fetch metadata for all URIs at once (concurrent requests)
         uri_to_metadata: Dict[str, UriMetadata] = {}
         if all_uris:
-            # 去重
+            # Deduplicate
             unique_uris = list(dict.fromkeys(all_uris))
             uri_to_metadata = self._fetch_metadata_batch(unique_uris)
 
-        # 第三步：处理各个消息（此时元数据已获取完成）
+        # Step 3: Process each message (metadata already fetched)
         if self._process_input and input_messages:
             for msg in input_messages:
                 if hasattr(msg, "parts") and msg.parts:
@@ -901,6 +932,6 @@ class MultimodalPreUploader(PreUploader):
         return uploads
 
 
-# 模块级别注册 fork 处理
+# Module-level fork handler registration
 if hasattr(os, "register_at_fork"):
     os.register_at_fork(after_in_child=MultimodalPreUploader._at_fork_reinit)
