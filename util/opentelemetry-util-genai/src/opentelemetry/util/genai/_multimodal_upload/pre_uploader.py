@@ -35,19 +35,15 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 import httpx
-
 from opentelemetry import trace as ot_trace
 from opentelemetry.instrumentation.utils import suppress_http_instrumentation
 from opentelemetry.trace import SpanContext
-from opentelemetry.util.genai._multimodal_upload._base import (
-    PreUploader,
-    PreUploadItem,
-)
+from opentelemetry.util.genai._multimodal_upload._base import (PreUploader,
+                                                               PreUploadItem)
 from opentelemetry.util.genai.extended_environment_variables import (
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_ENABLED,
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_SSL_VERIFY,
-    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE,
-)
+    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE)
 from opentelemetry.util.genai.types import Base64Blob, Blob, Modality, Uri
 
 _logger = logging.getLogger(__name__)
@@ -383,7 +379,7 @@ class MultimodalPreUploader(PreUploader):
         with suppress_http_instrumentation():
             try:
                 async with httpx.AsyncClient(
-                    timeout=httpx.Timeout(timeout),
+                    timeout=timeout,
                     verify=self._ssl_verify,
                 ) as client:
                     tasks = [
@@ -534,7 +530,7 @@ class MultimodalPreUploader(PreUploader):
 
         try:
             # 将 PCM16 字节数据转换为 numpy int16 数组
-            audio_np = np.frombuffer(pcm_data, dtype=np.int16)
+            audio_np = np.frombuffer(pcm_data, dtype=np.int16)  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
 
             # 使用内存缓冲区写入 WAV 数据
             buffer = io.BytesIO()

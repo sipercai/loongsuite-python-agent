@@ -413,6 +413,9 @@ class FsUploader(Uploader):
                     timeout=timeout, verify=self._ssl_verify
                 ) as client:
                     with client.stream("GET", uri) as response:
+                        # Explicitly reject 3xx redirects, to prevent old httpx versions from silently getting incorrect body
+                        if 300 <= response.status_code < 400:
+                            raise httpx.HTTPStatusError("Redirect not allowed", request=response.request, response=response)
                         response.raise_for_status()
                         buffer = io.BytesIO()
                         try:
