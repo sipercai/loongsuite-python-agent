@@ -89,6 +89,7 @@ class ExtendedInvocationMetricsRecorder(InvocationMetricsRecorder):
         """
         if isinstance(invocation, LLMInvocation):
             self.record(span, invocation, error_type=error_type)
+            return
         # TODO: Implement extended metrics recorder
 
 

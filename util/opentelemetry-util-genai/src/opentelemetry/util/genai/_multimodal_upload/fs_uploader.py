@@ -148,7 +148,7 @@ class FsUploader(Uploader):
         if hasattr(os, "register_at_fork"):
             weak_reinit = weakref.WeakMethod(self._at_fork_reinit)
             os.register_at_fork(
-                after_in_child=lambda: (ref := weak_reinit()) and ref()
+                after_in_child=lambda: (ref := weak_reinit()) and ref and ref()
             )
         self._pid = os.getpid()
 
