@@ -70,6 +70,10 @@ opentelemetry-instrument python your_app.py
 Control message content capture using environment variables:
 
 ```bash
+# Enable experimental GenAI semantic conventions
+# 启用实验性 GenAI 语义约定
+export OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
+
 # Capture content in spans only
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY
 
