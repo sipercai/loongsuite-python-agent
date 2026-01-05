@@ -35,19 +35,15 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 import httpx
-
 from opentelemetry import trace as ot_trace
 from opentelemetry.instrumentation.utils import suppress_http_instrumentation
 from opentelemetry.trace import SpanContext
-from opentelemetry.util.genai._multimodal_upload._base import (
-    PreUploader,
-    PreUploadItem,
-)
+from opentelemetry.util.genai._multimodal_upload._base import (PreUploader,
+                                                               PreUploadItem)
 from opentelemetry.util.genai.extended_environment_variables import (
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_ENABLED,
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_SSL_VERIFY,
-    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE,
-)
+    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE)
 from opentelemetry.util.genai.types import Base64Blob, Blob, Modality, Uri
 
 _logger = logging.getLogger(__name__)
@@ -336,7 +332,7 @@ class MultimodalPreUploader(PreUploader):
         uri: str,
     ) -> Tuple[str, Optional[UriMetadata]]:
         """Asynchronously fetch metadata for a single URI
-
+        
         Note: Keep as instance method rather than staticmethod for future extensibility
         """
         try:
@@ -538,6 +534,7 @@ class MultimodalPreUploader(PreUploader):
 
         try:
             # Convert PCM16 byte data to numpy int16 array
+            # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
             audio_np = np.frombuffer(pcm_data, dtype=np.int16)
 
             # Write WAV data to memory buffer
