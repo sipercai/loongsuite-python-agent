@@ -336,7 +336,7 @@ class MultimodalPreUploader(PreUploader):
         uri: str,
     ) -> Tuple[str, Optional[UriMetadata]]:
         """Asynchronously fetch metadata for a single URI
-        
+
         Note: Keep as instance method rather than staticmethod for future extensibility
         """
         try:
@@ -557,7 +557,7 @@ class MultimodalPreUploader(PreUploader):
             _logger.error("Failed to convert PCM16 to WAV: %s", exc)
             return None
 
-    def _create_upload_item(  # pylint: disable=too-many-positional-arguments
+    def _create_upload_item(
         self,
         data: bytes,
         mime_type: str,
@@ -606,7 +606,7 @@ class MultimodalPreUploader(PreUploader):
         uri_part = Uri(modality=modality, mime_type=mime_type, uri=full_url)
         return upload_item, uri_part
 
-    def _create_download_upload_item(  # pylint: disable=too-many-positional-arguments
+    def _create_download_upload_item(
         self,
         source_uri: str,
         metadata: UriMetadata,
@@ -655,7 +655,7 @@ class MultimodalPreUploader(PreUploader):
         """Check if URI starts with http:// or https://"""
         return uri.startswith("http://") or uri.startswith("https://")
 
-    def _process_message_parts(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements,too-many-positional-arguments
+    def _process_message_parts(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         self,
         parts: List[Any],
         trace_id: Optional[str],

@@ -366,13 +366,19 @@ class MultimodalProcessingMixin:
                 _logger.warning("Multimodal async processing error: %s", exc)
                 # Ensure span is ended
                 try:
-                    end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(
-                        task.invocation
+                    end_time_ns = (
+                        MultimodalProcessingMixin._compute_end_time_ns(
+                            task.invocation
+                        )
                     )
                     span = task.invocation.span
                     if span is not None:
                         span.end(end_time=end_time_ns)
-                except (AttributeError, TypeError, RuntimeError) as cleanup_exc:
+                except (
+                    AttributeError,
+                    TypeError,
+                    RuntimeError,
+                ) as cleanup_exc:
                     # AttributeError: Span object missing end method
                     # TypeError: end_time parameter type error
                     # RuntimeError: Span already ended or invalid state
@@ -419,7 +425,9 @@ class MultimodalProcessingMixin:
         _maybe_emit_llm_event(self._logger, span, invocation)  # type: ignore[attr-defined]
 
         # 5. Calculate correct end time and end span
-        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(
+            invocation
+        )
         span.end(end_time=end_time_ns)
 
     def _async_fail_llm(self, task: _MultimodalAsyncTask) -> None:
@@ -462,7 +470,9 @@ class MultimodalProcessingMixin:
         _maybe_emit_llm_event(self._logger, span, invocation, error)  # type: ignore[attr-defined]
 
         # 5. End span
-        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(
+            invocation
+        )
         span.end(end_time=end_time_ns)
 
     def _fallback_end_span(self, invocation: LLMInvocation) -> None:
@@ -473,7 +483,9 @@ class MultimodalProcessingMixin:
         _apply_llm_finish_attributes(span, invocation)
         self._record_llm_metrics(invocation, span)  # type: ignore[attr-defined]
         _maybe_emit_llm_event(self._logger, span, invocation)  # type: ignore[attr-defined]
-        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(
+            invocation
+        )
         span.end(end_time=end_time_ns)
 
     def _fallback_fail_span(
@@ -488,7 +500,9 @@ class MultimodalProcessingMixin:
         error_type = getattr(error.type, "__qualname__", None)
         self._record_llm_metrics(invocation, span, error_type=error_type)  # type: ignore[attr-defined]
         _maybe_emit_llm_event(self._logger, span, invocation, error)  # type: ignore[attr-defined]
-        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(invocation)
+        end_time_ns = MultimodalProcessingMixin._compute_end_time_ns(
+            invocation
+        )
         span.end(end_time=end_time_ns)
 
     @staticmethod
@@ -514,11 +528,11 @@ class MultimodalProcessingMixin:
         self,
     ) -> Tuple[Any, Any]:
         """Lazily get uploader and pre_uploader to avoid circular imports
-        
+
         Note: Keep as instance method for consistency with other methods in this mixin
         """
         try:
-            from opentelemetry.util.genai._multimodal_upload import (  # pylint: disable=import-outside-toplevel
+            from opentelemetry.util.genai._multimodal_upload import (  # pylint: disable=import-outside-toplevel  # noqa: PLC0415
                 get_pre_uploader,
                 get_uploader,
             )

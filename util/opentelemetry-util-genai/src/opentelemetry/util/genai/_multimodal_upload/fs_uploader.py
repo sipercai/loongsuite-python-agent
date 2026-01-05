@@ -60,7 +60,9 @@ def hash_content(content: bytes | str) -> str:
 @dataclass
 class _Task:
     path: str
-    content: Optional[bytes]  # Made optional, None for DOWNLOAD_AND_UPLOAD type
+    content: Optional[
+        bytes
+    ]  # Made optional, None for DOWNLOAD_AND_UPLOAD type
     skip_if_exists: bool
     meta: Optional[dict[str, str]]
     content_type: Optional[str]
@@ -116,7 +118,9 @@ class FsUploader(Uploader):
         self._queue_cond = threading.Condition(self._lock)  # for shutdown wait
         self._shutdown_event = threading.Event()
         self._lru_uploaded: OrderedDict[str, bool] = OrderedDict()
-        self._lru_lock = threading.Lock()  # Dedicated lock to protect LRU cache
+        self._lru_lock = (
+            threading.Lock()
+        )  # Dedicated lock to protect LRU cache
         self._lru_capacity = lru_cache_max_size
         self._auto_mkdirs = auto_mkdirs
         self._content_type = content_type
