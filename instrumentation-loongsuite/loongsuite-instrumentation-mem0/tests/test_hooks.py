@@ -22,6 +22,7 @@ from opentelemetry.instrumentation.mem0.internal._wrapper import (
     RerankerWrapper,
     VectorStoreWrapper,
 )
+from opentelemetry.instrumentation.mem0.types import set_memory_hooks
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.util.genai._extended_memory import MemoryInvocation
 
@@ -56,7 +57,7 @@ async def test_memory_hooks_sync_async_and_exception_paths():
         calls.append(("after", hook_context))
 
     w = MemoryOperationWrapper(_DummyTelemetryHandler())
-    w.set_hooks(memory_before_hook=before, memory_after_hook=after)
+    set_memory_hooks(w, memory_before_hook=before, memory_after_hook=after)
 
     # Cover helper: _normalize_call_parameters with positional args mapping
     def _sig(self, memory_id, data, *, user_id=None):  # noqa: ARG001
@@ -165,7 +166,9 @@ async def test_memory_hooks_sync_async_and_exception_paths():
     ):
         raise RuntimeError("boom2")
 
-    w.set_hooks(memory_before_hook=before_boom, memory_after_hook=after_boom)
+    set_memory_hooks(
+        w, memory_before_hook=before_boom, memory_after_hook=after_boom
+    )
     assert (
         w._execute_with_handler(
             _fn_sync,
@@ -180,7 +183,7 @@ async def test_memory_hooks_sync_async_and_exception_paths():
     )
 
     # exception path calls after_hook with exception
-    w.set_hooks(memory_before_hook=before, memory_after_hook=after)
+    set_memory_hooks(w, memory_before_hook=before, memory_after_hook=after)
 
     def _fn_raises(*a, **k):
         raise ValueError("nope")

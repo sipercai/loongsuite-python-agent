@@ -23,6 +23,7 @@ from opentelemetry.instrumentation.mem0.internal._wrapper import (
     VectorStoreWrapper,
 )
 from opentelemetry.instrumentation.mem0.package import _instruments
+from opentelemetry.instrumentation.mem0.types import set_memory_hooks
 from opentelemetry.instrumentation.mem0.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.semconv.schemas import Schemas
@@ -439,7 +440,8 @@ class Mem0Instrumentor(BaseInstrumentor):
                 return
 
             wrapper = MemoryOperationWrapper(telemetry_handler)
-            wrapper.set_hooks(
+            set_memory_hooks(
+                wrapper,
                 memory_before_hook=memory_before_hook,
                 memory_after_hook=memory_after_hook,
             )
@@ -501,7 +503,8 @@ class Mem0Instrumentor(BaseInstrumentor):
                 return
 
             wrapper = MemoryOperationWrapper(telemetry_handler)
-            wrapper.set_hooks(
+            set_memory_hooks(
+                wrapper,
                 memory_before_hook=memory_before_hook,
                 memory_after_hook=memory_after_hook,
             )
