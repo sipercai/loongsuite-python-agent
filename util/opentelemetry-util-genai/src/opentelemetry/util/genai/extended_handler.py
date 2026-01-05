@@ -70,27 +70,38 @@ from typing import Iterator, Optional
 from opentelemetry import context as otel_context
 from opentelemetry._logs import LoggerProvider
 from opentelemetry.metrics import MeterProvider, get_meter
-from opentelemetry.semconv._incubating.attributes import \
-    gen_ai_attributes as GenAI
+from opentelemetry.semconv._incubating.attributes import (
+    gen_ai_attributes as GenAI,
+)
 from opentelemetry.trace import SpanKind, TracerProvider, set_span_in_context
 from opentelemetry.util.genai._extended_memory import (
-    MemoryInvocation, _apply_memory_finish_attributes,
-    _maybe_emit_memory_event)
-from opentelemetry.util.genai._multimodal_processing import \
-    MultimodalProcessingMixin
-from opentelemetry.util.genai.extended_metrics import \
-    ExtendedInvocationMetricsRecorder
+    MemoryInvocation,
+    _apply_memory_finish_attributes,
+    _maybe_emit_memory_event,
+)
+from opentelemetry.util.genai._multimodal_processing import (
+    MultimodalProcessingMixin,
+)
+from opentelemetry.util.genai.extended_metrics import (
+    ExtendedInvocationMetricsRecorder,
+)
 from opentelemetry.util.genai.extended_span_utils import (
-    _apply_create_agent_finish_attributes, _apply_embedding_finish_attributes,
+    _apply_create_agent_finish_attributes,
+    _apply_embedding_finish_attributes,
     _apply_execute_tool_finish_attributes,
-    _apply_invoke_agent_finish_attributes, _apply_rerank_finish_attributes,
-    _apply_retrieve_finish_attributes, _maybe_emit_invoke_agent_event)
-from opentelemetry.util.genai.extended_types import (CreateAgentInvocation,
-                                                     EmbeddingInvocation,
-                                                     ExecuteToolInvocation,
-                                                     InvokeAgentInvocation,
-                                                     RerankInvocation,
-                                                     RetrieveInvocation)
+    _apply_invoke_agent_finish_attributes,
+    _apply_rerank_finish_attributes,
+    _apply_retrieve_finish_attributes,
+    _maybe_emit_invoke_agent_event,
+)
+from opentelemetry.util.genai.extended_types import (
+    CreateAgentInvocation,
+    EmbeddingInvocation,
+    ExecuteToolInvocation,
+    InvokeAgentInvocation,
+    RerankInvocation,
+    RetrieveInvocation,
+)
 from opentelemetry.util.genai.handler import TelemetryHandler
 from opentelemetry.util.genai.span_utils import _apply_error_attributes
 from opentelemetry.util.genai.types import Error, LLMInvocation

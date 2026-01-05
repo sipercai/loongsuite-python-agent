@@ -35,15 +35,19 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 import httpx
+
 from opentelemetry import trace as ot_trace
 from opentelemetry.instrumentation.utils import suppress_http_instrumentation
 from opentelemetry.trace import SpanContext
-from opentelemetry.util.genai._multimodal_upload._base import (PreUploader,
-                                                               PreUploadItem)
+from opentelemetry.util.genai._multimodal_upload._base import (
+    PreUploader,
+    PreUploadItem,
+)
 from opentelemetry.util.genai.extended_environment_variables import (
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_ENABLED,
     OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_SSL_VERIFY,
-    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE)
+    OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE,
+)
 from opentelemetry.util.genai.types import Base64Blob, Blob, Modality, Uri
 
 _logger = logging.getLogger(__name__)
@@ -681,7 +685,7 @@ class MultimodalPreUploader(PreUploader):
                 # 大小限制检查
                 if isinstance(part, Base64Blob):
                     b64data = part.content
-                    datalen = len(b64data) * 3 // 4 - b64data.count('=', -2)
+                    datalen = len(b64data) * 3 // 4 - b64data.count("=", -2)
                     if datalen > _MAX_MULTIMODAL_DATA_SIZE:
                         _logger.debug(
                             f"Skip Base64Blob: decoded size {datalen} exceeds limit {_MAX_MULTIMODAL_DATA_SIZE}"
