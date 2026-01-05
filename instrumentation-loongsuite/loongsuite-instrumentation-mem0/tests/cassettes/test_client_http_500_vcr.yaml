@@ -1,0 +1,38 @@
+interactions:
+- request:
+    body: '{"filters":{"user_id":"u_500"},"top_k":1}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - Bearer test_api_key
+      connection:
+      - keep-alive
+      content-length:
+      - '41'
+      content-type:
+      - application/json
+      host:
+      - 127.0.0.1:58634
+      mem0-user-id:
+      - test_user_id
+      user-agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: http://127.0.0.1:58634/v2/memories/
+  response:
+    body:
+      string: ''
+    headers:
+      Date:
+      - Mon, 05 Jan 2026 12:02:45 GMT
+      Server:
+      - BaseHTTP/0.6 Python/3.12.12
+      Set-Cookie: test_set_cookie
+      x-request-id: test_request_id
+    status:
+      code: 500
+      message: Internal Server Error
+version: 1

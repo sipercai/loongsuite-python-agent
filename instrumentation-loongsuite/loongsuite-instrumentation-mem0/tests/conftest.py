@@ -391,11 +391,11 @@ def instrument_with_factories_patched(
 
 @pytest.fixture(scope="module")
 def vcr_config(request):
-    # Default to playback mode (none), only change when --record-mode is explicitly passed
+    # Default to playback mode (none), only change when --vcr-record is explicitly passed
     record_mode = "none"
     try:
-        # Compatible with pytest-recording/pytest-vcr option names
-        record_mode = request.config.getoption("--record-mode") or "none"  # type: ignore
+        # Try to get --vcr-record option (pytest-vcr standard option)
+        record_mode = request.config.getoption("--vcr-record") or "none"  # type: ignore
     except Exception:
         # ignore exception
         pass
