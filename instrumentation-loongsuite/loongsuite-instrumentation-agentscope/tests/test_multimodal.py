@@ -30,7 +30,7 @@ class TestBlockConversion:
         assert part["content"] == "Hello world"
 
     def test_image_url_block_to_uri_part(self):
-        """Test image URL block converts to 'uri' type"""
+        """Test image URL block converts to 'uri' type with inferred mime_type"""
         block = {
             "type": "image",
             "source": {
@@ -44,6 +44,9 @@ class TestBlockConversion:
         assert part["type"] == "uri"
         assert part["uri"] == "https://example.com/cat.jpg"
         assert part["modality"] == "image"
+        assert (
+            part["mime_type"] == "image/jpeg"
+        )  # Inferred from .jpg extension
 
     def test_image_base64_block_to_blob_part(self):
         """Test image base64 block converts to 'blob' type"""
@@ -73,12 +76,12 @@ class TestBlockConversion:
         assert part["modality"] == "image"
 
     def test_audio_url_block_to_uri_part(self):
-        """Test audio URL block converts to 'uri' type with audio modality"""
+        """Test audio URL block converts to 'uri' type with inferred mime_type"""
         block = {
             "type": "audio",
             "source": {
                 "type": "url",
-                "url": "https://example.com/sound.wav",
+                "url": "https://example.com/sound.mp3",
             },
         }
         part = _convert_block_to_part(block)
@@ -86,6 +89,26 @@ class TestBlockConversion:
         assert part is not None
         assert part["type"] == "uri"
         assert part["modality"] == "audio"
+        assert (
+            part["mime_type"] == "audio/mpeg"
+        )  # Inferred from .mp3 extension
+
+    def test_image_url_with_query_params(self):
+        """Test URL with query parameters still infers mime_type correctly"""
+        block = {
+            "type": "image",
+            "source": {
+                "type": "url",
+                "url": "https://oss.example.com/image.png?token=abc&expires=123",
+            },
+        }
+        part = _convert_block_to_part(block)
+
+        assert part is not None
+        assert part["type"] == "uri"
+        assert (
+            part["mime_type"] == "image/png"
+        )  # Inferred despite query params
 
     def test_video_base64_block_to_blob_part(self):
         """Test video base64 block converts to 'blob' type"""

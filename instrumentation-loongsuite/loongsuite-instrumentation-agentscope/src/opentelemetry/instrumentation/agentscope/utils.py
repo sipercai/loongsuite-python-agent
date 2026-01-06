@@ -8,6 +8,7 @@ import enum
 import inspect
 import json
 import logging
+import mimetypes
 from dataclasses import is_dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
@@ -215,9 +216,13 @@ def _convert_block_to_part(block: Dict[str, Any]) -> Dict[str, Any] | None:
         media_type = source.get("media_type")
 
         if source_type == "url":
+            url = source.get("url", "")
+            # Infer mime_type from URL extension if not provided
+            if not media_type:
+                media_type, _ = mimetypes.guess_type(url)
             return {
                 "type": "uri",
-                "uri": source.get("url", ""),
+                "uri": url,
                 "modality": block_type,
                 "mime_type": media_type,
             }
