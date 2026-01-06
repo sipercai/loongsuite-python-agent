@@ -391,14 +391,28 @@ def instrument_with_factories_patched(
 
 @pytest.fixture(scope="module")
 def vcr_config(request):
-    # Default to playback mode (none), only change when --vcr-record is explicitly passed
-    record_mode = "none"
+    # Default to playback mode (none), only change when --vcr-record is explicitly passed.
+    #
+    # IMPORTANT: vcrpy expects RecordMode enum. If we pass raw strings like "none",
+    # Cassette.write_protected checks (record_mode == RecordMode.NONE) will fail and
+    # unmatched requests may leak to real network (then you see 401 in CI).
+    record_mode_value = "none"
     try:
         # Try to get --vcr-record option (pytest-vcr standard option)
-        record_mode = request.config.getoption("--vcr-record") or "none"  # type: ignore
+        record_mode_value = request.config.getoption("--vcr-record") or "none"  # type: ignore
     except Exception:
         # ignore exception
         pass
+
+    try:
+        # vcrpy internally defines RecordMode in vcr.record_mode.
+        # Importing from there is more stable for type checkers.
+        from vcr.record_mode import RecordMode  # type: ignore
+
+        record_mode = RecordMode(record_mode_value)
+    except Exception:
+        # Fall back to raw string if vcr isn't available or enum coercion fails.
+        record_mode = record_mode_value
 
     # Flatten cassette files to tests/cassettes directory without subdirectories
     def _flatten_path(path: str) -> str:
