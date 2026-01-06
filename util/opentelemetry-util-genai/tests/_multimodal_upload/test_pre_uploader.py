@@ -2,16 +2,21 @@
 Test general functionality of MultimodalPreUploader
 Includes extension mapping, URL generation, meta processing, message handling, async metadata fetching, etc.
 """
+
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import httpx
 import pytest
 import respx
-from opentelemetry.util.genai.types import Blob, InputMessage, Uri
+
 from opentelemetry.util.genai._multimodal_upload.pre_uploader import (
-    _MAX_MULTIMODAL_DATA_SIZE, _MAX_MULTIMODAL_PARTS, MultimodalPreUploader,
-    UriMetadata)
+    _MAX_MULTIMODAL_DATA_SIZE,
+    _MAX_MULTIMODAL_PARTS,
+    MultimodalPreUploader,
+    UriMetadata,
+)
+from opentelemetry.util.genai.types import Blob, InputMessage, Uri
 
 # Test audio file directory for integration tests
 TEST_AUDIO_DIR = Path(__file__).parent / "test_audio_samples"
@@ -28,57 +33,62 @@ class TestPreUploadGeneral:
             "workspaceId": "test_workspace",
             "serviceId": "test_service",
         }
-        return MultimodalPreUploader(base_path=base_path, extra_meta=extra_meta)
+        return MultimodalPreUploader(
+            base_path=base_path, extra_meta=extra_meta
+        )
 
     # ========== Extension Mapping Tests ==========
 
     @staticmethod
-    @pytest.mark.parametrize("mime_type,expected_ext", [
-        # Audio formats
-        ("audio/wav", "wav"),
-        ("audio/mp3", "mp3"),
-        ("audio/mpeg", "mp3"),      # Special mapping
-        ("audio/aac", "aac"),
-        ("audio/m4a", "m4a"),
-        ("audio/amr", "amr"),
-        ("audio/amr-wb", "amr"),    # Special mapping
-        ("audio/3gpp", "3gp"),      # Special mapping
-        ("audio/3gpp2", "3g2"),     # Special mapping
-        ("audio/ogg", "ogg"),
-        ("audio/flac", "flac"),
-        ("audio/webm", "webm"),
-        # Image formats
-        ("image/jpeg", "jpg"),      # Special mapping
-        ("image/png", "png"),
-        # Edge cases
-        ("audio/*", "bin"),         # Wildcard
-        ("audio/unknown", "bin"),   # Unknown format
-        ("video", "bin"),           # No slash
-    ])
+    @pytest.mark.parametrize(
+        "mime_type,expected_ext",
+        [
+            # Audio formats
+            ("audio/wav", "wav"),
+            ("audio/mp3", "mp3"),
+            ("audio/mpeg", "mp3"),  # Special mapping
+            ("audio/aac", "aac"),
+            ("audio/m4a", "m4a"),
+            ("audio/amr", "amr"),
+            ("audio/amr-wb", "amr"),  # Special mapping
+            ("audio/3gpp", "3gp"),  # Special mapping
+            ("audio/3gpp2", "3g2"),  # Special mapping
+            ("audio/ogg", "ogg"),
+            ("audio/flac", "flac"),
+            ("audio/webm", "webm"),
+            # Image formats
+            ("image/jpeg", "jpg"),  # Special mapping
+            ("image/png", "png"),
+            # Edge cases
+            ("audio/*", "bin"),  # Wildcard
+            ("audio/unknown", "bin"),  # Unknown format
+            ("video", "bin"),  # No slash
+        ],
+    )
     def test_extension_mapping(pre_uploader, mime_type, expected_ext):
         """Test extension mapping correctness"""
         ext = pre_uploader._ext_from_content_type(mime_type)
-        assert ext == expected_ext, \
+        assert ext == expected_ext, (
             f"MIME type {mime_type} extension mapping error, expected {expected_ext}, got {ext}"
+        )
 
     # ========== URL Generation Tests ==========
 
     @staticmethod
-    @pytest.mark.parametrize("base_path", [
-        "/tmp/test_upload",      # Without trailing slash
-        "/tmp/test_upload/",     # With trailing slash
-    ])
+    @pytest.mark.parametrize(
+        "base_path",
+        [
+            "/tmp/test_upload",  # Without trailing slash
+            "/tmp/test_upload/",  # With trailing slash
+        ],
+    )
     def test_url_generation_with_different_base_paths(base_path):
         """Test URL generation with/without trailing slash in base_path"""
         pre_uploader = MultimodalPreUploader(base_path=base_path)
 
-        test_data = b'test data'
+        test_data = b"test data"
 
-        part = Blob(
-            content=test_data,
-            mime_type="image/png",
-            modality="image"
-        )
+        part = Blob(content=test_data, mime_type="image/png", modality="image")
 
         input_message = InputMessage(role="user", parts=[part])
         input_messages = [input_message]
@@ -101,15 +111,19 @@ class TestPreUploadGeneral:
     @staticmethod
     def test_process_messages_and_meta(pre_uploader):
         """Test message processing and meta fields (integration test)"""
-        test_data = b'test data'
+        test_data = b"test data"
 
         # Input message
-        input_part = Blob(content=test_data, mime_type="image/png", modality="image")
+        input_part = Blob(
+            content=test_data, mime_type="image/png", modality="image"
+        )
         input_message = InputMessage(role="user", parts=[input_part])
         input_messages = [input_message]
 
         # Output message
-        output_part = Blob(content=test_data, mime_type="image/jpeg", modality="image")
+        output_part = Blob(
+            content=test_data, mime_type="image/jpeg", modality="image"
+        )
         output_message = InputMessage(role="assistant", parts=[output_part])
         output_messages = [output_message]
 
@@ -137,7 +151,9 @@ class TestPreUploadGeneral:
             assert "spanId" in upload.meta
 
         # Test without span_context
-        input_part2 = Blob(content=test_data, mime_type="image/png", modality="image")
+        input_part2 = Blob(
+            content=test_data, mime_type="image/png", modality="image"
+        )
         input_message2 = InputMessage(role="user", parts=[input_part2])
         input_messages2 = [input_message2]
 
@@ -156,7 +172,6 @@ class TestPreUploadGeneral:
         assert "timestamp" in meta
         assert "traceId" not in meta
         assert "spanId" not in meta
-
 
     @staticmethod
     def test_process_empty_messages(pre_uploader):
@@ -191,9 +206,7 @@ class TestPreUploadGeneral:
 
         # Create message with audio/unknown
         part = Blob(
-            content=audio_data,
-            mime_type="audio/unknown",
-            modality="audio"
+            content=audio_data, mime_type="audio/unknown", modality="audio"
         )
 
         input_message = InputMessage(role="user", parts=[part])
@@ -209,8 +222,9 @@ class TestPreUploadGeneral:
 
         # Verify auto-detection and conversion successful
         assert len(uploads) == 1
-        assert uploads[0].content_type == expected_mime, \
+        assert uploads[0].content_type == expected_mime, (
             f"MIME type should convert from audio/unknown to {expected_mime}"
+        )
         assert uploads[0].url.endswith(f".{expected_ext}")
 
 
@@ -222,15 +236,30 @@ class TestPreUploadKeyGeneration:
         return MultimodalPreUploader(base_path="/tmp/test_upload")
 
     @staticmethod
-    @pytest.mark.parametrize("uri,etag,last_modified,expected_contains_url", [
-        # Different ETags should generate different keys
-        ("https://example.com/image.png", '"abc123"', None, True),
-        ("https://example.com/image.png", '"def456"', None, True),
-        # Same params should generate same key
-        ("https://example.com/image.png?v=1", '"abc123"', "Wed, 01 Jan 2020 00:00:00 GMT", True),
-        ("https://example.com/image.png?v=2", '"abc123"', "Wed, 01 Jan 2020 00:00:00 GMT", True),
-    ])
-    def test_generate_remote_key_consistency(pre_uploader, uri, etag, last_modified, expected_contains_url):
+    @pytest.mark.parametrize(
+        "uri,etag,last_modified,expected_contains_url",
+        [
+            # Different ETags should generate different keys
+            ("https://example.com/image.png", '"abc123"', None, True),
+            ("https://example.com/image.png", '"def456"', None, True),
+            # Same params should generate same key
+            (
+                "https://example.com/image.png?v=1",
+                '"abc123"',
+                "Wed, 01 Jan 2020 00:00:00 GMT",
+                True,
+            ),
+            (
+                "https://example.com/image.png?v=2",
+                '"abc123"',
+                "Wed, 01 Jan 2020 00:00:00 GMT",
+                True,
+            ),
+        ],
+    )
+    def test_generate_remote_key_consistency(
+        pre_uploader, uri, etag, last_modified, expected_contains_url
+    ):
         """Test _generate_remote_key consistency"""
         key = pre_uploader._generate_remote_key(
             uri=uri,
@@ -245,7 +274,9 @@ class TestPreUploadKeyGeneration:
         assert all(c in "0123456789abcdef" for c in key)
 
     @staticmethod
-    def test_generate_remote_key_same_etag_different_url_same_key(pre_uploader):
+    def test_generate_remote_key_same_etag_different_url_same_key(
+        pre_uploader,
+    ):
         """Test same key generation when URL query params differ but other metadata is same"""
         key1 = pre_uploader._generate_remote_key(
             uri="https://cdn.example.com/image.png?token=abc",
@@ -295,7 +326,10 @@ class TestPreUploadUri:
         """Create PreUploader instance"""
         return MultimodalPreUploader(
             base_path="/tmp/test_upload",
-            extra_meta={"workspaceId": "test_workspace", "serviceId": "test_service"},
+            extra_meta={
+                "workspaceId": "test_workspace",
+                "serviceId": "test_service",
+            },
         )
 
     # ========== Async Metadata Fetching Tests ==========
@@ -350,7 +384,9 @@ class TestPreUploadUri:
     async def test_fetch_one_metadata_async_http_error(pre_uploader):
         """Test returns None on HTTP error"""
         mock_client = AsyncMock()
-        mock_client.get = AsyncMock(side_effect=httpx.HTTPError("Network error"))
+        mock_client.get = AsyncMock(
+            side_effect=httpx.HTTPError("Network error")
+        )
 
         uri, metadata = await pre_uploader._fetch_one_metadata_async(
             mock_client, "https://example.com/image.png"
@@ -362,8 +398,10 @@ class TestPreUploadUri:
     # ========== Uri Successful Processing Tests ==========
 
     @staticmethod
-    @patch.object(MultimodalPreUploader, '_fetch_metadata_batch')
-    def test_uri_part_success_creates_download_upload_item(mock_fetch, pre_uploader):
+    @patch.object(MultimodalPreUploader, "_fetch_metadata_batch")
+    def test_uri_part_success_creates_download_upload_item(
+        mock_fetch, pre_uploader
+    ):
         """Test creating DOWNLOAD_AND_UPLOAD task after successful metadata fetching"""
         mock_fetch.return_value = {
             "https://example.com/image.png": UriMetadata(
@@ -377,7 +415,7 @@ class TestPreUploadUri:
         part = Uri(
             uri="https://example.com/image.png",
             mime_type="image/png",
-            modality="image"
+            modality="image",
         )
         message = InputMessage(role="user", parts=[part])
 
@@ -401,7 +439,7 @@ class TestPreUploadUri:
         assert message.parts[0].uri.endswith(".png")
 
     @staticmethod
-    @patch.object(MultimodalPreUploader, '_fetch_metadata_batch')
+    @patch.object(MultimodalPreUploader, "_fetch_metadata_batch")
     def test_uri_part_all_modalities(mock_fetch, pre_uploader):
         """Test all supported modalities (image/video/audio)"""
         test_cases = [
@@ -439,13 +477,13 @@ class TestPreUploadUri:
     # ========== Uri Skip Scenarios Tests ==========
 
     @staticmethod
-    @patch.object(MultimodalPreUploader, '_fetch_metadata_batch')
+    @patch.object(MultimodalPreUploader, "_fetch_metadata_batch")
     def test_uri_part_skip_unsupported_modality(mock_fetch, pre_uploader):
         """Test unsupported modality doesn't call fetch"""
         part = Uri(
             uri="https://example.com/file.bin",
             mime_type="application/octet-stream",
-            modality="__unsupported__"
+            modality="__unsupported__",
         )
         message = InputMessage(role="user", parts=[part])
 
@@ -463,7 +501,7 @@ class TestPreUploadUri:
         mock_fetch.assert_not_called()
 
     @staticmethod
-    @patch.object(MultimodalPreUploader, '_fetch_metadata_batch')
+    @patch.object(MultimodalPreUploader, "_fetch_metadata_batch")
     def test_uri_part_skip_metadata_fetch_failed(mock_fetch, pre_uploader):
         """Test keeping original when metadata fetch fails"""
         mock_fetch.return_value = {}  # No metadata returned
@@ -486,7 +524,7 @@ class TestPreUploadUri:
         assert message.parts[0].uri == original_uri
 
     @staticmethod
-    @patch.object(MultimodalPreUploader, '_fetch_metadata_batch')
+    @patch.object(MultimodalPreUploader, "_fetch_metadata_batch")
     def test_uri_part_skip_size_exceeded(mock_fetch, pre_uploader):
         """Test keeping original when size exceeds limit"""
         mock_fetch.return_value = {
@@ -525,19 +563,18 @@ class TestPreUploadLimits:
     @staticmethod
     def test_max_multimodal_parts_limit(pre_uploader):
         """Test processing at most _MAX_MULTIMODAL_PARTS parts"""
-        test_data = b'test data'
+        test_data = b"test data"
 
         # Create more parts than the limit
         parts = []
         for _ in range(_MAX_MULTIMODAL_PARTS + 5):
-            parts.append(Blob(
-                content=test_data,
-                mime_type="image/png",
-                modality="image"
-            ))
+            parts.append(
+                Blob(
+                    content=test_data, mime_type="image/png", modality="image"
+                )
+            )
 
         message = InputMessage(role="user", parts=parts)
-
 
         input_messages = [message]
 
@@ -572,25 +609,25 @@ class TestPreUploadEventLoop:
                         "Content-Range": "bytes 0-0/1024",
                         "ETag": '"test-etag"',
                     },
-                    content=b'\x00',
+                    content=b"\x00",
                 )
             )
 
             part = Blob(
-                content=b'test data in async context',
+                content=b"test data in async context",
                 mime_type="image/png",
-                modality="image"
+                modality="image",
             )
             message = InputMessage(role="user", parts=[part])
 
             input_messages = [message]
 
-            test_data = b'test data in async context'
+            test_data = b"test data in async context"
 
             part2 = Uri(
                 uri="https://example.com/test.png",
                 mime_type="image/png",
-                modality="image"
+                modality="image",
             )
             message2 = InputMessage(role="assistant", parts=[part2])
             output_messages = [message2]
@@ -615,14 +652,14 @@ class TestPreUploadNonHttpUri:
         return MultimodalPreUploader(base_path="/tmp/test_upload")
 
     @staticmethod
-    @patch.object(MultimodalPreUploader, '_fetch_metadata_batch')
+    @patch.object(MultimodalPreUploader, "_fetch_metadata_batch")
     def test_non_http_uri_skipped(mock_fetch, pre_uploader):
         """Test non-http and already processed URIs are not fetched again"""
         # Test non-http/https URI
         part = Uri(
             uri="file:///local/path/image.png",
             mime_type="image/png",
-            modality="image"
+            modality="image",
         )
         message = InputMessage(role="user", parts=[part])
 
@@ -631,7 +668,7 @@ class TestPreUploadNonHttpUri:
         part = Uri(
             uri="sls://project/logstore/20241225/abc.png",
             mime_type="image/png",
-            modality="image"
+            modality="image",
         )
         message2 = InputMessage(role="user", parts=[part])
         input_messages.append(message2)
@@ -649,11 +686,28 @@ class TestPreUploadNonHttpUri:
     @staticmethod
     def test_is_http_uri_method(pre_uploader):
         """Test _is_http_uri method"""
-        assert MultimodalPreUploader._is_http_uri("http://example.com/test.png") is True
-        assert MultimodalPreUploader._is_http_uri("https://example.com/test.png") is True
-        assert MultimodalPreUploader._is_http_uri("HTTP://example.com/test.png") is False  # Case sensitive
-        assert MultimodalPreUploader._is_http_uri("file:///local/path.png") is False
-        assert MultimodalPreUploader._is_http_uri("sls://project/logstore/file.png") is False
+        assert (
+            MultimodalPreUploader._is_http_uri("http://example.com/test.png")
+            is True
+        )
+        assert (
+            MultimodalPreUploader._is_http_uri("https://example.com/test.png")
+            is True
+        )
+        assert (
+            MultimodalPreUploader._is_http_uri("HTTP://example.com/test.png")
+            is False
+        )  # Case sensitive
+        assert (
+            MultimodalPreUploader._is_http_uri("file:///local/path.png")
+            is False
+        )
+        assert (
+            MultimodalPreUploader._is_http_uri(
+                "sls://project/logstore/file.png"
+            )
+            is False
+        )
         assert MultimodalPreUploader._is_http_uri("/local/path.png") is False
 
 
@@ -666,7 +720,10 @@ class TestMultimodalUploadSwitch:
     @staticmethod
     def test_upload_mode_none_skips_all():
         """Test OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE=none skips all processing"""
-        with patch.dict("os.environ", {"OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE": "none"}):
+        with patch.dict(
+            "os.environ",
+            {"OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE": "none"},
+        ):
             pre_uploader = MultimodalPreUploader("/tmp/test")
             assert pre_uploader._process_input is False
             assert pre_uploader._process_output is False
@@ -674,7 +731,13 @@ class TestMultimodalUploadSwitch:
             # Even with multimodal data, don't process
             input_message = InputMessage(
                 role="user",
-                parts=[Blob(modality="image", mime_type="image/png", content=b"test")]
+                parts=[
+                    Blob(
+                        modality="image",
+                        mime_type="image/png",
+                        content=b"test",
+                    )
+                ],
             )
             input_messages = [input_message]
 
@@ -684,7 +747,10 @@ class TestMultimodalUploadSwitch:
     @staticmethod
     def test_upload_mode_input_only():
         """OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE=input only processes input"""
-        with patch.dict("os.environ", {"OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE": "input"}):
+        with patch.dict(
+            "os.environ",
+            {"OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE": "input"},
+        ):
             pre_uploader = MultimodalPreUploader("/tmp/test")
             assert pre_uploader._process_input is True
             assert pre_uploader._process_output is False
@@ -692,7 +758,10 @@ class TestMultimodalUploadSwitch:
     @staticmethod
     def test_upload_mode_output_only():
         """OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE=output only processes output"""
-        with patch.dict("os.environ", {"OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE": "output"}):
+        with patch.dict(
+            "os.environ",
+            {"OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_UPLOAD_MODE": "output"},
+        ):
             pre_uploader = MultimodalPreUploader("/tmp/test")
             assert pre_uploader._process_input is False
             assert pre_uploader._process_output is True
@@ -700,7 +769,12 @@ class TestMultimodalUploadSwitch:
     @staticmethod
     def test_download_disabled_skips_uri():
         """OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_ENABLED=false skips URI processing"""
-        with patch.dict("os.environ", {"OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_ENABLED": "false"}):
+        with patch.dict(
+            "os.environ",
+            {
+                "OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_DOWNLOAD_ENABLED": "false"
+            },
+        ):
             pre_uploader = MultimodalPreUploader("/tmp/test")
             assert pre_uploader._download_enabled is False
 
@@ -708,9 +782,17 @@ class TestMultimodalUploadSwitch:
             input_message = InputMessage(
                 role="user",
                 parts=[
-                    Blob(modality="image", mime_type="image/png", content=b"test"),
-                    Uri(modality="image", mime_type="image/jpeg", uri="https://example.com/img.jpg"),
-                ]
+                    Blob(
+                        modality="image",
+                        mime_type="image/png",
+                        content=b"test",
+                    ),
+                    Uri(
+                        modality="image",
+                        mime_type="image/jpeg",
+                        uri="https://example.com/img.jpg",
+                    ),
+                ],
             )
             input_messages = [input_message]
 

@@ -3,9 +3,11 @@ Test automatic audio format detection for MultimodalPreUploader
 Focuses on testing the _detect_audio_format method's ability to recognize various audio formats
 and audio format conversion (e.g., PCM16 to WAV)
 """
+
 from pathlib import Path
 
 import pytest
+
 from opentelemetry.util.genai._multimodal_upload import MultimodalPreUploader
 from opentelemetry.util.genai._multimodal_upload.pre_uploader import (
     _audio_libs_available,
@@ -40,31 +42,49 @@ class TestAudioFormatDetection:
     @staticmethod
     def test_detect_unknown_format(pre_uploader):
         """Test unrecognizable format"""
-        unknown_data = b'\x00' * 100
+        unknown_data = b"\x00" * 100
         detected = pre_uploader._detect_audio_format(unknown_data)
         assert detected is None
 
     @staticmethod
     def test_detect_insufficient_data(pre_uploader):
         """Test insufficient data case"""
-        short_data = b'\x00' * 5
+        short_data = b"\x00" * 5
         detected = pre_uploader._detect_audio_format(short_data)
         assert detected is None
 
     # ========== Real Audio File Format Detection Tests ==========
 
     @staticmethod
-    @pytest.mark.parametrize("filename,expected_mime,file_header_check", [
-        ("test.wav", "audio/wav", lambda d: d[:4] == b'RIFF' and d[8:12] == b'WAVE'),
-        ("test.mp3", "audio/mp3", lambda d: d[:3] == b'ID3' or (d[0] == 0xFF and (d[1] & 0xE0) == 0xE0)),
-        ("test.aac", "audio/aac", lambda d: d[0] == 0xFF and (d[1] & 0xF6) == 0xF0),
-        ("test.m4a", "audio/m4a", lambda d: d[4:8] == b'ftyp'),
-        ("test.ogg", "audio/ogg", lambda d: d[:4] == b'OggS'),
-        ("test.flac", "audio/flac", lambda d: d[:4] == b'fLaC'),
-        ("test.amr", "audio/amr", lambda d: d[:6] == b'#!AMR\n'),
-        ("test.3gp", "audio/3gpp", lambda d: d[4:8] == b'ftyp'),
-    ])
-    def test_detect_real_audio_format(pre_uploader, filename, expected_mime, file_header_check):
+    @pytest.mark.parametrize(
+        "filename,expected_mime,file_header_check",
+        [
+            (
+                "test.wav",
+                "audio/wav",
+                lambda d: d[:4] == b"RIFF" and d[8:12] == b"WAVE",
+            ),
+            (
+                "test.mp3",
+                "audio/mp3",
+                lambda d: d[:3] == b"ID3"
+                or (d[0] == 0xFF and (d[1] & 0xE0) == 0xE0),
+            ),
+            (
+                "test.aac",
+                "audio/aac",
+                lambda d: d[0] == 0xFF and (d[1] & 0xF6) == 0xF0,
+            ),
+            ("test.m4a", "audio/m4a", lambda d: d[4:8] == b"ftyp"),
+            ("test.ogg", "audio/ogg", lambda d: d[:4] == b"OggS"),
+            ("test.flac", "audio/flac", lambda d: d[:4] == b"fLaC"),
+            ("test.amr", "audio/amr", lambda d: d[:6] == b"#!AMR\n"),
+            ("test.3gp", "audio/3gpp", lambda d: d[4:8] == b"ftyp"),
+        ],
+    )
+    def test_detect_real_audio_format(
+        pre_uploader, filename, expected_mime, file_header_check
+    ):
         """Test real audio file format detection"""
         data = TestAudioFormatDetection._read_audio_file(filename)
 
@@ -75,32 +95,36 @@ class TestAudioFormatDetection:
         detected = pre_uploader._detect_audio_format(data)
         # AMR and 3GP may have multiple MIME types
         if expected_mime == "audio/amr":
-            assert detected in ("audio/amr", "audio/amr-wb"), \
+            assert detected in ("audio/amr", "audio/amr-wb"), (
                 f"{filename} format detection failed, detected: {detected}"
+            )
         elif expected_mime == "audio/3gpp":
-            assert detected in ("audio/3gpp", "audio/3gpp2"), \
+            assert detected in ("audio/3gpp", "audio/3gpp2"), (
                 f"{filename} format detection failed, detected: {detected}"
+            )
         else:
-            assert detected == expected_mime, \
+            assert detected == expected_mime, (
                 f"{filename} format detection failed, expected {expected_mime}, got {detected}"
+            )
 
     # ========== PCM16 to WAV Conversion Tests ==========
 
     @staticmethod
-    @pytest.mark.parametrize("pcm_mime_type", [
-        "audio/pcm16",
-        "audio/l16",
-        "audio/pcm",
-    ])
+    @pytest.mark.parametrize(
+        "pcm_mime_type",
+        [
+            "audio/pcm16",
+            "audio/l16",
+            "audio/pcm",
+        ],
+    )
     def test_pcm16_to_wav_conversion(pre_uploader, pcm_mime_type):
         """Test PCM16 to WAV format conversion"""
         # Create simulated PCM16 data
-        pcm_data = b'\x00\x01' * 1000
+        pcm_data = b"\x00\x01" * 1000
 
         part = Blob(
-            content=pcm_data,
-            mime_type=pcm_mime_type,
-            modality="audio"
+            content=pcm_data, mime_type=pcm_mime_type, modality="audio"
         )
 
         input_message = InputMessage(role="user", parts=[part])

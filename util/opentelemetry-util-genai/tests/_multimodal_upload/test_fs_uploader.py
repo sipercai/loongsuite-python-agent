@@ -2,6 +2,7 @@
 
 此测试文件测试基于 fsspec 的 FsUploader，依赖 fsspec/ossfs。
 """
+
 import json as _json
 import os
 import threading
@@ -12,6 +13,7 @@ from unittest.mock import MagicMock, patch
 import fsspec
 import httpx
 import pytest
+
 from opentelemetry.util.genai._multimodal_upload import FsUploader, UploadItem
 
 # 使用测试文件自身作为测试内容
@@ -40,12 +42,14 @@ def test_upload_local_binary():
         if os.path.exists(meta_path):
             os.remove(meta_path)
 
-        ok = uploader.upload(UploadItem(
-            url="sample.bin",
-            data=content,
-            content_type="application/octet-stream",
-            meta={"from": "test", "owner": "ci"},
-        ))
+        ok = uploader.upload(
+            UploadItem(
+                url="sample.bin",
+                data=content,
+                content_type="application/octet-stream",
+                meta={"from": "test", "owner": "ci"},
+            )
+        )
         assert ok
         uploader.shutdown()
 
@@ -69,11 +73,21 @@ def test_upload_oss_binary_env():
     endpoint = "https://oss-" + region_id + ".aliyuncs.com"
     key = os.getenv("APSARA_APM_COLLECTOR_MULTIMODAL_OSS_ACCESS_KEY")
     secret = os.getenv("APSARA_APM_COLLECTOR_MULTIMODAL_OSS_ACCESS_SECRET_KEY")
-    storage_base_path = os.getenv("OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_STORAGE_BASE_PATH", "")
+    storage_base_path = os.getenv(
+        "OTEL_INSTRUMENTATION_GENAI_MULTIMODAL_STORAGE_BASE_PATH", ""
+    )
 
     # 提前检查必要的环境变量
-    if not (region_id and key and secret and storage_base_path and "://" in storage_base_path):
-        pytest.skip("OSS credentials not set in environment; source export_env.sh to run this test.")
+    if not (
+        region_id
+        and key
+        and secret
+        and storage_base_path
+        and "://" in storage_base_path
+    ):
+        pytest.skip(
+            "OSS credentials not set in environment; source export_env.sh to run this test."
+        )
 
     bucket = storage_base_path.split("://", 1)[1].split("/", 1)[0]
 
@@ -105,12 +119,14 @@ def test_upload_oss_binary_env():
         except (OSError, IOError):
             pass
 
-        ok = uploader.upload(UploadItem(
-            url=key_path,
-            data=content,
-            content_type="application/octet-stream",
-            meta={"from": "test"},
-        ))
+        ok = uploader.upload(
+            UploadItem(
+                url=key_path,
+                data=content,
+                content_type="application/octet-stream",
+                meta={"from": "test"},
+            )
+        )
         assert ok
         uploader.shutdown()
 
@@ -146,19 +162,69 @@ def test_max_queue_size_limit():
 
     try:
         # 前 3 个应该成功入队
-        assert uploader.upload(UploadItem(url="file1.txt", data=b"content1", content_type="text/plain", meta={})) is True
-        assert uploader.upload(UploadItem(url="file2.txt", data=b"content2", content_type="text/plain", meta={})) is True
-        assert uploader.upload(UploadItem(url="file3.txt", data=b"content3", content_type="text/plain", meta={})) is True
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file1.txt",
+                    data=b"content1",
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is True
+        )
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file2.txt",
+                    data=b"content2",
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is True
+        )
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file3.txt",
+                    data=b"content3",
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is True
+        )
 
         # 第 4 个应该因队列满而失败
-        assert uploader.upload(UploadItem(url="file4.txt", data=b"content4", content_type="text/plain", meta={})) is False
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file4.txt",
+                    data=b"content4",
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is False
+        )
 
         # 解除阻塞，让任务完成
         block_event.set()
         time.sleep(0.5)
 
         # 现在应该可以入队了
-        assert uploader.upload(UploadItem(url="file5.txt", data=b"content5", content_type="text/plain", meta={})) is True
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file5.txt",
+                    data=b"content5",
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is True
+        )
     finally:
         block_event.set()
         uploader.shutdown(timeout=5.0)
@@ -192,21 +258,71 @@ def test_max_queue_bytes_limit():
         content_50 = b"x" * 50
 
         # 前 2 个应该成功入队 (50 + 50 = 100)
-        assert uploader.upload(UploadItem(url="file1.txt", data=content_50, content_type="text/plain", meta={})) is True
-        assert uploader.upload(UploadItem(url="file2.txt", data=content_50, content_type="text/plain", meta={})) is True
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file1.txt",
+                    data=content_50,
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is True
+        )
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file2.txt",
+                    data=content_50,
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is True
+        )
 
         # 第 3 个应该因字节数超限而失败
-        assert uploader.upload(UploadItem(url="file3.txt", data=content_50, content_type="text/plain", meta={})) is False
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file3.txt",
+                    data=content_50,
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is False
+        )
 
         # 小内容也不行，因为已经到达 100 字节限制
-        assert uploader.upload(UploadItem(url="small.txt", data=b"tiny", content_type="text/plain", meta={})) is False
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="small.txt",
+                    data=b"tiny",
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is False
+        )
 
         # 解除阻塞，让任务完成
         block_event.set()
         time.sleep(0.5)
 
         # 现在应该可以入队了
-        assert uploader.upload(UploadItem(url="file4.txt", data=content_50, content_type="text/plain", meta={})) is True
+        assert (
+            uploader.upload(
+                UploadItem(
+                    url="file4.txt",
+                    data=content_50,
+                    content_type="text/plain",
+                    meta={},
+                )
+            )
+            is True
+        )
     finally:
         block_event.set()
         uploader.shutdown(timeout=5.0)
@@ -218,32 +334,58 @@ class TestDownloadAndUpload:
     @staticmethod
     def test_upload_with_source_uri_requires_no_content():
         """测试 source_uri 参数：不需要提供 data"""
-        base_dir = os.path.abspath(os.path.join(os.getcwd(), "upload_source_uri_test"))
+        base_dir = os.path.abspath(
+            os.path.join(os.getcwd(), "upload_source_uri_test")
+        )
         os.makedirs(base_dir, exist_ok=True)
 
         uploader = FsUploader(base_path=base_dir, max_workers=1)
         try:
             # 没有 data 也没有 source_uri，应该失败
-            assert uploader.upload(UploadItem(url="fail.txt", content_type="text/plain", meta={})) is False
+            assert (
+                uploader.upload(
+                    UploadItem(
+                        url="fail.txt", content_type="text/plain", meta={}
+                    )
+                )
+                is False
+            )
 
             # 有 data 应该成功
-            assert uploader.upload(UploadItem(url="success1.txt", data=b"content", content_type="text/plain", meta={})) is True
+            assert (
+                uploader.upload(
+                    UploadItem(
+                        url="success1.txt",
+                        data=b"content",
+                        content_type="text/plain",
+                        meta={},
+                    )
+                )
+                is True
+            )
 
             # 有 source_uri 应该成功（入队），但实际下载可能失败
-            assert uploader.upload(UploadItem(
-                url="success2.txt",
-                source_uri="https://httpbin.org/bytes/100",
-                expected_size=100,
-                content_type="application/octet-stream",
-                meta={},
-            )) is True
+            assert (
+                uploader.upload(
+                    UploadItem(
+                        url="success2.txt",
+                        source_uri="https://httpbin.org/bytes/100",
+                        expected_size=100,
+                        content_type="application/octet-stream",
+                        meta={},
+                    )
+                )
+                is True
+            )
         finally:
             uploader.shutdown(timeout=5.0)
 
     @staticmethod
     def test_download_content_with_mock():
         """测试 _download_content 方法（使用 mock）"""
-        base_dir = os.path.abspath(os.path.join(os.getcwd(), "upload_download_test"))
+        base_dir = os.path.abspath(
+            os.path.join(os.getcwd(), "upload_download_test")
+        )
         os.makedirs(base_dir, exist_ok=True)
 
         uploader = FsUploader(base_path=base_dir, max_workers=1)
@@ -263,10 +405,9 @@ class TestDownloadAndUpload:
             mock_client.__enter__ = MagicMock(return_value=mock_client)
             mock_client.__exit__ = MagicMock(return_value=False)
 
-            with patch('httpx.Client', return_value=mock_client):
+            with patch("httpx.Client", return_value=mock_client):
                 result = uploader._download_content(
-                    "https://example.com/test.bin",
-                    max_size=1024
+                    "https://example.com/test.bin", max_size=1024
                 )
                 assert result == test_content
 
@@ -274,10 +415,10 @@ class TestDownloadAndUpload:
             large_content = b"x" * 100
             mock_response.iter_bytes.return_value = [large_content]
 
-            with patch('httpx.Client', return_value=mock_client):
+            with patch("httpx.Client", return_value=mock_client):
                 result = uploader._download_content(
                     "https://example.com/large.bin",
-                    max_size=50  # 小于 100
+                    max_size=50,  # 小于 100
                 )
                 assert result is None
         finally:
@@ -286,17 +427,20 @@ class TestDownloadAndUpload:
     @staticmethod
     def test_download_content_exception_handling():
         """测试 _download_content 异常处理"""
-        base_dir = os.path.abspath(os.path.join(os.getcwd(), "upload_download_exc_test"))
+        base_dir = os.path.abspath(
+            os.path.join(os.getcwd(), "upload_download_exc_test")
+        )
         os.makedirs(base_dir, exist_ok=True)
 
         uploader = FsUploader(base_path=base_dir, max_workers=1)
 
         try:
             # Mock httpx.Client 抛出 httpx.HTTPError 异常（更具体的异常类型）
-            with patch('httpx.Client', side_effect=httpx.ConnectError("Network error")):
+            with patch(
+                "httpx.Client", side_effect=httpx.ConnectError("Network error")
+            ):
                 result = uploader._download_content(
-                    "https://example.com/error.bin",
-                    max_size=1024
+                    "https://example.com/error.bin", max_size=1024
                 )
                 assert result is None
         finally:
@@ -305,7 +449,9 @@ class TestDownloadAndUpload:
     @staticmethod
     def test_queue_bytes_with_expected_size():
         """测试使用 expected_size 进行队列字节管理"""
-        base_dir = os.path.abspath(os.path.join(os.getcwd(), "upload_expected_size_test"))
+        base_dir = os.path.abspath(
+            os.path.join(os.getcwd(), "upload_expected_size_test")
+        )
         os.makedirs(base_dir, exist_ok=True)
 
         uploader = FsUploader(
@@ -327,29 +473,44 @@ class TestDownloadAndUpload:
 
         try:
             # 使用 expected_size 入队（50 + 50 = 100）
-            assert uploader.upload(UploadItem(
-                url="file1.txt",
-                source_uri="https://example.com/file1",
-                expected_size=50,
-                content_type="application/octet-stream",
-                meta={},
-            )) is True
-            assert uploader.upload(UploadItem(
-                url="file2.txt",
-                source_uri="https://example.com/file2",
-                expected_size=50,
-                content_type="application/octet-stream",
-                meta={},
-            )) is True
+            assert (
+                uploader.upload(
+                    UploadItem(
+                        url="file1.txt",
+                        source_uri="https://example.com/file1",
+                        expected_size=50,
+                        content_type="application/octet-stream",
+                        meta={},
+                    )
+                )
+                is True
+            )
+            assert (
+                uploader.upload(
+                    UploadItem(
+                        url="file2.txt",
+                        source_uri="https://example.com/file2",
+                        expected_size=50,
+                        content_type="application/octet-stream",
+                        meta={},
+                    )
+                )
+                is True
+            )
 
             # 第 3 个应该因字节数超限而失败
-            assert uploader.upload(UploadItem(
-                url="file3.txt",
-                source_uri="https://example.com/file3",
-                expected_size=10,
-                content_type="application/octet-stream",
-                meta={},
-            )) is False
+            assert (
+                uploader.upload(
+                    UploadItem(
+                        url="file3.txt",
+                        source_uri="https://example.com/file3",
+                        expected_size=10,
+                        content_type="application/octet-stream",
+                        meta={},
+                    )
+                )
+                is False
+            )
 
         finally:
             block_event.set()
