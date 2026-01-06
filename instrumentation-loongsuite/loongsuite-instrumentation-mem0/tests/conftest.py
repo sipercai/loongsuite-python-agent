@@ -43,6 +43,14 @@ from typing import Any, Dict, List, cast
 
 from opentelemetry.instrumentation.mem0 import Mem0Instrumentor
 
+try:
+    # vcrpy internally defines RecordMode in vcr.record_mode.
+    # Keep this import at module level to satisfy ruff (PLC0415) and to ensure
+    # our vcr_config passes an enum (avoids unmatched requests leaking to real network).
+    from vcr.record_mode import RecordMode  # type: ignore
+except Exception:  # pragma: no cover
+    RecordMode = None  # type: ignore
+
 
 # Fake classes for testing
 class FakeVectorStore:
@@ -405,11 +413,10 @@ def vcr_config(request):
         pass
 
     try:
-        # vcrpy internally defines RecordMode in vcr.record_mode.
-        # Importing from there is more stable for type checkers.
-        from vcr.record_mode import RecordMode  # type: ignore
-
-        record_mode = RecordMode(record_mode_value)
+        if RecordMode is not None:
+            record_mode = RecordMode(record_mode_value)
+        else:
+            record_mode = record_mode_value
     except Exception:
         # Fall back to raw string if vcr isn't available or enum coercion fails.
         record_mode = record_mode_value
