@@ -43,14 +43,6 @@ from typing import Any, Dict, List, cast
 
 from opentelemetry.instrumentation.mem0 import Mem0Instrumentor
 
-try:
-    # vcrpy internally defines RecordMode in vcr.record_mode.
-    # Keep this import at module level to satisfy ruff (PLC0415) and to ensure
-    # our vcr_config passes an enum (avoids unmatched requests leaking to real network).
-    from vcr.record_mode import RecordMode  # type: ignore
-except Exception:  # pragma: no cover
-    RecordMode = None  # type: ignore
-
 
 # Fake classes for testing
 class FakeVectorStore:
@@ -399,27 +391,14 @@ def instrument_with_factories_patched(
 
 @pytest.fixture(scope="module")
 def vcr_config(request):
-    # Default to playback mode (none), only change when --vcr-record is explicitly passed.
-    #
-    # IMPORTANT: vcrpy expects RecordMode enum. If we pass raw strings like "none",
-    # Cassette.write_protected checks (record_mode == RecordMode.NONE) will fail and
-    # unmatched requests may leak to real network (then you see 401 in CI).
-    record_mode_value = "none"
+    # Default to playback mode (none), only change when --record-mode is explicitly passed
+    record_mode = "none"
     try:
-        # Try to get --vcr-record option (pytest-vcr standard option)
-        record_mode_value = request.config.getoption("--vcr-record") or "none"  # type: ignore
+        # Compatible with pytest-recording/pytest-vcr option names
+        record_mode = request.config.getoption("--record-mode") or "none"  # type: ignore
     except Exception:
         # ignore exception
         pass
-
-    try:
-        if RecordMode is not None:
-            record_mode = RecordMode(record_mode_value)
-        else:
-            record_mode = record_mode_value
-    except Exception:
-        # Fall back to raw string if vcr isn't available or enum coercion fails.
-        record_mode = record_mode_value
 
     # Flatten cassette files to tests/cassettes directory without subdirectories
     def _flatten_path(path: str) -> str:
