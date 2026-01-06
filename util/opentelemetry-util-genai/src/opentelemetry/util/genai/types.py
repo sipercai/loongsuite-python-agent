@@ -27,7 +27,7 @@ from opentelemetry.semconv._incubating.attributes import (
 )
 from opentelemetry.trace import Span
 
-# Aliyun Python Agent Extension: Add type alias for ContextToken to avoid failure in python 3.8
+# LoongSuite Extension: Add type alias for ContextToken to avoid failure in python 3.8
 ContextToken: TypeAlias = Token[Context]
 
 

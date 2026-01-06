@@ -30,7 +30,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import queue
@@ -70,6 +69,9 @@ from opentelemetry.util.genai.types import (
     LLMInvocation,
     OutputMessage,
     Uri,
+)
+from opentelemetry.util.genai.utils import (
+    gen_ai_json_dumps,
 )
 
 if TYPE_CHECKING:
@@ -407,12 +409,12 @@ class MultimodalProcessingMixin:
             if input_metadata:
                 span.set_attribute(
                     GenAIEx.GEN_AI_INPUT_MULTIMODAL_METADATA,
-                    json.dumps(input_metadata),
+                    gen_ai_json_dumps(input_metadata),
                 )
             if output_metadata:
                 span.set_attribute(
                     GenAIEx.GEN_AI_OUTPUT_MULTIMODAL_METADATA,
-                    json.dumps(output_metadata),
+                    gen_ai_json_dumps(output_metadata),
                 )
 
         # 2. Execute original attribute setting
@@ -450,12 +452,12 @@ class MultimodalProcessingMixin:
             if input_metadata:
                 span.set_attribute(
                     GenAIEx.GEN_AI_INPUT_MULTIMODAL_METADATA,
-                    json.dumps(input_metadata),
+                    gen_ai_json_dumps(input_metadata),
                 )
             if output_metadata:
                 span.set_attribute(
                     GenAIEx.GEN_AI_OUTPUT_MULTIMODAL_METADATA,
-                    json.dumps(output_metadata),
+                    gen_ai_json_dumps(output_metadata),
                 )
 
         # 2. Set attributes

@@ -50,7 +50,24 @@ from opentelemetry.util.genai.extended_environment_variables import (
 )
 from opentelemetry.util.genai.types import Base64Blob, Blob, Modality, Uri
 
+# Try importing audio processing libraries (optional dependencies)
+try:
+    import numpy as np
+    import soundfile as sf  # pyright: ignore[reportMissingImports]
+
+    _audio_libs_available = True
+except ImportError:
+    np = None
+    sf = None
+    _audio_libs_available = False
+
 _logger = logging.getLogger(__name__)
+
+# Log warning if audio libraries are not available
+if not _audio_libs_available:
+    _logger.warning(
+        "numpy or soundfile not available, PCM16 to WAV conversion will be skipped"
+    )
 
 # Supported modality types for pre-upload
 _SUPPORTED_MODALITIES = ("image", "video", "audio")
@@ -73,21 +90,6 @@ class UriMetadata:
     content_length: int
     etag: Optional[str] = None
     last_modified: Optional[str] = None
-
-
-# Try importing audio processing libraries
-try:
-    import numpy as np
-    import soundfile as sf  # pyright: ignore[reportMissingImports]
-
-    _audio_libs_available = True
-except ImportError:
-    np = None
-    sf = None
-    _audio_libs_available = False
-    _logger.warning(
-        "numpy or soundfile not available, PCM16 to WAV conversion will be skipped"
-    )
 
 
 class MultimodalPreUploader(PreUploader):

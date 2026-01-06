@@ -41,11 +41,14 @@ try:
     from opentelemetry.util.genai._multimodal_upload.fs_uploader import (
         FsUploader,
     )
+except ImportError:
+    FsUploader = None
+
+try:
     from opentelemetry.util.genai._multimodal_upload.pre_uploader import (
         MultimodalPreUploader,
     )
 except ImportError:
-    FsUploader = None
     MultimodalPreUploader = None
 
 _uploader: Optional[Uploader] = None
@@ -89,10 +92,13 @@ __all__ = [
     "PreUploadItem",
     "Uploader",
     "PreUploader",
-    "FsUploader",
-    "MultimodalPreUploader",
     "set_uploader",
     "get_uploader",
     "set_pre_uploader",
     "get_pre_uploader",
 ]
+
+if FsUploader is not None:
+    __all__.append("FsUploader")
+if MultimodalPreUploader is not None:
+    __all__.append("MultimodalPreUploader")
