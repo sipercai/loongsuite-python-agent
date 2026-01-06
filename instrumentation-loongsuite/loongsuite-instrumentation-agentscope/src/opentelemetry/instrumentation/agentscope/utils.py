@@ -10,7 +10,7 @@ import json
 import logging
 from dataclasses import is_dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from agentscope import _config
 from agentscope.agent import AgentBase
@@ -30,6 +30,7 @@ from opentelemetry.util.genai.types import (
     InputMessage,
     LLMInvocation,
     OutputMessage,
+    Reasoning,
     Text,
     ToolCall,
     ToolCallResponse,
@@ -208,21 +209,32 @@ def _convert_block_to_part(block: Dict[str, Any]) -> Dict[str, Any] | None:
             "result": result,
         }
 
-    elif block_type == "image":
+    elif block_type in ["image", "audio", "video"]:
         source = block.get("source", {})
         source_type = source.get("type")
+        media_type = source.get("media_type")
+
         if source_type == "url":
-            return {"type": "image", "url": source.get("url", "")}
+            return {
+                "type": "uri",
+                "uri": source.get("url", ""),
+                "modality": block_type,
+                "mime_type": media_type,
+            }
         elif source_type == "base64":
-            data = source.get("data", "")
-            media_type = source.get("media_type", "image/jpeg")
-            return {"type": "image", "url": f"data:{media_type};base64,{data}"}
-
-    elif block_type == "audio":
-        return {"type": "audio", "source": block.get("source", {})}
-
-    elif block_type == "video":
-        return {"type": "video", "source": block.get("source", {})}
+            if not media_type:
+                default_media_types = {
+                    "image": "image/jpeg",
+                    "audio": "audio/wav",
+                    "video": "video/mp4",
+                }
+                media_type = default_media_types.get(block_type, "unknown")
+            return {
+                "type": "blob",
+                "content": source.get("data", ""),
+                "media_type": media_type,
+                "modality": block_type,
+            }
 
     return None
 
@@ -463,6 +475,12 @@ def convert_agentscope_messages_to_genai_format(
                         response=part.get("result", ""),
                     )
                 )
+            elif part_type == "reasoning":
+                converted_parts.append(
+                    Reasoning(content=part.get("content", ""))
+                )
+            elif part_type in ("uri", "blob"):
+                converted_parts.append(part)
             else:
                 # Keep other types as-is
                 converted_parts.append(part)
@@ -536,6 +554,10 @@ def convert_agent_response_to_output_messages(
             part_type = part.get("type")
             if part_type == "text":
                 converted_parts.append(Text(content=part.get("content", "")))
+            elif part_type == "reasoning":
+                converted_parts.append(
+                    Reasoning(content=part.get("content", ""))
+                )
             elif part_type == "tool_call":
                 converted_parts.append(
                     ToolCall(
@@ -544,6 +566,8 @@ def convert_agent_response_to_output_messages(
                         arguments=part.get("arguments", {}),
                     )
                 )
+            elif part_type in ("uri", "blob"):
+                converted_parts.append(part)
             else:
                 converted_parts.append(Text(content=str(part)))
 

@@ -21,7 +21,7 @@ from functools import wraps
 from typing import Any, AsyncGenerator
 
 from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
-from opentelemetry.util.genai.types import Error
+from opentelemetry.util.genai.types import Error, LLMInvocation
 
 from .utils import (
     convert_agent_response_to_output_messages,
