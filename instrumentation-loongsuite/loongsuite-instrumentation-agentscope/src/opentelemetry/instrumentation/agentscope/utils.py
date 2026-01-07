@@ -12,6 +12,7 @@ import mimetypes
 from dataclasses import is_dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 from agentscope import _config
 from agentscope.agent import AgentBase
@@ -219,7 +220,8 @@ def _convert_block_to_part(block: Dict[str, Any]) -> Dict[str, Any] | None:
             url = source.get("url", "")
             # Infer mime_type from URL extension if not provided
             if not media_type:
-                media_type, _ = mimetypes.guess_type(url)
+                parsed_url = urlparse(url)
+                media_type, _ = mimetypes.guess_type(parsed_url.path)
             return {
                 "type": "uri",
                 "uri": url,
