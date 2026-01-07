@@ -20,6 +20,9 @@ pip install agentscope
 
 # Install this instrumentation
 pip install ./instrumentation-loongsuite/loongsuite-instrumentation-agentscope
+
+# Note: This instrumentation uses ExtendedTelemetryHandler from opentelemetry-util-genai
+pip install ./util/opentelemetry-util-genai
 ```
 
 ## Usage
@@ -67,6 +70,9 @@ opentelemetry-instrument python your_app.py
 Control message content capture using environment variables:
 
 ```bash
+# Enable experimental GenAI semantic conventions
+export OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
+
 # Capture content in spans only
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=SPAN_ONLY
 
