@@ -27,6 +27,7 @@ from opentelemetry.semconv._incubating.attributes import (
 )
 from opentelemetry.trace import Span
 
+# LoongSuite Extension: Add type alias for ContextToken to avoid failure in python 3.8
 ContextToken: TypeAlias = Token[Context]
 
 
@@ -164,6 +165,20 @@ class OutputMessage:
 
 
 @dataclass()
+class Base64Blob:
+    """Represents base64 encoded blob binary data sent inline to the model
+
+    This model is specified as part of semconv in `GenAI messages Python models - BlobPart
+    <https://github.com/open-telemetry/semantic-conventions/blob/main/docs/gen-ai/non-normative/models.ipynb>`__.
+    """
+
+    mime_type: str | None
+    modality: Union[Modality, str]
+    content: str
+    type: Literal["base64_blob"] = "base64_blob"
+
+
+@dataclass()
 class FunctionToolDefinition:
     name: str
     description: str | None
@@ -241,6 +256,13 @@ class LLMInvocation:
     Monotonic start time in seconds (from timeit.default_timer) used
     for duration calculations to avoid mixing clock sources. This is
     populated by the TelemetryHandler when starting an invocation.
+    """
+    monotonic_end_s: float | None = None  # LoongSuite Extension
+    """
+    Monotonic end time in seconds (from timeit.default_timer) used
+    for duration calculations in async multimodal processing. This is
+    populated by the ExtendedTelemetryHandler when stopping an invocation
+    with multimodal data.
     """
 
 
