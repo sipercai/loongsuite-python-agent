@@ -7,5 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- Add multimodal separation and upload support for GenAI utils. ([#94](https://github.com/alibaba/loongsuite-python-agent/pull/94))
 - Add support for memory operations. ([#83](https://github.com/alibaba/loongsuite-python-agent/pull/83))
+
+- Add multimodal separation and upload support for GenAI utils. ([#94](https://github.com/alibaba/loongsuite-python-agent/pull/94))
+
+- Fix compatibility with Python 3.8 hashlib usage. ([#102](https://github.com/alibaba/loongsuite-python-agent/pull/102))
