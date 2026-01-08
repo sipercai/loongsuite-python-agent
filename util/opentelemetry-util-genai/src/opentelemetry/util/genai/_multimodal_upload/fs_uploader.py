@@ -19,7 +19,6 @@ Supports fsspec protocols (local, OSS, SLS, etc.).
 
 from __future__ import annotations
 
-import hashlib
 import io
 import json
 import logging
@@ -36,6 +35,9 @@ import fsspec
 import httpx
 
 from opentelemetry.instrumentation.utils import suppress_http_instrumentation
+
+# LoongSuite Extension: For Python 3.8 Compatibility
+from opentelemetry.util.genai import compatible_hashlib as hashlib
 from opentelemetry.util.genai._multimodal_upload._base import (
     Uploader,
     UploadItem,
