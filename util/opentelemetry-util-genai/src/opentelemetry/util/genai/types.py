@@ -14,21 +14,21 @@
 
 from __future__ import annotations
 
-from contextvars import Token
+from contextvars import Token  # pylint: disable=W0611
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Literal, Type, Union
 
 from typing_extensions import TypeAlias
 
-from opentelemetry.context import Context
+from opentelemetry.context import Context  # pylint: disable=W0611
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAI,
 )
 from opentelemetry.trace import Span
 
 # LoongSuite Extension: Add type alias for ContextToken to avoid failure in python 3.8
-ContextToken: TypeAlias = Token[Context]
+ContextToken: TypeAlias = "Token[Context]"
 
 
 class ContentCapturingMode(Enum):
