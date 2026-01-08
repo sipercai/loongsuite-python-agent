@@ -29,12 +29,14 @@ from uuid import uuid4
 
 import fsspec
 
-# Aliyun Python Agent Extension: Add support for Python 3.8
+# LoongSuite Extension: For Python 3.8 Compatibility
 from typing_extensions import TypeAlias
 
 from opentelemetry._logs import LogRecord
 from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
 from opentelemetry.trace import Span
+
+# LoongSuite Extension: For Python 3.8 Compatibility
 from opentelemetry.util.genai import compatible_hashlib as hashlib
 from opentelemetry.util.genai import types
 from opentelemetry.util.genai.completion_hook import CompletionHook
@@ -75,11 +77,11 @@ class CompletionRefs:
     system_instruction_ref: str
 
 
-# Aliyun Python Agent Extension: Use TypeAlias with string annotation for Python 3.8 compatibility
+# LoongSuite Extension: Use TypeAlias with string annotation for Python 3.8 compatibility
 JsonEncodeable: TypeAlias = "list[dict[str, Any]]"
 
 # mapping of upload path and whether the contents were hashed to the filename to function computing upload data dict
-# Aliyun Python Agent Extension: Use TypeAlias with string annotation for Python 3.8 compatibility
+# LoongSuite Extension: Use TypeAlias with string annotation for Python 3.8 compatibility
 UploadData: TypeAlias = "dict[tuple[str, bool], Callable[[], JsonEncodeable]]"
 
 
