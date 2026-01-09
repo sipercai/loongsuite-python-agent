@@ -1388,17 +1388,13 @@ class TestMultimodalProcessingMixin(unittest.TestCase):
         inv.span = mock_span
         error = Error(message="err", type=ValueError)
 
-        with (
-            patch(
-                "opentelemetry.util.genai._multimodal_processing._apply_llm_finish_attributes"
-            ) as m1,
-            patch(
-                "opentelemetry.util.genai._multimodal_processing._apply_error_attributes"
-            ) as m2,
-            patch(
-                "opentelemetry.util.genai._multimodal_processing._maybe_emit_llm_event"
-            ),
-        ):
+        with patch(
+            "opentelemetry.util.genai._multimodal_processing._apply_llm_finish_attributes"
+        ) as m1, patch(
+            "opentelemetry.util.genai._multimodal_processing._apply_error_attributes"
+        ) as m2, patch(
+            "opentelemetry.util.genai._multimodal_processing._maybe_emit_llm_event"
+        ):  # fmt: skip
             handler._fallback_end_span(inv)
             m1.assert_called_with(mock_span, inv)
             mock_span.end.assert_called_once()
@@ -1428,17 +1424,13 @@ class TestMultimodalProcessingMixin(unittest.TestCase):
             )
         ]
 
-        with (
-            patch(
-                "opentelemetry.util.genai._multimodal_processing._apply_llm_finish_attributes"
-            ) as m1,
-            patch(
-                "opentelemetry.util.genai._multimodal_processing._apply_error_attributes"
-            ) as m2,
-            patch(
-                "opentelemetry.util.genai._multimodal_processing._maybe_emit_llm_event"
-            ),
-        ):
+        with patch(
+            "opentelemetry.util.genai._multimodal_processing._apply_llm_finish_attributes"
+        ) as m1, patch(
+            "opentelemetry.util.genai._multimodal_processing._apply_error_attributes"
+        ) as m2, patch(
+            "opentelemetry.util.genai._multimodal_processing._maybe_emit_llm_event"
+        ):  # fmt: skip
             handler._async_stop_llm(
                 _MultimodalAsyncTask(
                     invocation=inv, method="stop", handler=handler
