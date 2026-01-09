@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 from claude_agent_sdk import HookMatcher
 from claude_agent_sdk.types import ClaudeAgentOptions
 
+from opentelemetry import context as otel_context
 from opentelemetry.instrumentation.claude_agent_sdk.context import (
     clear_parent_invocation,
     set_parent_invocation,
@@ -548,6 +549,8 @@ async def wrap_claude_client_receive_response(
         else [],
     )
 
+    # Clear context to create a new root trace for each independent query
+    otel_context.attach(otel_context.Context())
     handler.start_invoke_agent(agent_invocation)
     set_parent_invocation(agent_invocation)
 
@@ -647,6 +650,8 @@ async def wrap_query(wrapped, instance, args, kwargs, handler=None):
         else [],
     )
 
+    # Clear context to create a new root trace for each independent query
+    otel_context.attach(otel_context.Context())
     handler.start_invoke_agent(agent_invocation)
     set_parent_invocation(agent_invocation)
 
