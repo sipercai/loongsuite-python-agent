@@ -22,6 +22,22 @@ os.environ.setdefault(
     "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "SPAN_ONLY"
 )
 
+from opentelemetry.instrumentation._semconv import (
+    OTEL_SEMCONV_STABILITY_OPT_IN,
+    _OpenTelemetrySemanticConventionStability,
+)
+from opentelemetry.instrumentation.claude_agent_sdk import (
+    ClaudeAgentSDKInstrumentor,
+)
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
+)
+from opentelemetry.util.genai.environment_variables import (
+    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT,
+)
+
 
 def pytest_configure(config):
     """Register custom markers."""
@@ -44,22 +60,6 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "requires_cli" in item.keywords and not has_real_api:
             item.add_marker(skip_cli)
-
-from opentelemetry.instrumentation._semconv import (
-    OTEL_SEMCONV_STABILITY_OPT_IN,
-    _OpenTelemetrySemanticConventionStability,
-)
-from opentelemetry.instrumentation.claude_agent_sdk import (
-    ClaudeAgentSDKInstrumentor,
-)
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
-    InMemorySpanExporter,
-)
-from opentelemetry.util.genai.environment_variables import (
-    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT,
-)
 
 
 @pytest.fixture(scope="function", name="span_exporter")
