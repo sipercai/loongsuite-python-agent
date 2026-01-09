@@ -55,3 +55,8 @@ include = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/opentelemetry"]
 
+[tool.pytest.ini_options]
+markers = [
+  "requires_cli: marks tests that require Claude CLI executable (skipped in CI)",
+]
+

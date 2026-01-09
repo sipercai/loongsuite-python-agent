@@ -17,6 +17,7 @@ from opentelemetry.semconv._incubating.attributes import (
 )
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_span_attributes_semantic_conventions(instrument, span_exporter):
     """Test that all spans follow semantic conventions."""
@@ -52,6 +53,7 @@ async def test_span_attributes_semantic_conventions(instrument, span_exporter):
                 assert GenAIAttributes.GEN_AI_REQUEST_MODEL in span.attributes
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_agent_span_naming_convention(instrument, span_exporter):
     """Test agent span naming follows conventions."""
@@ -78,6 +80,7 @@ async def test_agent_span_naming_convention(instrument, span_exporter):
     )
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_llm_span_naming_convention(instrument, span_exporter):
     """Test LLM span naming follows conventions."""
@@ -107,6 +110,7 @@ async def test_llm_span_naming_convention(instrument, span_exporter):
     assert "qwen" in llm_span.name.lower() or "qwen-plus" in llm_span.name
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_tool_span_naming_convention(instrument, span_exporter):
     """Test tool span naming follows conventions."""
@@ -133,6 +137,7 @@ async def test_tool_span_naming_convention(instrument, span_exporter):
         assert "execute_tool" in tool_span.name
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_span_context_propagation(instrument, span_exporter):
     """Test that span context is properly propagated."""
@@ -164,6 +169,7 @@ async def test_span_context_propagation(instrument, span_exporter):
             assert span.parent.span_id == agent_span_id
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_token_usage_attributes(instrument, span_exporter):
     """Test that token usage attributes are captured."""
@@ -242,6 +248,7 @@ def test_instrumentor_class_exported():
     assert hasattr(claude_agent_sdk, "__version__")
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_multiple_concurrent_queries(instrument, span_exporter):
     """Test that multiple concurrent queries are handled correctly."""
@@ -271,6 +278,7 @@ async def test_multiple_concurrent_queries(instrument, span_exporter):
     assert len(agent_spans) >= 2
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_span_attributes_no_sensitive_data(
     instrument_no_content, span_exporter

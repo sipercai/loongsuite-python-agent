@@ -24,6 +24,7 @@ from opentelemetry.semconv._incubating.attributes import (
 )
 
 
+@pytest.mark.requires_cli
 @pytest.mark.asyncio
 async def test_agent_span_attributes_complete(instrument, span_exporter):
     """Test that agent span has all required attributes."""

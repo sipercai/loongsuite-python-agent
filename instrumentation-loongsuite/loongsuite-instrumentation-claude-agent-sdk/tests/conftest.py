@@ -22,6 +22,29 @@ os.environ.setdefault(
     "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "SPAN_ONLY"
 )
 
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line(
+        "markers",
+        "requires_cli: mark test as requiring Claude CLI executable (skipped in CI)",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip tests marked with 'requires_cli' if ANTHROPIC_API_KEY is not set or is mock."""
+    # Check if we have a real API key (not the test mock)
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    has_real_api = api_key and api_key != "test_anthropic_api_key"
+
+    skip_cli = pytest.mark.skip(
+        reason="Requires real ANTHROPIC_API_KEY and Claude CLI (not available in CI)"
+    )
+
+    for item in items:
+        if "requires_cli" in item.keywords and not has_real_api:
+            item.add_marker(skip_cli)
+
 from opentelemetry.instrumentation._semconv import (
     OTEL_SEMCONV_STABILITY_OPT_IN,
     _OpenTelemetrySemanticConventionStability,
