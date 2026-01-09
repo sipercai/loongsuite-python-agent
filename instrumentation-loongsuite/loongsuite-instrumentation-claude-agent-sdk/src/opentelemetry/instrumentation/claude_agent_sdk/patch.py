@@ -186,43 +186,52 @@ def _process_assistant_message(
     subagent_sessions: Optional[Dict[str, InvokeAgentInvocation]] = None,
 ) -> None:
     """Process AssistantMessage: create LLM turn, extract parts, create tool spans."""
-    # Start a new LLM turn (closes previous one if exists)
-    turn_tracker.start_llm_turn(
-        msg,
-        model,
-        prompt,
-        collected_messages,
-        provider=infer_provider_from_base_url(),
-    )
-
-    # Extract message parts
     parts = _extract_message_parts(msg)
+    has_text_content = any(isinstance(p, Text) for p in parts)
 
-    # Add output to LLM turn and Agent invocation
-    if parts:
-        turn_tracker.add_assistant_output(parts)
-        output_msg = OutputMessage(
-            role="assistant", parts=parts, finish_reason="stop"
+    if has_text_content:
+        # This is the start of a new LLM response (with text content)
+        message_arrival_time = time.time()
+
+        turn_tracker.start_llm_turn(
+            msg,
+            model,
+            prompt,
+            collected_messages,
+            provider=infer_provider_from_base_url(),
+            message_arrival_time=message_arrival_time,
         )
-        agent_invocation.output_messages.append(output_msg)
 
-        # Collect assistant message for next turn's input
-        text_parts = [p.content for p in parts if isinstance(p, Text)]
-        if text_parts:
-            collected_messages.append(
-                {"role": "assistant", "content": " ".join(text_parts)}
+        if parts:
+            turn_tracker.add_assistant_output(parts)
+            output_msg = OutputMessage(
+                role="assistant", parts=parts, finish_reason="stop"
             )
+            agent_invocation.output_messages.append(output_msg)
 
-    # Close LLM span before creating tool spans (ensures tool spans are siblings of LLM spans)
-    turn_tracker.close_llm_turn()
+            text_parts = [p.content for p in parts if isinstance(p, Text)]
+            if text_parts:
+                collected_messages.append(
+                    {"role": "assistant", "content": " ".join(text_parts)}
+                )
 
-    # Process Task subagents if enabled
+    else:
+        # This is a tool-only message, part of the current LLM turn
+        # Append it to the current LLM invocation's output
+        if parts and turn_tracker.current_llm_invocation:
+            turn_tracker.add_assistant_output(parts)
+            output_msg = OutputMessage(
+                role="assistant", parts=parts, finish_reason="stop"
+            )
+            agent_invocation.output_messages.append(output_msg)
+
+        turn_tracker.close_llm_turn()
+
     if process_subagents and subagent_sessions is not None:
         _handle_task_subagents(
             msg, agent_invocation, subagent_sessions, handler
         )
 
-    # Create tool spans (exclude Task if processing subagents)
     exclude_tools = ["Task"] if process_subagents else []
     _create_tool_spans_from_message(
         msg, handler, exclude_tool_names=exclude_tools
@@ -241,7 +250,9 @@ def _process_user_message(
     if user_text_parts:
         user_content = " ".join(user_text_parts)
         collected_messages.append({"role": "user", "content": user_content})
-        turn_tracker.mark_next_llm_start()
+
+    # Always mark next LLM start when UserMessage arrives
+    turn_tracker.mark_next_llm_start()
 
 
 def _process_result_message(
@@ -280,9 +291,19 @@ class AssistantTurnTracker:
         prompt: str,
         collected_messages: List[Dict[str, Any]],
         provider: str = "anthropic",
+        message_arrival_time: Optional[float] = None,
     ) -> Optional[LLMInvocation]:
-        """Start a new LLM invocation span with pre-recorded start time."""
-        start_time = self.next_llm_start_time or time.time()
+        """Start a new LLM invocation span with pre-recorded start time.
+
+        Args:
+            message_arrival_time: The time when the AssistantMessage arrived.
+                If next_llm_start_time is set (from previous UserMessage), use that.
+                Otherwise, use message_arrival_time or fall back to current time.
+        """
+        # Priority: next_llm_start_time > message_arrival_time > current time
+        start_time = (
+            self.next_llm_start_time or message_arrival_time or time.time()
+        )
 
         if self.current_llm_invocation:
             self.handler.stop_llm(self.current_llm_invocation)
