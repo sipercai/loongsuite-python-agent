@@ -16,7 +16,7 @@
 
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from claude_agent_sdk import HookMatcher
 from claude_agent_sdk.types import ClaudeAgentOptions
@@ -519,24 +519,26 @@ def _handle_task_subagents(
             logger.warning(f"Failed to create subagent session: {e}")
 
 
-async def wrap_claude_client_receive_messages(
-    wrapped, instance, args, kwargs, handler=None
-):
-    """Wrapper for ClaudeSDKClient.receive_messages to trace agent invocation."""
-    if handler is None:
-        handler = getattr(instance, "_otel_handler", None)
+async def _wrap_message_stream(
+    message_stream: AsyncIterator[Any],
+    prompt: str,
+    model: str,
+    handler: ExtendedTelemetryHandler,
+    process_subagents: bool = False,
+) -> AsyncIterator[Any]:
+    """
+    Common message stream wrapper that creates span tree.
 
-    if handler is None:
-        logger.warning("Handler not available, skipping instrumentation")
-        async for msg in wrapped(*args, **kwargs):
-            yield msg
-        return
+    Args:
+        message_stream: Original message stream from SDK
+        prompt: User prompt
+        model: Model name
+        handler: Telemetry handler
+        process_subagents: Whether to process Task subagents
 
-    prompt = getattr(instance, "_otel_prompt", "") or ""
-    model = "unknown"
-    if hasattr(instance, "options") and instance.options:
-        model = getattr(instance.options, "model", "unknown")
-
+    Yields:
+        Messages from the stream (pass-through)
+    """
     agent_invocation = InvokeAgentInvocation(
         provider=infer_provider_from_base_url(),
         agent_name="claude-agent",
@@ -560,43 +562,58 @@ async def wrap_claude_client_receive_messages(
     )
 
     collected_messages: List[Dict[str, Any]] = []
-    subagent_sessions: Dict[str, InvokeAgentInvocation] = {}
+    subagent_sessions: Dict[str, InvokeAgentInvocation] = (
+        {} if process_subagents else None
+    )
 
     try:
-        async for msg in wrapped(*args, **kwargs):
-            msg_type = type(msg).__name__
+        async for message in message_stream:
+            msg_type = type(message).__name__
 
             if msg_type == "AssistantMessage":
                 _process_assistant_message(
-                    msg,
+                    message,
                     model,
                     prompt,
                     agent_invocation,
                     turn_tracker,
                     handler,
                     collected_messages,
-                    process_subagents=True,
+                    process_subagents=process_subagents,
                     subagent_sessions=subagent_sessions,
                 )
 
             elif msg_type == "UserMessage":
                 _process_user_message(
-                    msg, turn_tracker, handler, collected_messages
+                    message, turn_tracker, handler, collected_messages
                 )
 
             elif msg_type == "ResultMessage":
-                _process_result_message(msg, agent_invocation, turn_tracker)
+                _process_result_message(
+                    message, agent_invocation, turn_tracker
+                )
 
-            yield msg
+            yield message
 
         handler.stop_invoke_agent(agent_invocation)
 
-        for subagent_invocation in subagent_sessions.values():
-            try:
-                handler.stop_invoke_agent(subagent_invocation)
-            except Exception as e:
-                logger.warning(f"Failed to complete subagent session: {e}")
+        if subagent_sessions:
+            for subagent_invocation in subagent_sessions.values():
+                try:
+                    handler.stop_invoke_agent(subagent_invocation)
+                except Exception as e:
+                    logger.warning(f"Failed to complete subagent session: {e}")
 
+    except GeneratorExit:
+        # Handle early termination (e.g., receive_response() returning after ResultMessage)
+        handler.stop_invoke_agent(agent_invocation)
+        if subagent_sessions:
+            for subagent_invocation in subagent_sessions.values():
+                try:
+                    handler.stop_invoke_agent(subagent_invocation)
+                except Exception as e:
+                    logger.warning(f"Failed to complete subagent session: {e}")
+        raise
     except Exception as e:
         error_msg = str(e)
         if agent_invocation.span:
@@ -610,6 +627,35 @@ async def wrap_claude_client_receive_messages(
         turn_tracker.close()
         clear_active_tool_runs()
         clear_parent_invocation()
+
+
+async def wrap_claude_client_receive_messages(
+    wrapped, instance, args, kwargs, handler=None
+):
+    """Wrapper for ClaudeSDKClient.receive_messages to trace agent invocation."""
+    if handler is None:
+        handler = getattr(instance, "_otel_handler", None)
+
+    if handler is None:
+        logger.warning("Handler not available, skipping instrumentation")
+        async for msg in wrapped(*args, **kwargs):
+            yield msg
+        return
+
+    prompt = getattr(instance, "_otel_prompt", "") or ""
+    model = "unknown"
+    if hasattr(instance, "options") and instance.options:
+        model = getattr(instance.options, "model", "unknown")
+
+    message_stream = wrapped(*args, **kwargs)
+    async for msg in _wrap_message_stream(
+        message_stream=message_stream,
+        prompt=prompt,
+        model=model,
+        handler=handler,
+        process_subagents=True,
+    ):
+        yield msg
 
 
 async def wrap_query(wrapped, instance, args, kwargs, handler=None):
@@ -638,71 +684,13 @@ async def wrap_query(wrapped, instance, args, kwargs, handler=None):
         model = getattr(options, "model", "unknown")
 
     prompt_str = str(prompt) if isinstance(prompt, str) else ""
-    agent_invocation = InvokeAgentInvocation(
-        provider=infer_provider_from_base_url(),
-        agent_name="claude-agent",
-        request_model=model,
-        conversation_id="",
-        input_messages=[
-            InputMessage(role="user", parts=[Text(content=prompt_str)])
-        ]
-        if prompt_str
-        else [],
-    )
 
-    # Clear context to create a new root trace for each independent query
-    otel_context.attach(otel_context.Context())
-    handler.start_invoke_agent(agent_invocation)
-    set_parent_invocation(agent_invocation)
-
-    query_start_time = time.time()
-    turn_tracker = AssistantTurnTracker(
-        handler, query_start_time=query_start_time
-    )
-
-    collected_messages: List[Dict[str, Any]] = []
-
-    try:
-        async for message in wrapped(*args, **kwargs):
-            msg_type = type(message).__name__
-
-            if msg_type == "AssistantMessage":
-                _process_assistant_message(
-                    message,
-                    model,
-                    prompt_str,
-                    agent_invocation,
-                    turn_tracker,
-                    handler,
-                    collected_messages,
-                    process_subagents=False,
-                    subagent_sessions=None,
-                )
-
-            elif msg_type == "UserMessage":
-                _process_user_message(
-                    message, turn_tracker, handler, collected_messages
-                )
-
-            elif msg_type == "ResultMessage":
-                _process_result_message(
-                    message, agent_invocation, turn_tracker
-                )
-
-            yield message
-
-        handler.stop_invoke_agent(agent_invocation)
-
-    except Exception as e:
-        error_msg = str(e)
-        if agent_invocation.span:
-            agent_invocation.span.set_attribute("error.type", type(e).__name__)
-            agent_invocation.span.set_attribute("error.message", error_msg)
-        handler.fail_invoke_agent(
-            agent_invocation, error=Error(message=error_msg, type=type(e))
-        )
-        raise
-    finally:
-        turn_tracker.close()
-        clear_active_tool_runs()
-        clear_parent_invocation()
+    message_stream = wrapped(*args, **kwargs)
+    async for message in _wrap_message_stream(
+        message_stream=message_stream,
+        prompt=prompt_str,
+        model=model,
+        handler=handler,
+        process_subagents=False,
+    ):
+        yield message
