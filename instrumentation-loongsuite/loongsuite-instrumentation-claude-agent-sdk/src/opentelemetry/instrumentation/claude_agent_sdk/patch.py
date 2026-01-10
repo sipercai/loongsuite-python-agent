@@ -519,10 +519,10 @@ def _handle_task_subagents(
             logger.warning(f"Failed to create subagent session: {e}")
 
 
-async def wrap_claude_client_receive_response(
+async def wrap_claude_client_receive_messages(
     wrapped, instance, args, kwargs, handler=None
 ):
-    """Wrapper for ClaudeSDKClient.receive_response to trace agent invocation."""
+    """Wrapper for ClaudeSDKClient.receive_messages to trace agent invocation."""
     if handler is None:
         handler = getattr(instance, "_otel_handler", None)
 

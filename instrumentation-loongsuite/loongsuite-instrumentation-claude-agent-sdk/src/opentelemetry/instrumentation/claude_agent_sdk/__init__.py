@@ -34,7 +34,7 @@ Basic instrumentation::
 
     async with ClaudeSDKClient() as client:
         await client.query(prompt="Hello!")
-        async for message in client.receive_response():
+        async for message in client.receive_messages():
             print(message)
 
 The instrumentation automatically captures:
@@ -54,7 +54,7 @@ from opentelemetry.instrumentation.claude_agent_sdk.package import _instruments
 from opentelemetry.instrumentation.claude_agent_sdk.patch import (
     wrap_claude_client_init,
     wrap_claude_client_query,
-    wrap_claude_client_receive_response,
+    wrap_claude_client_receive_messages,
     wrap_query,
 )
 from opentelemetry.instrumentation.claude_agent_sdk.version import __version__
@@ -130,21 +130,21 @@ class ClaudeAgentSDKInstrumentor(BaseInstrumentor):
         except Exception as e:
             logger.warning(f"Failed to instrument ClaudeSDKClient.query: {e}")
 
-        # Wrap ClaudeSDKClient.receive_response
+        # Wrap ClaudeSDKClient.receive_messages
         try:
             wrap_function_wrapper(
                 module="claude_agent_sdk",
-                name="ClaudeSDKClient.receive_response",
+                name="ClaudeSDKClient.receive_messages",
                 wrapper=lambda wrapped,
                 instance,
                 args,
-                kwargs: wrap_claude_client_receive_response(
+                kwargs: wrap_claude_client_receive_messages(
                     wrapped, instance, args, kwargs, handler=self._handler
                 ),
             )
         except Exception as e:
             logger.warning(
-                f"Failed to instrument ClaudeSDKClient.receive_response: {e}"
+                f"Failed to instrument ClaudeSDKClient.receive_messages: {e}"
             )
 
         # Wrap standalone query() function
@@ -167,7 +167,7 @@ class ClaudeAgentSDKInstrumentor(BaseInstrumentor):
             # Unwrap all instrumented methods
             unwrap(claude_agent_sdk.ClaudeSDKClient, "__init__")
             unwrap(claude_agent_sdk.ClaudeSDKClient, "query")
-            unwrap(claude_agent_sdk.ClaudeSDKClient, "receive_response")
+            unwrap(claude_agent_sdk.ClaudeSDKClient, "receive_messages")
             unwrap(claude_agent_sdk, "query")
 
         except Exception as e:
