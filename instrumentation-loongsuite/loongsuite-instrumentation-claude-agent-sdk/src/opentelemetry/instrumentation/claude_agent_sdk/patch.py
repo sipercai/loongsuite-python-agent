@@ -34,6 +34,7 @@ from opentelemetry.instrumentation.claude_agent_sdk.hooks import (
 )
 from opentelemetry.instrumentation.claude_agent_sdk.utils import (
     extract_usage_from_result_message,
+    get_model_from_options_or_env,
     infer_provider_from_base_url,
 )
 from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
@@ -418,7 +419,6 @@ def _inject_tracing_hooks(options: Any) -> None:
 
         options.hooks["PreToolUse"].insert(0, otel_pre_matcher)
         options.hooks["PostToolUse"].insert(0, otel_post_matcher)
-        logger.warning("Failed to import HookMatcher from claude_agent_sdk")
     except Exception as e:
         logger.warning(f"Failed to inject tracing hooks: {e}")
 
@@ -633,9 +633,7 @@ async def wrap_query(wrapped, instance, args, kwargs, handler=None):
         except Exception as e:
             logger.warning(f"Failed to create ClaudeAgentOptions: {e}")
 
-    model = "unknown"
-    if options:
-        model = getattr(options, "model", "unknown")
+    model = get_model_from_options_or_env(options)
 
     prompt_str = str(prompt) if isinstance(prompt, str) else ""
     agent_invocation = InvokeAgentInvocation(

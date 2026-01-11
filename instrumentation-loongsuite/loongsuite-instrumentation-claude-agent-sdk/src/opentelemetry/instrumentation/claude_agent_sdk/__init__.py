@@ -70,9 +70,10 @@ class ClaudeAgentSDKInstrumentor(BaseInstrumentor):
     Instrumentor for Claude Agent SDK.
     """
 
+    _handler: Optional[ExtendedTelemetryHandler] = None
+
     def __init__(self):
         super().__init__()
-        self._handler: Optional[ExtendedTelemetryHandler] = None
 
     def instrumentation_dependencies(self) -> Collection[str]:
         """Return the dependencies required for this instrumentation."""
@@ -173,7 +174,7 @@ class ClaudeAgentSDKInstrumentor(BaseInstrumentor):
         except Exception as e:
             logger.warning(f"Failed to uninstrument Claude Agent SDK: {e}")
 
-        self._handler = None
+        ClaudeAgentSDKInstrumentor._handler = None
 
 
 __all__ = [

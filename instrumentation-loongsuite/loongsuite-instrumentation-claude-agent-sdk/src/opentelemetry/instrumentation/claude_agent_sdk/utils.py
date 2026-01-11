@@ -30,6 +30,27 @@ from opentelemetry.util.genai.types import Text, ToolCall
 logger = logging.getLogger(__name__)
 
 
+def get_model_from_options_or_env(options: Any) -> str:
+    """
+    Get model name from options or environment variables.
+    """
+    model = "unknown"
+
+    if options:
+        model = getattr(options, "model", None)
+
+        # Key: If options.model is None, read from environment variables
+        # This mimics Claude CLI behavior: when no --model parameter, CLI reads environment variables
+        if not model:
+            model = (
+                os.getenv("ANTHROPIC_MODEL")
+                or os.getenv("ANTHROPIC_SMALL_FAST_MODEL")
+                or "unknown"
+            )
+
+    return model
+
+
 def infer_provider_from_base_url(base_url: Optional[str] = None) -> str:
     """
     Infer the provider name from ANTHROPIC_BASE_URL environment variable.
