@@ -100,6 +100,7 @@ async def test_llm_span_naming_convention(instrument, span_exporter):
         s
         for s in spans
         if GenAIAttributes.GEN_AI_OPERATION_NAME in s.attributes
+        and s.attributes[GenAIAttributes.GEN_AI_OPERATION_NAME] == "chat"
     ]
 
     assert len(llm_spans) >= 1
