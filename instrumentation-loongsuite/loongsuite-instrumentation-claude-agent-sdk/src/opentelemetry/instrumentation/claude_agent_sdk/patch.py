@@ -130,7 +130,8 @@ def _close_tool_spans_from_message(
 
                 # Set tool response
                 tool_content = getattr(block, "content", None)
-                is_error = getattr(block, "is_error", False)
+                is_error_value = getattr(block, "is_error", None)
+                is_error = is_error_value is True
 
                 tool_invocation.tool_call_result = tool_content
 

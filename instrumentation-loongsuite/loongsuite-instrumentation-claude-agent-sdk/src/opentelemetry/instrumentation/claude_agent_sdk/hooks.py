@@ -158,10 +158,10 @@ async def post_tool_use_hook(
             # Set response (will be auto-formatted to gen_ai.tool.call.result by telemetry handler)
             client_invocation.tool_call_result = tool_response
 
-            # Check if error
             is_error = False
             if isinstance(tool_response, dict):
-                is_error = tool_response.get("is_error", False)
+                is_error_value = tool_response.get("is_error")
+                is_error = is_error_value is True
 
             if is_error:
                 error_msg = (
@@ -192,10 +192,10 @@ async def post_tool_use_hook(
         # Set response (will be auto-formatted to gen_ai.tool.call.result by telemetry handler)
         tool_invocation.tool_call_result = tool_response
 
-        # Check if error
         is_error = False
         if isinstance(tool_response, dict):
-            is_error = tool_response.get("is_error", False)
+            is_error_value = tool_response.get("is_error")
+            is_error = is_error_value is True
 
         if is_error:
             error_msg = (
