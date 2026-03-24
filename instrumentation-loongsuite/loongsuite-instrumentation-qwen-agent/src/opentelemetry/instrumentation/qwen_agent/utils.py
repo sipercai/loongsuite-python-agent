@@ -127,10 +127,18 @@ def convert_qwen_messages_to_input_messages(
     input_messages = []
     for msg in messages:
         try:
-            role = msg.role if hasattr(msg, "role") else msg.get("role", "user")
-            content = msg.content if hasattr(msg, "content") else msg.get("content", "")
+            role = (
+                msg.role if hasattr(msg, "role") else msg.get("role", "user")
+            )
+            content = (
+                msg.content
+                if hasattr(msg, "content")
+                else msg.get("content", "")
+            )
             function_call = (
-                msg.function_call if hasattr(msg, "function_call") else msg.get("function_call")
+                msg.function_call
+                if hasattr(msg, "function_call")
+                else msg.get("function_call")
             )
             name = msg.name if hasattr(msg, "name") else msg.get("name")
 
@@ -154,7 +162,9 @@ def convert_qwen_messages_to_input_messages(
                         fc_args = json.loads(fc_args)
                     except (json.JSONDecodeError, ValueError):
                         pass
-                parts.append(ToolCall(name=fc_name, arguments=fc_args, id=None))
+                parts.append(
+                    ToolCall(name=fc_name, arguments=fc_args, id=None)
+                )
 
             # Handle function role (tool response)
             if role == "function" and content:
@@ -200,9 +210,15 @@ def convert_qwen_messages_to_output_messages(
     output_messages = []
     for msg in messages:
         try:
-            content = msg.content if hasattr(msg, "content") else msg.get("content", "")
+            content = (
+                msg.content
+                if hasattr(msg, "content")
+                else msg.get("content", "")
+            )
             function_call = (
-                msg.function_call if hasattr(msg, "function_call") else msg.get("function_call")
+                msg.function_call
+                if hasattr(msg, "function_call")
+                else msg.get("function_call")
             )
 
             parts = []
@@ -224,7 +240,9 @@ def convert_qwen_messages_to_output_messages(
                         fc_args = json.loads(fc_args)
                     except (json.JSONDecodeError, ValueError):
                         pass
-                parts.append(ToolCall(name=fc_name, arguments=fc_args, id=None))
+                parts.append(
+                    ToolCall(name=fc_name, arguments=fc_args, id=None)
+                )
                 finish_reason = "tool_calls"
 
             if content:
@@ -250,7 +268,9 @@ def convert_qwen_messages_to_output_messages(
     return output_messages
 
 
-def get_tool_definitions(functions: Optional[List[Dict]]) -> Optional[List[FunctionToolDefinition]]:
+def get_tool_definitions(
+    functions: Optional[List[Dict]],
+) -> Optional[List[FunctionToolDefinition]]:
     """Extract tool definitions for tracing as FunctionToolDefinition objects.
 
     Args:
@@ -355,7 +375,9 @@ def create_agent_invocation(
 
     input_messages = convert_qwen_messages_to_input_messages(messages)
 
-    agent_name = getattr(agent_instance, "name", None) or type(agent_instance).__name__
+    agent_name = (
+        getattr(agent_instance, "name", None) or type(agent_instance).__name__
+    )
     agent_description = getattr(agent_instance, "description", None) or ""
 
     invocation = InvokeAgentInvocation(
@@ -367,8 +389,13 @@ def create_agent_invocation(
     )
 
     # Set system instruction if available
-    if hasattr(agent_instance, "system_message") and agent_instance.system_message:
-        invocation.system_instruction = [Text(content=agent_instance.system_message)]
+    if (
+        hasattr(agent_instance, "system_message")
+        and agent_instance.system_message
+    ):
+        invocation.system_instruction = [
+            Text(content=agent_instance.system_message)
+        ]
 
     return invocation
 

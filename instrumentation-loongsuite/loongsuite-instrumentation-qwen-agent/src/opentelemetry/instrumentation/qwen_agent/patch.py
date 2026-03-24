@@ -69,7 +69,9 @@ def _close_active_react_step(handler: ExtendedTelemetryHandler) -> None:
         _react_step_invocation.set(None)
 
 
-def wrap_agent_run(wrapped, instance, args, kwargs, handler: ExtendedTelemetryHandler):
+def wrap_agent_run(
+    wrapped, instance, args, kwargs, handler: ExtendedTelemetryHandler
+):
     """Wrapper for Agent.run() to create invoke_agent spans.
 
     Agent.run() is a generator that yields List[Message].
@@ -104,8 +106,8 @@ def wrap_agent_run(wrapped, instance, args, kwargs, handler: ExtendedTelemetryHa
 
         # Extract output from last yielded response
         if last_response:
-            invocation.output_messages = convert_qwen_messages_to_output_messages(
-                last_response
+            invocation.output_messages = (
+                convert_qwen_messages_to_output_messages(last_response)
             )
 
         # Close the last react_step span before closing invoke_agent.
@@ -137,7 +139,11 @@ def wrap_chat_model_chat(
     - Iterator[List[Message]] (stream)
     """
     messages = args[0] if args else kwargs.get("messages", [])
-    functions = kwargs.get("functions") if len(args) < 2 else (args[1] if len(args) > 1 else None)
+    functions = (
+        kwargs.get("functions")
+        if len(args) < 2
+        else (args[1] if len(args) > 1 else None)
+    )
     stream = kwargs.get("stream", True)
     extra_generate_cfg = kwargs.get("extra_generate_cfg")
 
@@ -154,21 +160,31 @@ def wrap_chat_model_chat(
     try:
         result = wrapped(*args, **kwargs)
 
-        if stream and hasattr(result, "__iter__") and not isinstance(result, list):
+        if (
+            stream
+            and hasattr(result, "__iter__")
+            and not isinstance(result, list)
+        ):
             # Streaming: wrap the iterator
             return _wrap_streaming_llm_response(result, invocation, handler)
         else:
             # Non-streaming: result is List[Message]
             if result:
-                invocation.output_messages = convert_qwen_messages_to_output_messages(
-                    result
+                invocation.output_messages = (
+                    convert_qwen_messages_to_output_messages(result)
                 )
                 invocation.response_model_name = invocation.request_model
                 invocation.finish_reasons = ["stop"]
 
                 # Check for function calls in output
                 for msg in result:
-                    fc = msg.function_call if hasattr(msg, "function_call") else msg.get("function_call") if isinstance(msg, dict) else None
+                    fc = (
+                        msg.function_call
+                        if hasattr(msg, "function_call")
+                        else msg.get("function_call")
+                        if isinstance(msg, dict)
+                        else None
+                    )
                     if fc:
                         invocation.finish_reasons = ["tool_calls"]
                         break
@@ -196,15 +212,21 @@ def _wrap_streaming_llm_response(
             yield response
 
         if last_response:
-            invocation.output_messages = convert_qwen_messages_to_output_messages(
-                last_response
+            invocation.output_messages = (
+                convert_qwen_messages_to_output_messages(last_response)
             )
             invocation.response_model_name = invocation.request_model
             invocation.finish_reasons = ["stop"]
 
             # Check for function calls
             for msg in last_response:
-                fc = msg.function_call if hasattr(msg, "function_call") else msg.get("function_call") if isinstance(msg, dict) else None
+                fc = (
+                    msg.function_call
+                    if hasattr(msg, "function_call")
+                    else msg.get("function_call")
+                    if isinstance(msg, dict)
+                    else None
+                )
                 if fc:
                     invocation.finish_reasons = ["tool_calls"]
                     break
@@ -275,7 +297,9 @@ def wrap_agent_call_tool(
         tool_instance = instance.function_map.get(tool_name)
 
     try:
-        invocation = create_tool_invocation(tool_name, tool_args, tool_instance)
+        invocation = create_tool_invocation(
+            tool_name, tool_args, tool_instance
+        )
     except Exception as e:
         logger.debug(f"Failed to create tool invocation: {e}")
         return wrapped(*args, **kwargs)
