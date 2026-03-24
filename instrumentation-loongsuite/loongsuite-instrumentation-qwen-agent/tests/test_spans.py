@@ -113,7 +113,9 @@ class TestLLMChatSpan:
 
         spans = span_exporter.get_finished_spans()
         chat_spans = [s for s in spans if s.name.startswith("chat")]
-        assert len(chat_spans) >= 1, f"Expected a chat span, got: {[s.name for s in spans]}"
+        assert len(chat_spans) >= 1, (
+            f"Expected a chat span, got: {[s.name for s in spans]}"
+        )
 
         span = chat_spans[0]
         assert span.name == "chat qwen-max"
@@ -121,8 +123,12 @@ class TestLLMChatSpan:
         attrs = dict(span.attributes or {})
         assert attrs.get(GenAIAttributes.GEN_AI_REQUEST_MODEL) == "qwen-max"
         # Provider name is stored as "gen_ai.provider.name" in newer semconv
-        provider = attrs.get("gen_ai.provider.name") or attrs.get(GenAIAttributes.GEN_AI_SYSTEM)
-        assert provider == "dashscope", f"Expected 'dashscope', got attrs: {attrs}"
+        provider = attrs.get("gen_ai.provider.name") or attrs.get(
+            GenAIAttributes.GEN_AI_SYSTEM
+        )
+        assert provider == "dashscope", (
+            f"Expected 'dashscope', got attrs: {attrs}"
+        )
 
     def test_stream_chat_creates_span(self, span_exporter, instrument):
         """Streaming chat() should create a chat span after the iterator is consumed."""
@@ -177,7 +183,9 @@ class TestLLMChatSpan:
             return_value=fake_response,
         ):
             model.chat(
-                messages=[Message(role="user", content="What is the weather?")],
+                messages=[
+                    Message(role="user", content="What is the weather?")
+                ],
                 stream=False,
             )
 
@@ -215,7 +223,9 @@ class TestLLMChatSpan:
 class TestAgentRunSpan:
     """Verify that Agent.run() and run_nonstream() produce invoke_agent spans."""
 
-    def test_agent_run_creates_invoke_agent_span(self, span_exporter, instrument):
+    def test_agent_run_creates_invoke_agent_span(
+        self, span_exporter, instrument
+    ):
         """Agent.run() (generator) should create an invoke_agent span."""
         llm = MagicMock()
         llm.model = "qwen-max"
@@ -229,13 +239,17 @@ class TestAgentRunSpan:
             yield response_msgs
 
         with patch.object(_StubAgent, "_run", side_effect=fake_run):
-            results = list(agent.run([Message(role="user", content="Weather?")]))
+            results = list(
+                agent.run([Message(role="user", content="Weather?")])
+            )
 
         assert len(results) >= 1
 
         spans = span_exporter.get_finished_spans()
         agent_spans = [s for s in spans if "invoke_agent" in s.name]
-        assert len(agent_spans) >= 1, f"Expected invoke_agent span, got: {[s.name for s in spans]}"
+        assert len(agent_spans) >= 1, (
+            f"Expected invoke_agent span, got: {[s.name for s in spans]}"
+        )
 
         span = agent_spans[0]
         assert span.name == "invoke_agent WeatherBot"
@@ -273,7 +287,9 @@ class TestAgentRunSpan:
         span_names = [s.name for s in agent_spans]
         assert any("ChatBot" in n for n in span_names)
 
-    def test_agent_run_error_creates_error_span(self, span_exporter, instrument):
+    def test_agent_run_error_creates_error_span(
+        self, span_exporter, instrument
+    ):
         """An exception during Agent.run() should produce an error invoke_agent span."""
         llm = MagicMock()
         llm.model = "qwen-max"
@@ -337,7 +353,9 @@ class TestToolCallSpan:
         agent.function_map = {tool_name: mock_tool}
         return agent, mock_tool
 
-    def test_call_tool_creates_execute_tool_span(self, span_exporter, instrument):
+    def test_call_tool_creates_execute_tool_span(
+        self, span_exporter, instrument
+    ):
         """_call_tool() should create an execute_tool span with tool name."""
         agent, mock_tool = self._make_agent_with_tool("get_weather")
 
@@ -347,7 +365,9 @@ class TestToolCallSpan:
 
         spans = span_exporter.get_finished_spans()
         tool_spans = [s for s in spans if "execute_tool" in s.name]
-        assert len(tool_spans) >= 1, f"Expected execute_tool span, got: {[s.name for s in spans]}"
+        assert len(tool_spans) >= 1, (
+            f"Expected execute_tool span, got: {[s.name for s in spans]}"
+        )
 
         span = tool_spans[0]
         assert span.name == "execute_tool get_weather"
@@ -606,9 +626,7 @@ class TestReactStepSpan:
             with patch.object(
                 _StubChatModel,
                 "_chat_no_stream",
-                return_value=[
-                    Message(role="assistant", content="Hello!")
-                ],
+                return_value=[Message(role="assistant", content="Hello!")],
             ):
                 agent._call_llm(messages=messages, stream=False)
             yield [Message(role="assistant", content="Hello!")]

@@ -120,8 +120,10 @@ class QwenAgentInstrumentor(BaseInstrumentor):
             wrap_function_wrapper(
                 module=_LLM_MODULE,
                 name="BaseChatModel.chat",
-                wrapper=lambda wrapped, instance, args, kwargs: wrap_chat_model_chat(
-                    wrapped, instance, args, kwargs, handler=self._handler
+                wrapper=lambda wrapped, instance, args, kwargs: (
+                    wrap_chat_model_chat(
+                        wrapped, instance, args, kwargs, handler=self._handler
+                    )
                 ),
             )
             logger.debug("Instrumented BaseChatModel.chat")
@@ -133,8 +135,10 @@ class QwenAgentInstrumentor(BaseInstrumentor):
             wrap_function_wrapper(
                 module=_AGENT_MODULE,
                 name="Agent._call_llm",
-                wrapper=lambda wrapped, instance, args, kwargs: wrap_agent_call_llm(
-                    wrapped, instance, args, kwargs, handler=self._handler
+                wrapper=lambda wrapped, instance, args, kwargs: (
+                    wrap_agent_call_llm(
+                        wrapped, instance, args, kwargs, handler=self._handler
+                    )
                 ),
             )
             logger.debug("Instrumented Agent._call_llm")
@@ -146,8 +150,10 @@ class QwenAgentInstrumentor(BaseInstrumentor):
             wrap_function_wrapper(
                 module=_AGENT_MODULE,
                 name="Agent._call_tool",
-                wrapper=lambda wrapped, instance, args, kwargs: wrap_agent_call_tool(
-                    wrapped, instance, args, kwargs, handler=self._handler
+                wrapper=lambda wrapped, instance, args, kwargs: (
+                    wrap_agent_call_tool(
+                        wrapped, instance, args, kwargs, handler=self._handler
+                    )
                 ),
             )
             logger.debug("Instrumented Agent._call_tool")

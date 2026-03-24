@@ -31,7 +31,9 @@ from opentelemetry.util.genai.types import ToolCall
 class TestQwenAgentInstrumentor:
     """Test the instrumentor lifecycle."""
 
-    def test_instrument_and_uninstrument(self, tracer_provider, logger_provider, meter_provider):
+    def test_instrument_and_uninstrument(
+        self, tracer_provider, logger_provider, meter_provider
+    ):
         """Test that instrument/uninstrument works without errors."""
         instrumentor = QwenAgentInstrumentor()
         instrumentor.instrument(
@@ -109,7 +111,9 @@ class TestMessageConversion:
 
     def test_convert_function_response_message(self):
         """Test converting a function role message (tool result)."""
-        msg = Message(role="function", name="get_weather", content="Sunny, 25°C")
+        msg = Message(
+            role="function", name="get_weather", content="Sunny, 25°C"
+        )
         result = convert_qwen_messages_to_input_messages([msg])
         assert len(result) == 1
         assert result[0].role == "function"
