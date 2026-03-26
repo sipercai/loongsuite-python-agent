@@ -3,10 +3,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "loongsuite-distro"
+name = "loongsuite-site-bootstrap"
 dynamic = ["version"]
-description = "LoongSuite Python Agent Distro"
-readme = "README.rst"
+description = "LoongSuite .pth site bootstrap for OpenTelemetry auto-instrumentation (opt-in via env)"
+readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.9"
 authors = [
@@ -27,39 +27,25 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "opentelemetry-api ~= 1.12",
-  "opentelemetry-sdk ~= 1.13",
-  "opentelemetry-instrumentation >= 0.58b0",
-  "packaging",
+  "loongsuite-distro",
 ]
-
-[project.optional-dependencies]
-otlp = [
-  "opentelemetry-exporter-otlp ~= 1.40",
-]
-
-[project.entry-points.opentelemetry_configurator]
-loongsuite = "loongsuite.distro:LoongSuiteConfigurator"
-
-[project.entry-points.opentelemetry_distro]
-loongsuite = "loongsuite.distro:LoongSuiteDistro"
-
-[project.scripts]
-loongsuite-bootstrap = "loongsuite.distro.bootstrap:main"
-loongsuite-instrument = "opentelemetry.instrumentation.auto_instrumentation:run"
 
 [project.urls]
-Homepage = "https://github.com/alibaba/loongsuite-python-agent/tree/main/loongsuite-distro"
+Homepage = "https://github.com/alibaba/loongsuite-python-agent/tree/main/loongsuite-site-bootstrap"
 Repository = "https://github.com/alibaba/loongsuite-python-agent"
 
 [tool.hatch.version]
-path = "src/loongsuite/distro/version.py"
+path = "src/loongsuite_site_bootstrap/version.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
   "/src",
-  "/tests",
+  "/pth",
+  "/README.md",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/loongsuite"]
+packages = ["src/loongsuite_site_bootstrap"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"pth/loongsuite-site-bootstrap.pth" = "loongsuite-site-bootstrap.pth"
