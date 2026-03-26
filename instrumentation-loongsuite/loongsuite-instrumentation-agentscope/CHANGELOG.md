@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Adapt imports to `opentelemetry-util-genai` module layout change
+  ([#158](https://github.com/alibaba/loongsuite-python-agent/pull/158))
+
 ### Fixed
 
 - Avoid duplicate LLM / Agent spans when multiple `ChatModelBase` or

@@ -50,11 +50,19 @@ from opentelemetry.semconv.attributes import (
     server_attributes as ServerAttributes,
 )
 from opentelemetry.trace.status import StatusCode
-from opentelemetry.util.genai._extended_common import (
-    EntryInvocation,
-    ReactStepInvocation,
+from opentelemetry.util.genai._multimodal_processing import (
+    MultimodalProcessingMixin,
+    _MultimodalAsyncTask,
 )
-from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
+from opentelemetry.util.genai.environment_variables import (
+    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT,
+    OTEL_INSTRUMENTATION_GENAI_EMIT_EVENT,
+)
+from opentelemetry.util.genai.extended_handler import (
+    ExtendedTelemetryHandler,
+    get_extended_telemetry_handler,
+)
+from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import (
     GEN_AI_EMBEDDINGS_DIMENSION_COUNT,
     GEN_AI_REACT_FINISH_REASON,
     GEN_AI_REACT_ROUND,
@@ -69,23 +77,13 @@ from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes impor
     GEN_AI_USER_ID,
     GenAiSpanKindValues,
 )
-from opentelemetry.util.genai._multimodal_processing import (
-    MultimodalProcessingMixin,
-    _MultimodalAsyncTask,
-)
-from opentelemetry.util.genai.environment_variables import (
-    OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT,
-    OTEL_INSTRUMENTATION_GENAI_EMIT_EVENT,
-)
-from opentelemetry.util.genai.extended_handler import (
-    ExtendedTelemetryHandler,
-    get_extended_telemetry_handler,
-)
 from opentelemetry.util.genai.extended_types import (
     CreateAgentInvocation,
     EmbeddingInvocation,
+    EntryInvocation,
     ExecuteToolInvocation,
     InvokeAgentInvocation,
+    ReactStepInvocation,
     RerankInvocation,
     RetrievalDocument,
     RetrievalInvocation,

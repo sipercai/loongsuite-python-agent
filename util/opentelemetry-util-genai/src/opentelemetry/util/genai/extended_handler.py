@@ -81,34 +81,30 @@ from opentelemetry.trace import (
     TracerProvider,
     set_span_in_context,
 )
-from opentelemetry.util.genai._extended_common import (
-    EntryInvocation,
-    ReactStepInvocation,
-    _apply_entry_finish_attributes,
-    _apply_react_step_finish_attributes,
+from opentelemetry.util.genai._multimodal_processing import (
+    MultimodalProcessingMixin,
 )
-from opentelemetry.util.genai._extended_memory import (
+from opentelemetry.util.genai.extended_memory import (
     MemoryInvocation,
     _apply_memory_finish_attributes,
     _maybe_emit_memory_event,
 )
-from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
-    GEN_AI_SESSION_ID as _GEN_AI_SESSION_ID,
-)
-from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
-    GEN_AI_USER_ID as _GEN_AI_USER_ID,
-)
-from opentelemetry.util.genai._multimodal_processing import (
-    MultimodalProcessingMixin,
-)
 from opentelemetry.util.genai.extended_metrics import (
     ExtendedInvocationMetricsRecorder,
+)
+from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import (
+    GEN_AI_SESSION_ID as _GEN_AI_SESSION_ID,
+)
+from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import (
+    GEN_AI_USER_ID as _GEN_AI_USER_ID,
 )
 from opentelemetry.util.genai.extended_span_utils import (
     _apply_create_agent_finish_attributes,
     _apply_embedding_finish_attributes,
+    _apply_entry_finish_attributes,
     _apply_execute_tool_finish_attributes,
     _apply_invoke_agent_finish_attributes,
+    _apply_react_step_finish_attributes,
     _apply_rerank_finish_attributes,
     _apply_retrieval_finish_attributes,
     _maybe_emit_invoke_agent_event,
@@ -116,8 +112,10 @@ from opentelemetry.util.genai.extended_span_utils import (
 from opentelemetry.util.genai.extended_types import (
     CreateAgentInvocation,
     EmbeddingInvocation,
+    EntryInvocation,
     ExecuteToolInvocation,
     InvokeAgentInvocation,
+    ReactStepInvocation,
     RerankInvocation,
     RetrievalInvocation,
 )
