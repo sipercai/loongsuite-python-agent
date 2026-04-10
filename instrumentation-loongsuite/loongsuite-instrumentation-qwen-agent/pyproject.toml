@@ -5,12 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "loongsuite-instrumentation-qwen-agent"
 dynamic = ["version"]
-description = "OpenTelemetry Qwen-Agent Instrumentation"
+description = "LoongSuite Qwen-Agent Instrumentation"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.9"
 authors = [
-    { name = "LoongSuite Python Agent Authors", email = "qp467389@alibaba-inc.com" },
+    { name = "LoongSuite Python Agent Authors", email = "caishipeng.csp@alibaba-inc.com" },
+    { name = "OpenTelemetry Authors", email = "cncf-opentelemetry-contributors@lists.cncf.io" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -49,7 +50,7 @@ test = [
 qwen_agent = "opentelemetry.instrumentation.qwen_agent:QwenAgentInstrumentor"
 
 [project.urls]
-Homepage = "https://github.com/alibaba/loongsuite-python-agent"
+Homepage = "https://github.com/alibaba/loongsuite-python-agent/tree/main/instrumentation-loongsuite/loongsuite-instrumentation-qwen-agent"
 Repository = "https://github.com/alibaba/loongsuite-python-agent"
 
 [tool.hatch.version]

@@ -151,7 +151,7 @@ interactions:
             },
             {
               "role": "tool",
-              "content": "An error occurred when calling tool `get_current_weather_test`:\nAttributeError: 'str' object has no attribute 'get'\nTraceback:\n  File \"/Users/sipercai/miniforge3/lib/python3.12/site-packages/qwen_agent/agent.py\", line 192, in _call_tool\n    tool_result = tool.call(tool_args, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sipercai/project/pyins/team-work/loongsuite-python-agent/instrumentation-loongsuite/loongsuite-instrumentation-qwen-agent/tests/test_real_api.py\", line 204, in call\n    city = params.get(\"city\", \"unknown\")\n           ^^^^^^^^^^\n",
+              "content": "The weather in Beijing is sunny and 22 degrees Celsius.",
               "name": "get_current_weather_test",
               "extra": {
                 "function_id": "call_355b7a9ccc024c71a743ab"
@@ -298,7 +298,7 @@ interactions:
             },
             {
               "role": "tool",
-              "content": "An error occurred when calling tool `get_current_weather_test`:\nAttributeError: 'str' object has no attribute 'get'\nTraceback:\n  File \"/Users/sipercai/miniforge3/lib/python3.12/site-packages/qwen_agent/agent.py\", line 192, in _call_tool\n    tool_result = tool.call(tool_args, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sipercai/project/pyins/team-work/loongsuite-python-agent/instrumentation-loongsuite/loongsuite-instrumentation-qwen-agent/tests/test_real_api.py\", line 204, in call\n    city = params.get(\"city\", \"unknown\")\n           ^^^^^^^^^^\n",
+              "content": "The weather in Beijing is sunny and 22 degrees Celsius.",
               "name": "get_current_weather_test",
               "extra": {
                 "function_id": "call_355b7a9ccc024c71a743ab"
@@ -321,7 +321,7 @@ interactions:
             },
             {
               "role": "tool",
-              "content": "An error occurred when calling tool `get_current_weather_test`:\nAttributeError: 'str' object has no attribute 'get'\nTraceback:\n  File \"/Users/sipercai/miniforge3/lib/python3.12/site-packages/qwen_agent/agent.py\", line 192, in _call_tool\n    tool_result = tool.call(tool_args, **kwargs)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sipercai/project/pyins/team-work/loongsuite-python-agent/instrumentation-loongsuite/loongsuite-instrumentation-qwen-agent/tests/test_real_api.py\", line 204, in call\n    city = params.get(\"city\", \"unknown\")\n           ^^^^^^^^^^\n",
+              "content": "The weather in Beijing is sunny and 22 degrees Celsius.",
               "name": "get_current_weather_test",
               "extra": {
                 "function_id": "call_cbd8e5262b69466a8f8fdc"

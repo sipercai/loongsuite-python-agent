@@ -20,10 +20,10 @@ from qwen_agent.llm.schema import ContentItem, FunctionCall, Message
 
 from opentelemetry.instrumentation.qwen_agent import QwenAgentInstrumentor
 from opentelemetry.instrumentation.qwen_agent.utils import (
-    convert_qwen_messages_to_input_messages,
-    convert_qwen_messages_to_output_messages,
-    create_llm_invocation,
-    get_provider_name,
+    _convert_qwen_messages_to_input_messages,
+    _convert_qwen_messages_to_output_messages,
+    _create_llm_invocation,
+    _get_provider_name,
 )
 from opentelemetry.util.genai.types import ToolCall
 
@@ -59,24 +59,24 @@ class TestProviderName:
     def test_dashscope_model_type(self):
         llm = MagicMock()
         llm.model_type = "qwen_dashscope"
-        assert get_provider_name(llm) == "dashscope"
+        assert _get_provider_name(llm) == "dashscope"
 
     def test_oai_model_type(self):
         llm = MagicMock()
         llm.model_type = "oai"
-        assert get_provider_name(llm) == "openai"
+        assert _get_provider_name(llm) == "openai"
 
     def test_unknown_model_type(self):
         llm = MagicMock()
         llm.model_type = "unknown_custom"
         type(llm).__name__ = "CustomModel"
-        assert get_provider_name(llm) == "qwen_agent"
+        assert _get_provider_name(llm) == "dashscope"
 
     def test_class_name_fallback_dashscope(self):
         llm = MagicMock()
         llm.model_type = "custom"
         type(llm).__name__ = "QwenDashScopeChat"
-        assert get_provider_name(llm) == "dashscope"
+        assert _get_provider_name(llm) == "dashscope"
 
 
 class TestMessageConversion:
@@ -85,7 +85,7 @@ class TestMessageConversion:
     def test_convert_simple_user_message(self):
         """Test converting a simple user text message."""
         messages = [Message(role="user", content="Hello")]
-        result = convert_qwen_messages_to_input_messages(messages)
+        result = _convert_qwen_messages_to_input_messages(messages)
         assert len(result) == 1
         assert result[0].role == "user"
         assert len(result[0].parts) == 1
@@ -101,7 +101,7 @@ class TestMessageConversion:
                 arguments='{"city": "Beijing"}',
             ),
         )
-        result = convert_qwen_messages_to_output_messages([msg])
+        result = _convert_qwen_messages_to_output_messages([msg])
         assert len(result) == 1
         assert result[0].finish_reason == "tool_calls"
         # Should have a ToolCall part
@@ -114,13 +114,13 @@ class TestMessageConversion:
         msg = Message(
             role="function", name="get_weather", content="Sunny, 25°C"
         )
-        result = convert_qwen_messages_to_input_messages([msg])
+        result = _convert_qwen_messages_to_input_messages([msg])
         assert len(result) == 1
         assert result[0].role == "function"
 
     def test_convert_empty_messages(self):
         """Test converting empty message list."""
-        result = convert_qwen_messages_to_input_messages([])
+        result = _convert_qwen_messages_to_input_messages([])
         assert result == []
 
     def test_convert_multimodal_content(self):
@@ -129,7 +129,7 @@ class TestMessageConversion:
             role="user",
             content=[ContentItem(text="Describe this image")],
         )
-        result = convert_qwen_messages_to_input_messages([msg])
+        result = _convert_qwen_messages_to_input_messages([msg])
         assert len(result) == 1
         assert result[0].parts[0].content == "Describe this image"
 
@@ -144,7 +144,7 @@ class TestLLMInvocation:
         llm.model_type = "qwen_dashscope"
 
         messages = [Message(role="user", content="Hi")]
-        invocation = create_llm_invocation(llm, messages)
+        invocation = _create_llm_invocation(llm, messages)
 
         assert invocation.request_model == "qwen-max"
         assert invocation.provider == "dashscope"
@@ -164,7 +164,7 @@ class TestLLMInvocation:
                 "parameters": {"type": "object", "properties": {}},
             }
         ]
-        invocation = create_llm_invocation(llm, messages, functions=functions)
+        invocation = _create_llm_invocation(llm, messages, functions=functions)
 
         # P1 fix: tool_definitions are now FunctionToolDefinition objects on invocation.tool_definitions
         assert len(invocation.tool_definitions) == 1

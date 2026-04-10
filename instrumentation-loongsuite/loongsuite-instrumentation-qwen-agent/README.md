@@ -10,11 +10,10 @@ opentelemetry-bootstrap -a install
 
 pip install "qwen-agent >= 0.0.20"
 
+pip install ./util/opentelemetry-util-genai
+
 # Install this instrumentation (from the LoongSuite repo)
 pip install ./instrumentation-loongsuite/loongsuite-instrumentation-qwen-agent
-
-# Required: GenAI utilities used by the instrumentation
-pip install ./util/opentelemetry-util-genai
 ```
 
 Published package name:

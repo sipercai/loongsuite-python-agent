@@ -37,10 +37,10 @@ from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 from opentelemetry.util.genai.types import Error
 
 from .utils import (
-    convert_qwen_messages_to_output_messages,
-    create_agent_invocation,
-    create_llm_invocation,
-    create_tool_invocation,
+    _convert_qwen_messages_to_output_messages,
+    _create_agent_invocation,
+    _create_llm_invocation,
+    _create_tool_invocation,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,12 @@ _react_step_invocation: ContextVar[Optional[ReactStepInvocation]] = ContextVar(
 _react_step_counter: ContextVar[int] = ContextVar(
     "qwen_react_step_counter", default=0
 )
+
+# Reentrancy guards to prevent duplicate spans when Agent/BaseChatModel
+# are abstract classes and subclass calls super() (Proxy/Wrapper scenarios).
+_in_agent_run: ContextVar[bool] = ContextVar("_qwen_in_agent_run", default=False)
+_in_chat: ContextVar[bool] = ContextVar("_qwen_in_chat", default=False)
+_in_call_tool: ContextVar[bool] = ContextVar("_qwen_in_call_tool", default=False)
 
 
 def _close_active_react_step(handler: ExtendedTelemetryHandler) -> None:
@@ -81,12 +87,20 @@ def wrap_agent_run(
     function_map, _react_mode is set to True so that wrap_agent_call_llm
     will create react_step spans for each ReAct iteration.
     """
+    # Reentrancy guard: prevent duplicate spans in Proxy/Wrapper scenarios
+    # where a subclass calls super().run().
+    if _in_agent_run.get():
+        yield from wrapped(*args, **kwargs)
+        return
+    run_token = _in_agent_run.set(True)
+
     messages = args[0] if args else kwargs.get("messages", [])
 
     try:
-        invocation = create_agent_invocation(instance, messages)
+        invocation = _create_agent_invocation(instance, messages)
     except Exception as e:
         logger.debug(f"Failed to create agent invocation: {e}")
+        _in_agent_run.reset(run_token)
         yield from wrapped(*args, **kwargs)
         return
 
@@ -107,7 +121,7 @@ def wrap_agent_run(
         # Extract output from last yielded response
         if last_response:
             invocation.output_messages = (
-                convert_qwen_messages_to_output_messages(last_response)
+                _convert_qwen_messages_to_output_messages(last_response)
             )
 
         # Close the last react_step span before closing invoke_agent.
@@ -115,6 +129,14 @@ def wrap_agent_run(
 
         handler.stop_invoke_agent(invocation)
 
+    except GeneratorExit as e:
+        # Generator was closed early (e.g., consumer stopped iterating).
+        # Ensure any open react_step and the invoke_agent span are finalized.
+        _close_active_react_step(handler)
+        handler.fail_invoke_agent(
+            invocation, Error(message=str(e), type=type(e))
+        )
+        raise
     except Exception as e:
         # Close any open react_step on error path too.
         _close_active_react_step(handler)
@@ -127,6 +149,7 @@ def wrap_agent_run(
         _react_step_counter.reset(counter_token)
         _react_step_invocation.reset(step_token)
         _react_mode.reset(mode_token)
+        _in_agent_run.reset(run_token)
 
 
 def wrap_chat_model_chat(
@@ -138,63 +161,72 @@ def wrap_chat_model_chat(
     - List[Message] (non-stream)
     - Iterator[List[Message]] (stream)
     """
-    messages = args[0] if args else kwargs.get("messages", [])
-    functions = (
-        kwargs.get("functions")
-        if len(args) < 2
-        else (args[1] if len(args) > 1 else None)
-    )
-    stream = kwargs.get("stream", True)
-    extra_generate_cfg = kwargs.get("extra_generate_cfg")
-
-    try:
-        invocation = create_llm_invocation(
-            instance, messages, functions, stream, extra_generate_cfg
-        )
-    except Exception as e:
-        logger.debug(f"Failed to create LLM invocation: {e}")
+    # Reentrancy guard: prevent duplicate spans in Proxy/Wrapper scenarios
+    # where a subclass calls super().chat().
+    if _in_chat.get():
         return wrapped(*args, **kwargs)
-
-    handler.start_llm(invocation)
+    chat_token = _in_chat.set(True)
 
     try:
-        result = wrapped(*args, **kwargs)
+        messages = args[0] if args else kwargs.get("messages", [])
+        functions = (
+            kwargs.get("functions")
+            if len(args) < 2
+            else (args[1] if len(args) > 1 else None)
+        )
+        stream = kwargs.get("stream", True)
+        extra_generate_cfg = kwargs.get("extra_generate_cfg")
 
-        if (
-            stream
-            and hasattr(result, "__iter__")
-            and not isinstance(result, list)
-        ):
-            # Streaming: wrap the iterator
-            return _wrap_streaming_llm_response(result, invocation, handler)
-        else:
-            # Non-streaming: result is List[Message]
-            if result:
-                invocation.output_messages = (
-                    convert_qwen_messages_to_output_messages(result)
-                )
-                invocation.response_model_name = invocation.request_model
-                invocation.finish_reasons = ["stop"]
+        try:
+            invocation = _create_llm_invocation(
+                instance, messages, functions, stream, extra_generate_cfg
+            )
+        except Exception as e:
+            logger.debug(f"Failed to create LLM invocation: {e}")
+            return wrapped(*args, **kwargs)
 
-                # Check for function calls in output
-                for msg in result:
-                    fc = (
-                        msg.function_call
-                        if hasattr(msg, "function_call")
-                        else msg.get("function_call")
-                        if isinstance(msg, dict)
-                        else None
+        handler.start_llm(invocation)
+
+        try:
+            result = wrapped(*args, **kwargs)
+
+            if (
+                stream
+                and hasattr(result, "__iter__")
+                and not isinstance(result, list)
+            ):
+                # Streaming: wrap the iterator
+                return _wrap_streaming_llm_response(result, invocation, handler)
+            else:
+                # Non-streaming: result is List[Message]
+                if result:
+                    invocation.output_messages = (
+                        _convert_qwen_messages_to_output_messages(result)
                     )
-                    if fc:
-                        invocation.finish_reasons = ["tool_calls"]
-                        break
+                    invocation.response_model_name = invocation.request_model
+                    invocation.finish_reasons = ["stop"]
 
-            handler.stop_llm(invocation)
-            return result
+                    # Check for function calls in output
+                    for msg in result:
+                        fc = (
+                            msg.function_call
+                            if hasattr(msg, "function_call")
+                            else msg.get("function_call")
+                            if isinstance(msg, dict)
+                            else None
+                        )
+                        if fc:
+                            invocation.finish_reasons = ["tool_calls"]
+                            break
 
-    except Exception as e:
-        handler.fail_llm(invocation, Error(message=str(e), type=type(e)))
-        raise
+                handler.stop_llm(invocation)
+                return result
+
+        except Exception as e:
+            handler.fail_llm(invocation, Error(message=str(e), type=type(e)))
+            raise
+    finally:
+        _in_chat.reset(chat_token)
 
 
 def _wrap_streaming_llm_response(
@@ -213,7 +245,7 @@ def _wrap_streaming_llm_response(
 
         if last_response:
             invocation.output_messages = (
-                convert_qwen_messages_to_output_messages(last_response)
+                _convert_qwen_messages_to_output_messages(last_response)
             )
             invocation.response_model_name = invocation.request_model
             invocation.finish_reasons = ["stop"]
@@ -233,6 +265,11 @@ def _wrap_streaming_llm_response(
 
         handler.stop_llm(invocation)
 
+    except GeneratorExit as e:
+        # Stream was closed early (e.g., consumer stopped iterating).
+        # Ensure the LLM span is finalized.
+        handler.fail_llm(invocation, Error(message=str(e), type=type(e)))
+        raise
     except Exception as e:
         handler.fail_llm(invocation, Error(message=str(e), type=type(e)))
         raise
@@ -288,41 +325,50 @@ def wrap_agent_call_tool(
 
     _call_tool(tool_name, tool_args, **kwargs) -> str | List[ContentItem]
     """
-    tool_name = args[0] if args else kwargs.get("tool_name", "unknown_tool")
-    tool_args = args[1] if len(args) > 1 else kwargs.get("tool_args", "{}")
-
-    # Get tool instance for description
-    tool_instance = None
-    if hasattr(instance, "function_map"):
-        tool_instance = instance.function_map.get(tool_name)
-
-    try:
-        invocation = create_tool_invocation(
-            tool_name, tool_args, tool_instance
-        )
-    except Exception as e:
-        logger.debug(f"Failed to create tool invocation: {e}")
+    # Reentrancy guard: prevent duplicate spans in Proxy/Wrapper scenarios
+    # where a subclass calls super()._call_tool().
+    if _in_call_tool.get():
         return wrapped(*args, **kwargs)
-
-    handler.start_execute_tool(invocation)
+    tool_guard_token = _in_call_tool.set(True)
 
     try:
-        result = wrapped(*args, **kwargs)
+        tool_name = args[0] if args else kwargs.get("tool_name", "unknown_tool")
+        tool_args = args[1] if len(args) > 1 else kwargs.get("tool_args", "{}")
 
-        # Set tool result
-        if isinstance(result, str):
-            invocation.tool_call_result = result
-        elif isinstance(result, list):
-            # List[ContentItem] - serialize to string
-            invocation.tool_call_result = str(result)
-        else:
-            invocation.tool_call_result = str(result) if result else None
+        # Get tool instance for description
+        tool_instance = None
+        if hasattr(instance, "function_map"):
+            tool_instance = instance.function_map.get(tool_name)
 
-        handler.stop_execute_tool(invocation)
-        return result
+        try:
+            invocation = _create_tool_invocation(
+                tool_name, tool_args, tool_instance
+            )
+        except Exception as e:
+            logger.debug(f"Failed to create tool invocation: {e}")
+            return wrapped(*args, **kwargs)
 
-    except Exception as e:
-        handler.fail_execute_tool(
-            invocation, Error(message=str(e), type=type(e))
-        )
-        raise
+        handler.start_execute_tool(invocation)
+
+        try:
+            result = wrapped(*args, **kwargs)
+
+            # Set tool result
+            if isinstance(result, str):
+                invocation.tool_call_result = result
+            elif isinstance(result, list):
+                # List[ContentItem] - serialize to string
+                invocation.tool_call_result = str(result)
+            else:
+                invocation.tool_call_result = str(result) if result else None
+
+            handler.stop_execute_tool(invocation)
+            return result
+
+        except Exception as e:
+            handler.fail_execute_tool(
+                invocation, Error(message=str(e), type=type(e))
+            )
+            raise
+    finally:
+        _in_call_tool.reset(tool_guard_token)

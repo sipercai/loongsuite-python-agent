@@ -18,15 +18,15 @@ Handles conversion between qwen-agent Message types and
 OpenTelemetry GenAI semantic convention types.
 """
 
-from __future__ import annotations
-
 import json
 import logging
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
+)
+from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
+    GenAiExtendedProviderNameValues,
 )
 from opentelemetry.util.genai.extended_types import (
     ExecuteToolInvocation,
@@ -44,27 +44,19 @@ from opentelemetry.util.genai.types import (
 
 logger = logging.getLogger(__name__)
 
-
-class QwenAgentProviderName(str, Enum):
-    """Provider names for qwen-agent LLM backends."""
-
-    DASHSCOPE = "dashscope"
-    QWEN = "qwen"
-
-
-# Map qwen-agent model_type to provider name
+# Map qwen-agent model_type to provider name.
 _MODEL_TYPE_PROVIDER_MAP = {
-    "qwen_dashscope": QwenAgentProviderName.DASHSCOPE.value,
-    "qwenvl_dashscope": QwenAgentProviderName.DASHSCOPE.value,
-    "qwenaudio_dashscope": QwenAgentProviderName.DASHSCOPE.value,
+    "qwen_dashscope": GenAiExtendedProviderNameValues.DASHSCOPE.value,
+    "qwenvl_dashscope": GenAiExtendedProviderNameValues.DASHSCOPE.value,
+    "qwenaudio_dashscope": GenAiExtendedProviderNameValues.DASHSCOPE.value,
+    "qwenvlo_dashscope": GenAiExtendedProviderNameValues.DASHSCOPE.value,
     "oai": GenAIAttributes.GenAiProviderNameValues.OPENAI.value,
-    "azure": GenAIAttributes.GenAiProviderNameValues.OPENAI.value,
+    "azure": GenAIAttributes.GenAiProviderNameValues.AZURE_AI_OPENAI.value,
     "qwenvl_oai": GenAIAttributes.GenAiProviderNameValues.OPENAI.value,
     "qwenomni_oai": GenAIAttributes.GenAiProviderNameValues.OPENAI.value,
 }
 
-
-def get_provider_name(llm_instance: Any) -> str:
+def _get_provider_name(llm_instance: Any) -> str:
     """Extract provider name from a qwen-agent LLM instance.
 
     Args:
@@ -80,11 +72,13 @@ def get_provider_name(llm_instance: Any) -> str:
     # Fallback: infer from class name
     class_name = type(llm_instance).__name__.lower()
     if "dashscope" in class_name:
-        return QwenAgentProviderName.DASHSCOPE.value
-    if "openai" in class_name or "oai" in class_name or "azure" in class_name:
+        return GenAiExtendedProviderNameValues.DASHSCOPE.value
+    if "openai" in class_name or "oai" in class_name:
         return GenAIAttributes.GenAiProviderNameValues.OPENAI.value
+    if "azure" in class_name:
+        return GenAIAttributes.GenAiProviderNameValues.AZURE_AI_OPENAI.value
 
-    return "qwen_agent"
+    return GenAiExtendedProviderNameValues.DASHSCOPE.value
 
 
 def _extract_content_text(content: Any) -> str:
@@ -107,7 +101,7 @@ def _extract_content_text(content: Any) -> str:
     return str(content) if content else ""
 
 
-def convert_qwen_messages_to_input_messages(
+def _convert_qwen_messages_to_input_messages(
     messages: Any,
 ) -> List[InputMessage]:
     """Convert qwen-agent Message list to GenAI InputMessage format.
@@ -166,12 +160,40 @@ def convert_qwen_messages_to_input_messages(
                     ToolCall(name=fc_name, arguments=fc_args, id=None)
                 )
 
-            # Handle function role (tool response)
-            if role == "function" and content:
+            # Handle function/tool role (tool response).
+            # qwen-agent uses role="function" internally, but DashScope API
+            # converts it to role="tool" (see base.py:445). Handle both.
+            if role in ("function", "tool") and content:
                 text = _extract_content_text(content)
+
+                # Extract tool_call_id: prefer msg.id, then msg.extra.function_id,
+                # then fall back to tool name.
+                tool_call_id: str = ""
+                if hasattr(msg, "id"):
+                    tool_call_id = getattr(msg, "id", "") or ""
+                elif isinstance(msg, dict):
+                    tool_call_id = msg.get("id") or ""
+
+                if not tool_call_id:
+                    extra = (
+                        getattr(msg, "extra", None)
+                        if not isinstance(msg, dict)
+                        else msg.get("extra")
+                    )
+                    if extra is not None:
+                        if isinstance(extra, dict):
+                            tool_call_id = extra.get("function_id") or ""
+                        else:
+                            tool_call_id = (
+                                getattr(extra, "function_id", "") or ""
+                            )
+
+                if not tool_call_id:
+                    tool_call_id = name or ""
+
                 parts.append(
                     ToolCallResponse(
-                        id=name or "",
+                        id=tool_call_id,
                         response=text,
                     )
                 )
@@ -190,7 +212,7 @@ def convert_qwen_messages_to_input_messages(
     return input_messages
 
 
-def convert_qwen_messages_to_output_messages(
+def _convert_qwen_messages_to_output_messages(
     messages: Any,
 ) -> List[OutputMessage]:
     """Convert qwen-agent response messages to GenAI OutputMessage format.
@@ -268,7 +290,7 @@ def convert_qwen_messages_to_output_messages(
     return output_messages
 
 
-def get_tool_definitions(
+def _get_tool_definitions(
     functions: Optional[List[Dict]],
 ) -> Optional[List[FunctionToolDefinition]]:
     """Extract tool definitions for tracing as FunctionToolDefinition objects.
@@ -306,7 +328,7 @@ def get_tool_definitions(
     return None
 
 
-def create_llm_invocation(
+def _create_llm_invocation(
     llm_instance: Any,
     messages: Any,
     functions: Optional[List[Dict]] = None,
@@ -325,10 +347,10 @@ def create_llm_invocation(
     Returns:
         LLMInvocation for ExtendedTelemetryHandler.
     """
-    provider_name = get_provider_name(llm_instance)
+    provider_name = _get_provider_name(llm_instance)
     request_model = getattr(llm_instance, "model", "unknown_model")
 
-    input_messages = convert_qwen_messages_to_input_messages(messages)
+    input_messages = _convert_qwen_messages_to_input_messages(messages)
 
     invocation = LLMInvocation(
         request_model=request_model,
@@ -346,14 +368,14 @@ def create_llm_invocation(
             invocation.top_p = extra_generate_cfg["top_p"]
 
     # Set tool definitions
-    tool_definitions = get_tool_definitions(functions)
+    tool_definitions = _get_tool_definitions(functions)
     if tool_definitions:
         invocation.tool_definitions = tool_definitions
 
     return invocation
 
 
-def create_agent_invocation(
+def _create_agent_invocation(
     agent_instance: Any,
     messages: Any,
 ) -> InvokeAgentInvocation:
@@ -370,10 +392,10 @@ def create_agent_invocation(
     provider_name = None
     request_model = None
     if hasattr(agent_instance, "llm") and agent_instance.llm:
-        provider_name = get_provider_name(agent_instance.llm)
+        provider_name = _get_provider_name(agent_instance.llm)
         request_model = getattr(agent_instance.llm, "model", None)
 
-    input_messages = convert_qwen_messages_to_input_messages(messages)
+    input_messages = _convert_qwen_messages_to_input_messages(messages)
 
     agent_name = (
         getattr(agent_instance, "name", None) or type(agent_instance).__name__
@@ -388,7 +410,14 @@ def create_agent_invocation(
         input_messages=input_messages,
     )
 
-    # Set system instruction if available
+    # Set system instruction if available.
+    # Qwen-Agent's Agent.system_message is a plain string (Optional[str])
+    # that serves as the system prompt prepended to messages (see agent.py:113).
+    # This conforms to the gen_ai.system_instructions semantic convention:
+    # "The full system instructions (also known as system prompt)".
+    # Note: agent.py:117 may concatenate system_message with an existing
+    # system message in the input, but we capture the original system_message
+    # as the agent's configured instruction.
     if (
         hasattr(agent_instance, "system_message")
         and agent_instance.system_message
@@ -400,7 +429,7 @@ def create_agent_invocation(
     return invocation
 
 
-def create_tool_invocation(
+def _create_tool_invocation(
     tool_name: str,
     tool_args: Any = None,
     tool_instance: Any = None,
