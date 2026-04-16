@@ -1,0 +1,22 @@
+[
+  {
+    "id": "apollo-telemetry",
+    "topic": "apollo telemetry",
+    "aliases": [
+      "apollo",
+      "telemetry hierarchy"
+    ],
+    "answer": "Apollo telemetry keeps ENTRY > AGENT > STEP as the primary hierarchy.",
+    "evidence": "The design note says LLM and tool spans should hang beneath the active step instead of flattening the trace."
+  },
+  {
+    "id": "mercury-retrieval",
+    "topic": "mercury retrieval",
+    "aliases": [
+      "mercury rag",
+      "knowledge grounding"
+    ],
+    "answer": "Mercury retrieval returns snippets together with source ids for grounded answers.",
+    "evidence": "Each retrieved chunk includes a source id, title, and snippet so the caller can cite grounding evidence."
+  }
+]
