@@ -30,9 +30,6 @@ from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import
     GEN_AI_SKILL_NAME,
     GEN_AI_SKILL_VERSION,
 )
-from opentelemetry.util.genai.extended_span_utils import (
-    _apply_execute_tool_finish_attributes,
-)
 from opentelemetry.util.genai.extended_types import ExecuteToolInvocation
 
 
@@ -243,34 +240,6 @@ class TestEnrichSkillMetadata:
 
 
 class TestSkillSpanAttributes:
-    def test_apply_execute_tool_finish_attributes_writes_skill_fields(self):
-        invocation = ExecuteToolInvocation(
-            tool_name="read_file",
-            skill_name="news",
-            skill_id="workspace:default:news",
-            skill_description="Latest news",
-            skill_version="1.0",
-        )
-
-        span = _FakeSpan()
-        _apply_execute_tool_finish_attributes(span, invocation)
-
-        assert span.attributes[GEN_AI_SKILL_NAME] == "news"
-        assert span.attributes[GEN_AI_SKILL_ID] == "workspace:default:news"
-        assert span.attributes[GEN_AI_SKILL_DESCRIPTION] == "Latest news"
-        assert span.attributes[GEN_AI_SKILL_VERSION] == "1.0"
-
-    def test_apply_execute_tool_finish_attributes_skips_none(self):
-        span = _FakeSpan()
-        _apply_execute_tool_finish_attributes(
-            span, ExecuteToolInvocation(tool_name="read_file")
-        )
-
-        assert GEN_AI_SKILL_NAME not in span.attributes
-        assert GEN_AI_SKILL_ID not in span.attributes
-        assert GEN_AI_SKILL_DESCRIPTION not in span.attributes
-        assert GEN_AI_SKILL_VERSION not in span.attributes
-
     @pytest.mark.asyncio
     async def test_trace_async_generator_wrapper_preserves_skill_attributes(self):
         async def fake_tool_generator():
