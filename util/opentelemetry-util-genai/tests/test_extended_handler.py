@@ -70,6 +70,10 @@ from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import
     GEN_AI_RETRIEVAL_DOCUMENTS,
     GEN_AI_RETRIEVAL_QUERY_TEXT,
     GEN_AI_SESSION_ID,
+    GEN_AI_SKILL_DESCRIPTION,
+    GEN_AI_SKILL_ID,
+    GEN_AI_SKILL_NAME,
+    GEN_AI_SKILL_VERSION,
     GEN_AI_SPAN_KIND,
     GEN_AI_TOOL_CALL_ARGUMENTS,
     GEN_AI_TOOL_CALL_RESULT,
@@ -466,6 +470,40 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
                 ErrorAttributes.ERROR_TYPE: ToolExecutionError.__qualname__,
             },
         )
+
+    def test_execute_tool_writes_skill_attributes(self):
+        with self.telemetry_handler.execute_tool() as invocation:
+            invocation.tool_name = "read_file"
+            invocation.skill_name = "news"
+            invocation.skill_id = "workspace:default:news"
+            invocation.skill_description = "Latest news"
+            invocation.skill_version = "1.0"
+
+        span = _get_single_span(self.span_exporter)
+        span_attrs = _get_span_attributes(span)
+        _assert_span_attributes(
+            span_attrs,
+            {
+                GenAI.GEN_AI_OPERATION_NAME: "execute_tool",
+                GenAI.GEN_AI_TOOL_NAME: "read_file",
+                GEN_AI_SKILL_NAME: "news",
+                GEN_AI_SKILL_ID: "workspace:default:news",
+                GEN_AI_SKILL_DESCRIPTION: "Latest news",
+                GEN_AI_SKILL_VERSION: "1.0",
+            },
+        )
+
+    def test_execute_tool_skips_empty_skill_attributes(self):
+        with self.telemetry_handler.execute_tool() as invocation:
+            invocation.tool_name = "read_file"
+
+        span = _get_single_span(self.span_exporter)
+        span_attrs = _get_span_attributes(span)
+
+        self.assertNotIn(GEN_AI_SKILL_NAME, span_attrs)
+        self.assertNotIn(GEN_AI_SKILL_ID, span_attrs)
+        self.assertNotIn(GEN_AI_SKILL_DESCRIPTION, span_attrs)
+        self.assertNotIn(GEN_AI_SKILL_VERSION, span_attrs)
 
     # ==================== Invoke Agent Tests ====================
 
