@@ -33,6 +33,241 @@ from opentelemetry.util.genai.types import Error
 logger = logging.getLogger(__name__)
 
 
+# The canonical filename that defines a skill.  Only reads targeting this
+# file are treated as "skill load" operations.
+_SKILL_MANIFEST = "SKILL.md"
+
+
+def _resolves_to_skill_md(
+    file_path: str,
+    skill_dir: str,
+    *,
+    allow_bare: bool = False,
+) -> bool:
+    """Return True if *file_path* points to the ``SKILL.md`` inside *skill_dir*.
+
+    Supports three path forms that appear in real CoPaw/QwenPaw traces:
+
+    1. **Absolute path** – e.g.
+       ``/home/user/.copaw/workspaces/default/skills/pdf/SKILL.md``
+       Compared directly against ``{skill_dir}/SKILL.md`` using
+       ``realpath`` to resolve symlinks (important on macOS where
+       ``/var`` → ``/private/var``).
+
+    2. **Bare filename** – ``SKILL.md``
+       Only accepted when *allow_bare* is ``True``.  The caller
+       (``_match_skill_for_tool``) sets this flag only when exactly
+       one skill is registered, so a bare ``SKILL.md`` is unambiguous.
+       With multiple skills a bare name could match any of them, so we
+       conservatively reject it and let the upstream CoPaw context
+       provide the authoritative match instead.
+
+    3. **Workspace-relative path** – e.g. ``skills/pdf/SKILL.md`` or
+       ``workspaces/default/skills/pdf/SKILL.md``
+       CoPaw resolves these against a workspace / WORKING_DIR that may
+       differ from the process cwd.  Instead of guessing the base
+       directory, we use **suffix matching**: the normalised path must
+       end with ``/{skill_dir_basename}/SKILL.md`` where
+       *skill_dir_basename* is the last component of *skill_dir*.
+       This avoids depending on cwd at all.
+    """
+    import os
+
+    try:
+        # Use realpath to resolve symlinks (e.g. /var → /private/var on macOS)
+        real_skill_dir = os.path.normpath(os.path.realpath(skill_dir))
+        expected = os.path.join(real_skill_dir, _SKILL_MANIFEST)
+
+        # --- Try 1: absolute path ---
+        if os.path.isabs(file_path):
+            candidate = os.path.normpath(os.path.realpath(file_path))
+            return candidate == expected
+
+        normalised_rel = os.path.normpath(file_path)
+
+        # --- Try 2: bare "SKILL.md" (only when unambiguous) ---
+        if normalised_rel == _SKILL_MANIFEST:
+            return allow_bare
+
+        # --- Try 3: workspace-relative path (suffix matching) ---
+        # Build the expected suffix: e.g. "pdf/SKILL.md"
+        skill_dir_basename = os.path.basename(real_skill_dir)
+        expected_suffix = os.path.join(skill_dir_basename, _SKILL_MANIFEST)
+
+        # The relative path must end with exactly "{skill_name}/SKILL.md"
+        # Use os.sep-aware comparison to avoid partial-name collisions
+        # (e.g. "pdf-extra/SKILL.md" must NOT match skill dir "pdf")
+        if normalised_rel == expected_suffix:
+            return True
+        if normalised_rel.endswith(os.sep + expected_suffix):
+            return True
+
+    except Exception:
+        return False
+
+    return False
+
+
+def _enrich_skill_metadata(skill):
+    """Enrich a matched skill dict with version and id from SKILL.md.
+
+    AgentScope's ``AgentSkill`` only stores ``name``, ``description``,
+    and ``dir``.  This function reads the SKILL.md frontmatter to extract
+    ``version`` and builds a **runtime / deployment-scoped** ``id``.
+
+    The enrichment is best-effort: if the frontmatter cannot be read
+    (e.g. file missing, parse error, or running without CoPaw), the
+    original skill dict is returned unchanged.
+
+    When CoPaw is available, its ``_read_frontmatter_safe`` and
+    ``_extract_version`` helpers are preferred because they are the
+    canonical source of truth.  Otherwise we fall back to a lightweight
+    ``frontmatter`` parse.
+
+    Returns a new dict (never mutates the original).
+    """
+    import os
+
+    skill_dir = skill.get("dir", "")
+    skill_name = skill.get("name", "")
+    if not skill_dir:
+        return dict(skill)
+
+    enriched = dict(skill)
+
+    # --- Extract version ---
+    version_text = None
+
+    # Prefer CoPaw's own helpers (canonical source of truth). If that
+    # path fails at runtime for any reason, continue to lightweight
+    # frontmatter/manifest fallbacks instead of dropping version entirely.
+    try:
+        from pathlib import Path
+
+        from copaw.agents.skills_manager import (
+            _extract_version,
+            _read_frontmatter_safe,
+        )
+
+        post = _read_frontmatter_safe(Path(skill_dir), skill_name)
+        version_text = _extract_version(post)
+    except Exception:
+        version_text = None
+
+    if not version_text:
+        try:
+            import frontmatter
+
+            skill_md_path = os.path.join(skill_dir, _SKILL_MANIFEST)
+            with open(skill_md_path, "r", encoding="utf-8") as fh:
+                post = frontmatter.load(fh)
+            metadata = post.get("metadata") or {}
+            for value in (
+                post.get("version"),
+                metadata.get("version"),
+                metadata.get("builtin_skill_version"),
+            ):
+                if value not in (None, ""):
+                    version_text = str(value)
+                    break
+        except Exception:
+            version_text = None
+
+    if not version_text:
+        try:
+            import json
+            from pathlib import Path
+
+            skill_path = Path(skill_dir)
+            skill_json_path = skill_path.parent.parent / "skill.json"
+            if skill_json_path.exists():
+                # CoPaw-specific runtime fallback: workspace skill.json may
+                # already contain normalized version_text even when direct
+                # helper/frontmatter extraction is unavailable in-process.
+                payload = json.loads(skill_json_path.read_text(encoding="utf-8"))
+                entry = payload.get("skills", {}).get(skill_name, {})
+                metadata = entry.get("metadata", {}) or {}
+                value = metadata.get("version_text")
+                if value not in (None, ""):
+                    version_text = str(value)
+        except Exception:
+            version_text = None
+
+    if version_text:
+        enriched["version"] = str(version_text)
+
+    # --- Build runtime/deployment-scoped skill ID ---
+    # Format: workspace:{workspace_name}:{skill_name}
+    # NOT a globally canonical ID — stable within one workspace.
+    try:
+        parts = skill_dir.replace("\\", "/").split("/")
+        workspace_name = "default"
+        try:
+            skills_idx = len(parts) - 1 - parts[::-1].index("skills")
+            if skills_idx >= 1:
+                workspace_name = parts[skills_idx - 1]
+        except ValueError:
+            pass
+        enriched["id"] = f"workspace:{workspace_name}:{skill_name}"
+    except Exception:
+        pass
+
+    return enriched
+
+def _match_skill_for_tool(instance, tool_args):
+    """Detect if a tool execution is loading a skill.
+
+    Returns an enriched dict with skill metadata (including version and
+    id when available) when **all** of the following conditions are met:
+
+    1. The Toolkit instance has registered skills.
+    2. The tool arguments contain a file path (``file_path``, ``path``,
+       or ``target_file``).
+    3. That path resolves to the ``SKILL.md`` file at the top level of a
+       registered skill directory.
+
+    Only reads of ``SKILL.md`` are considered skill loads.  Accessing
+    other files inside a skill directory (scripts, references, resources)
+    does **not** trigger skill attributes, keeping the semantic boundary
+    clean.
+
+    The skill judgment is precise: only skills registered in
+    ``toolkit.skills`` (i.e. effective skills for the current workspace
+    and channel) can match.  Arbitrary SKILL.md files outside the
+    registered set are never matched.
+
+    Otherwise ``None`` is returned.
+    """
+    if not hasattr(instance, "skills") or not instance.skills:
+        return None
+
+    # Extract candidate file path from tool arguments
+    file_path = None
+    if isinstance(tool_args, dict):
+        file_path = (
+            tool_args.get("file_path")
+            or tool_args.get("path")
+            or tool_args.get("target_file")
+        )
+    if not file_path:
+        return None
+
+    # Bare "SKILL.md" is ambiguous when multiple skills are registered.
+    # Only allow it when exactly one skill exists.
+    single_skill = len(instance.skills) == 1
+
+    # Check if the path resolves to SKILL.md of any registered skill
+    for skill in instance.skills.values():
+        skill_dir = skill.get("dir", "")
+        if not skill_dir:
+            continue
+
+        if _resolves_to_skill_md(file_path, skill_dir, allow_bare=single_skill):
+            return _enrich_skill_metadata(skill)
+
+    return None
+
+
 def _get_tool_description(instance, tool_name):
     """Get tool description from toolkit."""
     if (
@@ -107,7 +342,6 @@ async def _trace_async_generator_wrapper(
                 pass
 
         # Apply handler's attribute logic (without context management)
-        # TODO: Fix the context management logic in genai util
         try:
             _apply_execute_tool_finish_attributes(span, invocation)
 
@@ -143,6 +377,7 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
         kwargs: Keyword arguments
         handler: ExtendedTelemetryHandler instance (required)
     """
+
     # Extract tool call information
     tool_call = args[0] if args else kwargs.get("tool_call", {})
     tool_name = (
@@ -158,6 +393,9 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
     # Get tool description from AgentScope's toolkit
     tool_description = _get_tool_description(instance, tool_name)
 
+    # Detect if this tool execution is loading a skill
+    matched_skill = _match_skill_for_tool(instance, tool_args)
+
     # Create invocation object with all tool data
     invocation = ExecuteToolInvocation(
         tool_name=tool_name,
@@ -165,6 +403,27 @@ async def wrap_tool_call(wrapped, instance, args, kwargs, handler):
         tool_description=tool_description,
         tool_call_arguments=tool_args,
     )
+
+    # --- Skill attributes ---
+    #
+    # ``_match_skill_for_tool`` checks whether this tool call reads a
+    # registered skill's SKILL.md.  Only skills in ``toolkit.skills``
+    # (i.e. effective skills for the current workspace/channel) can match.
+    #
+    # When a match is found, ``_enrich_skill_metadata`` reads the
+    # SKILL.md frontmatter to extract version and builds a runtime-scoped
+    # skill_id.  If CoPaw is available, its canonical helpers are used;
+    # otherwise a lightweight frontmatter parse provides a best-effort
+    # fallback.  When running AgentScope standalone (no CoPaw, no
+    # frontmatter lib), name and description are still available from
+    # the AgentSkill dict.
+
+    if matched_skill is not None:
+        invocation.skill_name = matched_skill.get("name")
+        invocation.skill_id = matched_skill.get("id")
+        invocation.skill_description = matched_skill.get("description")
+        invocation.skill_version = matched_skill.get("version")
+
     invocation.monotonic_start_s = timeit.default_timer()
 
     span_name = f"{GenAIAttributes.GenAiOperationNameValues.EXECUTE_TOOL.value} {tool_name}"
