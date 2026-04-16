@@ -52,6 +52,10 @@ from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import
     GEN_AI_RERANK_SCORING_PROMPT,
     GEN_AI_RESPONSE_TIME_TO_FIRST_TOKEN,
     GEN_AI_RETRIEVAL_DOCUMENTS,
+    GEN_AI_SKILL_DESCRIPTION,
+    GEN_AI_SKILL_ID,
+    GEN_AI_SKILL_NAME,
+    GEN_AI_SKILL_VERSION,
     GEN_AI_RETRIEVAL_QUERY_TEXT,
     GEN_AI_SESSION_ID,
     GEN_AI_SPAN_KIND,
@@ -509,6 +513,16 @@ def _apply_execute_tool_finish_attributes(
             invocation.tool_call_result,
         )
     )
+
+    # Skill attributes (conditionally set when this tool execution loaded a skill)
+    if invocation.skill_name is not None:
+        attributes[GEN_AI_SKILL_NAME] = invocation.skill_name
+    if invocation.skill_id is not None:
+        attributes[GEN_AI_SKILL_ID] = invocation.skill_id
+    if invocation.skill_description is not None:
+        attributes[GEN_AI_SKILL_DESCRIPTION] = invocation.skill_description
+    if invocation.skill_version is not None:
+        attributes[GEN_AI_SKILL_VERSION] = invocation.skill_version
 
     # Custom attributes
     attributes.update(invocation.attributes)

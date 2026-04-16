@@ -121,6 +121,11 @@ class ExecuteToolInvocation:
     tool_type: str | None = None  # function, extension, datastore
     tool_call_arguments: Any = None
     tool_call_result: Any = None
+    # Skill attributes (conditionally set when this tool execution loaded a skill)
+    skill_name: str | None = None
+    skill_id: str | None = None
+    skill_description: str | None = None
+    skill_version: str | None = None
     monotonic_start_s: float | None = None
 
 

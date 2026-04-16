@@ -105,6 +105,27 @@ GEN_AI_RERANK_OUTPUT_DOCUMENTS: Final = "gen_ai.rerank.output_documents"
 The reranked documents returned by the reranking operation.
 """
 
+# Skill attributes (per loongsuite-semantic-conventions PR #19)
+GEN_AI_SKILL_NAME: Final = "gen_ai.skill.name"
+"""
+The name of the GenAI skill being invoked.
+"""
+
+GEN_AI_SKILL_ID: Final = "gen_ai.skill.id"
+"""
+The unique identifier of the GenAI skill being invoked.
+"""
+
+GEN_AI_SKILL_DESCRIPTION: Final = "gen_ai.skill.description"
+"""
+Free-form description of the GenAI skill provided by the application.
+"""
+
+GEN_AI_SKILL_VERSION: Final = "gen_ai.skill.version"
+"""
+The version of the GenAI skill being invoked.
+"""
+
 GEN_AI_SPAN_KIND: Final = "gen_ai.span.kind"
 """
 The semantic type of GenAI operation (e.g., LLM, AGENT, EMBEDDING).
