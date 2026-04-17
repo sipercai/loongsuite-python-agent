@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Add `gen_ai.skill.name`, `gen_ai.skill.id`, `gen_ai.skill.description`, and
+  `gen_ai.skill.version` semantic attributes for `execute_tool` spans, plus the
+  corresponding optional fields on `ExecuteToolInvocation`.
+
 ## Version 0.4.0 (2026-04-03)
 
 There are no changelog entries for this release.
