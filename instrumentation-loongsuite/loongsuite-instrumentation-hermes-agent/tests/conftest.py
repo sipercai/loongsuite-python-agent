@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import importlib
-import importlib.util
 import json
 import os
 import sys
@@ -55,20 +54,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
 
-_INSTRUMENTOR_PATH = (
-    PACKAGE_SRC
-    / "opentelemetry"
-    / "instrumentation"
-    / "hermes_agent"
-    / "__init__.py"
-)
-_SPEC = importlib.util.spec_from_file_location(
-    "hermes_agent_local_instrumentation",
-    _INSTRUMENTOR_PATH,
-)
-_MODULE = importlib.util.module_from_spec(_SPEC)
-assert _SPEC and _SPEC.loader
-_SPEC.loader.exec_module(_MODULE)
+_MODULE = importlib.import_module("opentelemetry.instrumentation.hermes_agent")
 HermesAgentInstrumentor = _MODULE.HermesAgentInstrumentor
 
 
