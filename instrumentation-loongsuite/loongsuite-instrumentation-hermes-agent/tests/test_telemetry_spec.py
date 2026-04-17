@@ -94,6 +94,99 @@ def _response(
     )
 
 
+def _response_with_cached_prompt_tokens(
+    *,
+    content: str = "最终答案",
+    finish_reason: str = "stop",
+    model: str = "qwen-turbo",
+    response_id: str = "resp-cache-1",
+    prompt_tokens: int = 14,
+    completion_tokens: int = 5,
+    cached_tokens: int = 4,
+):
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(
+                    role="assistant",
+                    content=content,
+                    tool_calls=None,
+                ),
+                finish_reason=finish_reason,
+            )
+        ],
+        model=model,
+        id=response_id,
+        usage=SimpleNamespace(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=prompt_tokens + completion_tokens,
+            prompt_tokens_details=SimpleNamespace(cached_tokens=cached_tokens),
+        ),
+    )
+
+
+def _codex_response(
+    *,
+    content: str = "最终答案",
+    model: str = "gpt-5.4",
+    response_id: str = "resp-codex-1",
+    status: str = "completed",
+    incomplete_reason: str | None = None,
+    input_tokens: int = 12,
+    output_tokens: int = 7,
+    cached_tokens: int = 3,
+    tool_calls=None,
+):
+    output = []
+    if tool_calls:
+        for tool_call in tool_calls:
+            output.append(
+                SimpleNamespace(
+                    type="function_call",
+                    id=tool_call.id,
+                    call_id=tool_call.id,
+                    name=tool_call.function.name,
+                    arguments=tool_call.function.arguments,
+                )
+            )
+    elif content is not None:
+        output.append(
+            SimpleNamespace(
+                type="message",
+                content=[SimpleNamespace(type="output_text", text=content)],
+            )
+        )
+
+    return SimpleNamespace(
+        output=output,
+        output_text=content or "",
+        model=model,
+        id=response_id,
+        status=status,
+        incomplete_details=(
+            SimpleNamespace(reason=incomplete_reason)
+            if incomplete_reason is not None
+            else None
+        ),
+        usage=SimpleNamespace(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+            input_tokens_details=SimpleNamespace(cached_tokens=cached_tokens),
+        ),
+    )
+
+
+def _codex_input_items(user_message: str) -> list[dict[str, object]]:
+    return [
+        {
+            "role": "user",
+            "content": user_message,
+        }
+    ]
+
+
 def _runtime(instrumentation_module, tracer_provider, meter_provider):
     tracer = trace_api.get_tracer(
         "hermes-agent-spec-tests",
@@ -449,6 +542,133 @@ def test_streaming_ttft_rolls_up_to_agent_span(
     assert llm_span.attributes["gen_ai.operation.name"] == "chat"
     assert llm_span.attributes["gen_ai.response.time_to_first_token"] > 0
     assert agent_span.attributes["gen_ai.response.time_to_first_token"] > 0
+
+
+def test_codex_responses_usage_and_finish_reason_are_normalized(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(
+        session_id="session-codex",
+        model="gpt-5.4",
+        provider="openai-codex",
+    )
+    agent.api_mode = "codex_responses"
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _codex_response(
+                content="最终答案",
+                input_tokens=12,
+                output_tokens=7,
+                cached_tokens=3,
+            ),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "instructions": "你是一个严谨的助手。",
+                    "input": _codex_input_items(user_message),
+                    "max_output_tokens": 256,
+                },
+            ),
+            {},
+        )
+        return {"final_response": "最终答案"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("请直接回答",), {})
+
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+    llm_span = _spans_by_kind(span_exporter, "LLM")[0]
+    step_span = _spans_by_kind(span_exporter, "STEP")[0]
+
+    assert llm_span.attributes["gen_ai.usage.input_tokens"] == 9
+    assert llm_span.attributes["gen_ai.usage.output_tokens"] == 7
+    assert llm_span.attributes["gen_ai.usage.total_tokens"] == 16
+    assert llm_span.attributes["gen_ai.response.finish_reason"] == "stop"
+    assert llm_span.attributes["gen_ai.response.finish_reasons"] == "[\"stop\"]"
+    assert "你是一个严谨的助手。" in llm_span.attributes["gen_ai.input.messages"]
+    assert "请直接回答" in llm_span.attributes["gen_ai.input.messages"]
+    assert step_span.attributes["gen_ai.react.finish_reason"] == "stop"
+    assert agent_span.attributes["gen_ai.usage.input_tokens"] == 9
+    assert agent_span.attributes["gen_ai.usage.output_tokens"] == 7
+    assert agent_span.attributes["gen_ai.usage.total_tokens"] == 16
+
+
+def test_chat_completions_total_tokens_uses_uncached_input_plus_output(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-cache-chat")
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response_with_cached_prompt_tokens(
+                prompt_tokens=14,
+                completion_tokens=5,
+                cached_tokens=4,
+            ),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        return {"final_response": "最终答案"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("请直接回答",), {})
+
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+    llm_span = _spans_by_kind(span_exporter, "LLM")[0]
+
+    assert llm_span.attributes["gen_ai.usage.input_tokens"] == 10
+    assert llm_span.attributes["gen_ai.usage.output_tokens"] == 5
+    assert llm_span.attributes["gen_ai.usage.total_tokens"] == 15
+    assert agent_span.attributes["gen_ai.usage.input_tokens"] == 10
+    assert agent_span.attributes["gen_ai.usage.output_tokens"] == 5
+    assert agent_span.attributes["gen_ai.usage.total_tokens"] == 15
+
+
+def test_streaming_wrapper_suppresses_nested_llm_span(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-nested-stream")
+
+    runtime.streaming_llm_wrapper(
+        lambda api_kwargs, **_: runtime.llm_wrapper(
+            lambda inner_api_kwargs: _response(content="完成", finish_reason="stop"),
+            agent,
+            (api_kwargs,),
+            {},
+        ),
+        agent,
+        (
+            {
+                "model": agent.model,
+                "messages": [{"role": "user", "content": "请回复：完成"}],
+            },
+        ),
+        {},
+    )
+
+    llm_spans = _spans_by_kind(span_exporter, "LLM")
+    step_spans = _spans_by_kind(span_exporter, "STEP")
+
+    assert len(llm_spans) == 1
+    assert len(step_spans) == 1
 
 
 def test_child_agent_invocation_reuses_ingress_without_creating_child_entry(
