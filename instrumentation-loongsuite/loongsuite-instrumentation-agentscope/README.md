@@ -92,6 +92,28 @@ export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=NO_CONTENT
 - **Tools**: Toolkit.call_tool_function
 - **Formatters**: TruncatedFormatterBase.format
 
+### Skill metadata on tool spans
+
+When a tool execution reads the top-level `SKILL.md` of a skill already
+registered in `toolkit.skills`, AgentScope enriches that `execute_tool` span
+with:
+
+- `gen_ai.skill.name`
+- `gen_ai.skill.id`
+- `gen_ai.skill.description`
+- `gen_ai.skill.version`
+
+The matching is intentionally conservative:
+
+- only registered skills can match
+- only the top-level `SKILL.md` counts as a skill load
+- reads under other paths such as `scripts/` or `references/` do not emit
+  `gen_ai.skill.*`
+
+For CoPaw-style workspace layouts, `gen_ai.skill.version` is resolved from
+`SKILL.md` frontmatter first and falls back to workspace `skill.json`
+`metadata.version_text` when needed.
+
 ## Concurrency (agents)
 
 ReAct step tracing stores temporary state on the agent instance for the
