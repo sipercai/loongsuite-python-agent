@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 
@@ -62,6 +63,8 @@ def test_sync_llm_call_records_single_llm_span_and_metric(
     agent_span = agent_spans[0]
     step_span = step_spans[0]
     span = llm_spans[0]
+    agent_output_messages = json.loads(agent_span.attributes["gen_ai.output.messages"])
+    llm_input_messages = json.loads(span.attributes["gen_ai.input.messages"])
     assert agent_span.name == "invoke_agent Hermes"
     assert step_span.name == "react step"
     assert span.name == "chat qwen-turbo"
@@ -69,7 +72,13 @@ def test_sync_llm_call_records_single_llm_span_and_metric(
     _assert_parent(step_span, agent_span)
     _assert_parent(span, step_span)
 
-    assert "同步成功" in agent_span.attributes["gen_ai.output.messages"]
+    assert agent_output_messages == [
+        {
+            "role": "assistant",
+            "parts": [{"type": "text", "content": "同步成功"}],
+            "finish_reason": "stop",
+        }
+    ]
     assert agent_span.attributes["gen_ai.agent.name"] == "Hermes"
     assert agent_span.attributes["gen_ai.provider.name"] == "hermes-agent"
     assert agent_span.attributes["gen_ai.operation.name"] == "invoke_agent"
@@ -81,6 +90,8 @@ def test_sync_llm_call_records_single_llm_span_and_metric(
     assert span.attributes["gen_ai.provider.name"] == "dashscope"
     assert span.attributes["gen_ai.operation.name"] == "chat"
     assert span.attributes["gen_ai.request.model"] == "qwen-turbo"
+    assert llm_input_messages[0]["role"] in {"system", "user"}
+    assert all("parts" in message for message in llm_input_messages)
     assert span.attributes["gen_ai.response.model"]
     assert span.attributes["gen_ai.response.id"]
     assert span.attributes["gen_ai.usage.input_tokens"] > 0

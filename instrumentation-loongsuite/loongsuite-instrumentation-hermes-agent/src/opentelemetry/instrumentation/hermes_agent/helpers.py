@@ -52,6 +52,56 @@ def safe_json(value: Any) -> str:
     )
 
 
+def _text_part(content: Any) -> dict[str, Any] | None:
+    flattened = _flatten_content(content)
+    if flattened is None:
+        return None
+    if isinstance(flattened, str) and not flattened.strip():
+        return None
+    return {"type": "text", "content": flattened}
+
+
+def _tool_call_part(
+    *,
+    call_id: Any = None,
+    name: Any = None,
+    arguments: Any = None,
+) -> dict[str, Any] | None:
+    if not name:
+        return None
+    return {
+        "type": "tool_call",
+        "id": str(call_id) if call_id is not None else None,
+        "name": str(name),
+        "arguments": arguments,
+    }
+
+
+def _tool_call_response_part(
+    *,
+    call_id: Any = None,
+    response: Any = None,
+) -> dict[str, Any]:
+    return {
+        "type": "tool_call_response",
+        "id": str(call_id) if call_id is not None else None,
+        "response": response,
+    }
+
+
+def _message(role: str, parts: list[dict[str, Any]], *, finish_reason: str | None = None) -> dict[str, Any]:
+    message = {"role": role, "parts": parts}
+    if finish_reason is not None:
+        message["finish_reason"] = finish_reason
+    return message
+
+
+def _message_finish_reason_for_output_schema(finish_reason: str | None) -> str:
+    if finish_reason == "tool_calls":
+        return "tool_call"
+    return finish_reason or "stop"
+
+
 def _flatten_content(value: Any) -> Any:
     if value is None:
         return None
@@ -72,14 +122,40 @@ def _flatten_content(value: Any) -> Any:
     return str(value)
 
 
-def _normalize_chat_message(message: Any) -> dict[str, Any]:
+def _normalize_chat_message(message: Any) -> dict[str, Any] | None:
     role = obj_get(message, "role", "")
-    return {
-        "role": role or "",
-        "content": _flatten_content(obj_get(message, "content")),
-        "tool_calls": obj_get(message, "tool_calls"),
-        "tool_call_id": obj_get(message, "tool_call_id"),
-    }
+    if not role:
+        return None
+
+    parts: list[dict[str, Any]] = []
+    text_part = _text_part(obj_get(message, "content"))
+    if text_part is not None:
+        parts.append(text_part)
+
+    for tool_call in obj_get(message, "tool_calls", []) or []:
+        function = obj_get(tool_call, "function", {})
+        part = _tool_call_part(
+            call_id=obj_get(tool_call, "id"),
+            name=obj_get(function, "name"),
+            arguments=obj_get(function, "arguments"),
+        )
+        if part is not None:
+            parts.append(part)
+
+    tool_call_id = obj_get(message, "tool_call_id")
+    if role in {"tool", "function"} and (tool_call_id or parts):
+        response = obj_get(message, "content")
+        parts = [
+            _tool_call_response_part(
+                call_id=tool_call_id,
+                response=_flatten_content(response),
+            )
+        ]
+
+    if not parts:
+        return None
+    normalized_role = "tool" if role == "function" else str(role)
+    return _message(normalized_role, parts)
 
 
 def _normalize_codex_input_item(item: Any) -> dict[str, Any] | None:
@@ -90,44 +166,47 @@ def _normalize_codex_input_item(item: Any) -> dict[str, Any] | None:
     role = item.get("role")
 
     if role in {"system", "user", "assistant", "tool"}:
-        return {
-            "role": role,
-            "content": _flatten_content(item.get("content")),
-            "tool_call_id": item.get("tool_call_id"),
-        }
+        parts: list[dict[str, Any]] = []
+        text_part = _text_part(item.get("content"))
+        if text_part is not None:
+            parts.append(text_part)
+        if role == "tool" and item.get("tool_call_id") is not None:
+            parts = [
+                _tool_call_response_part(
+                    call_id=item.get("tool_call_id"),
+                    response=_flatten_content(item.get("content")),
+                )
+            ]
+        if not parts:
+            return None
+        return _message(role, parts)
 
     if item_type == "function_call":
-        arguments = item.get("arguments", "{}")
-        if not isinstance(arguments, str):
-            arguments = safe_json(arguments)
-        return {
-            "role": "assistant",
-            "content": None,
-            "tool_calls": [
-                {
-                    "id": item.get("call_id") or item.get("id"),
-                    "type": "function",
-                    "function": {
-                        "name": item.get("name") or item.get("function_name"),
-                        "arguments": arguments,
-                    },
-                }
-            ],
-        }
+        part = _tool_call_part(
+            call_id=item.get("call_id") or item.get("id"),
+            name=item.get("name") or item.get("function_name"),
+            arguments=item.get("arguments", item.get("input", {})),
+        )
+        if part is None:
+            return None
+        return _message("assistant", [part])
 
     if item_type == "function_call_output":
-        output = item.get("output")
-        return {
-            "role": "tool",
-            "content": _flatten_content(output),
-            "tool_call_id": item.get("call_id"),
-        }
+        return _message(
+            "tool",
+            [
+                _tool_call_response_part(
+                    call_id=item.get("call_id"),
+                    response=_flatten_content(item.get("output")),
+                )
+            ],
+        )
 
     if item_type == "message":
-        return {
-            "role": item.get("role", "assistant"),
-            "content": _flatten_content(item.get("content")),
-        }
+        text_part = _text_part(item.get("content"))
+        if text_part is None:
+            return None
+        return _message(item.get("role", "assistant"), [text_part])
 
     return None
 
@@ -140,11 +219,16 @@ def serialize_request_messages(api_kwargs: Any) -> str | None:
 
     instructions = api_kwargs.get("instructions")
     if isinstance(instructions, str) and instructions.strip():
-        serialized.append({"role": "system", "content": instructions.strip()})
+        serialized.append(
+            _message("system", [{"type": "text", "content": instructions.strip()}])
+        )
 
     messages = api_kwargs.get("messages")
     if isinstance(messages, list):
-        serialized.extend(_normalize_chat_message(message) for message in messages)
+        for message in messages:
+            normalized = _normalize_chat_message(message)
+            if normalized is not None:
+                serialized.append(normalized)
 
     input_items = api_kwargs.get("input")
     if isinstance(input_items, list):
@@ -153,14 +237,16 @@ def serialize_request_messages(api_kwargs: Any) -> str | None:
             if normalized is not None:
                 serialized.append(normalized)
     elif isinstance(input_items, str) and input_items.strip():
-        serialized.append({"role": "user", "content": input_items.strip()})
+        serialized.append(
+            _message("user", [{"type": "text", "content": input_items.strip()}])
+        )
 
     if not serialized:
         return None
     return safe_json(serialized)
 
 
-def response_message(response: Any) -> dict[str, Any]:
+def structured_response_message(instance: Any, response: Any) -> dict[str, Any]:
     choice = None
     try:
         choice = response.choices[0]
@@ -171,59 +257,120 @@ def response_message(response: Any) -> dict[str, Any]:
         message = getattr(choice, "message", None)
         if message is None and isinstance(choice, dict):
             message = choice.get("message")
+        parts: list[dict[str, Any]] = []
+        text_part = _text_part(obj_get(message, "content"))
+        if text_part is not None:
+            parts.append(text_part)
+        for tool_call in obj_get(message, "tool_calls", []) or []:
+            function = obj_get(tool_call, "function", {})
+            part = _tool_call_part(
+                call_id=obj_get(tool_call, "id"),
+                name=obj_get(function, "name"),
+                arguments=obj_get(function, "arguments"),
+            )
+            if part is not None:
+                parts.append(part)
+        return _message(
+            "assistant",
+            parts,
+            finish_reason=_message_finish_reason_for_output_schema(
+                response_finish_reason(instance, response)
+            ),
+        )
 
-        return {
-            "role": "assistant",
-            "content": _flatten_content(obj_get(message, "content")),
-            "tool_calls": obj_get(message, "tool_calls"),
-        }
-
-    content_parts: list[str] = []
-    tool_calls: list[Any] = []
+    parts: list[dict[str, Any]] = []
     for item in obj_get(response, "output", []) or []:
         item_type = obj_get(item, "type", "")
         if item_type == "function_call":
-            arguments = obj_get(item, "arguments", obj_get(item, "input", "{}"))
-            if not isinstance(arguments, str):
-                arguments = safe_json(arguments)
-            tool_calls.append(
-                SimpleNamespace(
-                    id=obj_get(item, "call_id") or obj_get(item, "id"),
-                    type="function",
-                    function=SimpleNamespace(
-                        name=obj_get(item, "name") or obj_get(item, "function_name"),
-                        arguments=arguments,
-                    ),
-                )
+            part = _tool_call_part(
+                call_id=obj_get(item, "call_id") or obj_get(item, "id"),
+                name=obj_get(item, "name") or obj_get(item, "function_name"),
+                arguments=obj_get(item, "arguments", obj_get(item, "input", {})),
             )
+            if part is not None:
+                parts.append(part)
             continue
 
-        text = _flatten_content(obj_get(item, "content"))
-        if isinstance(text, str) and text:
-            content_parts.append(text)
+        if item_type == "reasoning":
+            reasoning = obj_get(item, "summary") or obj_get(item, "content")
+            text = _flatten_content(reasoning)
+            if isinstance(text, str) and text:
+                parts.append({"type": "reasoning", "content": text})
+            continue
+
+        text_part = _text_part(obj_get(item, "content"))
+        if text_part is not None:
+            parts.append(text_part)
             continue
 
         raw_text = obj_get(item, "text") or obj_get(item, "output_text")
         if isinstance(raw_text, str) and raw_text:
-            content_parts.append(raw_text)
+            parts.append({"type": "text", "content": raw_text})
 
-    content = "\n".join(part for part in content_parts if part).strip()
-    if not content:
+    if not parts:
         output_text = obj_get(response, "output_text")
         if isinstance(output_text, str) and output_text:
-            content = output_text
+            parts.append({"type": "text", "content": output_text})
 
+    return _message(
+        "assistant",
+        parts,
+        finish_reason=_message_finish_reason_for_output_schema(
+            response_finish_reason(instance, response)
+        ),
+    )
+
+
+def response_message(response: Any) -> dict[str, Any]:
+    structured = structured_response_message(SimpleNamespace(api_mode=""), response)
+    content_parts: list[str] = []
+    tool_calls: list[Any] = []
+    for part in structured.get("parts", []):
+        if part.get("type") == "text" and isinstance(part.get("content"), str):
+            content_parts.append(part["content"])
+        if part.get("type") == "tool_call":
+            tool_calls.append(
+                SimpleNamespace(
+                    id=part.get("id"),
+                    type="function",
+                    function=SimpleNamespace(
+                        name=part.get("name"),
+                        arguments=part.get("arguments"),
+                    ),
+                )
+            )
     return {
-        "role": "assistant",
-        "content": content or None,
+        "role": structured.get("role", "assistant"),
+        "content": "\n".join(content_parts).strip() or None,
         "tool_calls": tool_calls,
     }
 
 
 def tool_call_list(response: Any) -> list[Any]:
-    tool_calls = response_message(response).get("tool_calls")
-    if isinstance(tool_calls, list):
-        return tool_calls
+    try:
+        choice_tool_calls = response.choices[0].message.tool_calls
+        if isinstance(choice_tool_calls, list):
+            return choice_tool_calls
+    except Exception:
+        pass
+
+    codex_tool_calls: list[Any] = []
+    for item in obj_get(response, "output", []) or []:
+        if obj_get(item, "type") != "function_call":
+            continue
+        arguments = obj_get(item, "arguments", obj_get(item, "input", {}))
+        codex_tool_calls.append(
+            SimpleNamespace(
+                id=obj_get(item, "call_id") or obj_get(item, "id"),
+                type="function",
+                function=SimpleNamespace(
+                    name=obj_get(item, "name") or obj_get(item, "function_name"),
+                    arguments=arguments,
+                ),
+            )
+        )
+    if codex_tool_calls:
+        return codex_tool_calls
     return []
 
 
@@ -240,7 +387,9 @@ def canonical_usage(instance: Any, response: Any) -> tuple[int, int, int]:
             provider=provider_name(instance),
             api_mode=str(getattr(instance, "api_mode", "") or "").strip().lower(),
         )
-        input_tokens = to_int(getattr(canonical, "input_tokens", 0))
+        # Export prompt-total input usage so span total_tokens stays aligned with
+        # Hermes' own session/accounting semantics when provider cache is used.
+        input_tokens = to_int(getattr(canonical, "prompt_tokens", 0))
         output_tokens = to_int(getattr(canonical, "output_tokens", 0))
         total_tokens = input_tokens + output_tokens
         return input_tokens, output_tokens, total_tokens
