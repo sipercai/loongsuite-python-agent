@@ -454,6 +454,66 @@ def test_tool_span_captures_call_id_arguments_and_result(
     assert tool_span.attributes["gen_ai.tool.call.result"] == "tool_ok"
 
 
+def test_nested_tool_dispatch_reuses_outer_tool_span(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    dispatch_wrapper = instrumentation_module._ToolDispatchWrapper(runtime.tracer)
+    agent = _FakeAgent(session_id="session-tool-nested")
+    first_tool_call = _tool_call(call_id="call-read-file")
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(
+                content=None,
+                finish_reason="tool_calls",
+                tool_calls=[first_tool_call],
+            ),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        runtime.tool_batch_wrapper(
+            lambda: runtime.tool_wrapper(
+                lambda *args, **kwargs: dispatch_wrapper(
+                    lambda *inner_args, **inner_kwargs: "tool_ok",
+                    None,
+                    ("read_file", {"path": "/tmp/demo.txt"}),
+                    {},
+                ),
+                agent,
+                (
+                    "read_file",
+                    {"path": "/tmp/demo.txt"},
+                    "task-1",
+                    first_tool_call.id,
+                ),
+                {},
+            ),
+            agent,
+            (),
+            {},
+        )
+        return {"final_response": "tool_ok"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("请调用 read_file",), {})
+
+    step_span = _spans_by_kind(span_exporter, "STEP")[0]
+    tool_spans = _spans_by_kind(span_exporter, "TOOL")
+
+    assert len(tool_spans) == 1
+    _assert_parent(tool_spans[0], step_span)
+    assert tool_spans[0].attributes["gen_ai.tool.call.id"] == "call-read-file"
+
+
 def test_agent_rolls_up_last_response_metadata_and_usage(
     instrumentation_module,
     tracer_provider,

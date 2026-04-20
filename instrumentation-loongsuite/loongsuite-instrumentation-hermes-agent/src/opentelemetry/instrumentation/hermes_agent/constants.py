@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-INSTRUMENTATION_VERSION = "0.1.0"
+INSTRUMENTATION_VERSION = "0.1.1"
 
 INSTRUMENTATION_DEPENDENCIES = ("openai >= 1.0.0",)
 

@@ -60,6 +60,16 @@ def finish_step(
     current_state["pending_step_finish_reason"] = None
 
 
+def _is_current_tool_span(tool_name: str) -> bool:
+    current_span = trace_api.get_current_span()
+    current_attrs = getattr(current_span, "attributes", None)
+    return bool(
+        current_attrs
+        and current_attrs.get(GEN_AI_SPAN_KIND) == GEN_AI_KIND_TOOL
+        and current_attrs.get("gen_ai.tool.name") == tool_name
+    )
+
+
 class RunConversationWrapper:
     def __init__(self, tracer):
         self._tracer = tracer
@@ -349,6 +359,8 @@ class ToolCallWrapper:
         function_name = args[0] if args else kwargs.get("function_name", "")
         function_args = args[1] if len(args) > 1 else kwargs.get("function_args")
         tool_call_id = args[3] if len(args) > 3 else kwargs.get("tool_call_id")
+        if _is_current_tool_span(function_name):
+            return wrapped(*args, **kwargs)
         attrs = {
             GEN_AI_OPERATION_NAME: GEN_AI_OP_EXECUTE_TOOL,
             GEN_AI_PROVIDER_NAME: HERMES_PROVIDER,
