@@ -25,12 +25,12 @@ from .helpers import (
     clear_state,
     provider_name,
     response_finish_reason,
-    response_message,
     safe_json,
     serialize_request_messages,
     start_step,
     state,
     step_finish_reason,
+    structured_response_message,
 )
 
 
@@ -76,7 +76,12 @@ class RunConversationWrapper:
             "gen_ai.conversation.id": session_id or "",
             "gen_ai.request.model": getattr(instance, "model", ""),
             "gen_ai.input.messages": safe_json(
-                [{"role": "user", "content": user_message}]
+                [
+                    {
+                        "role": "user",
+                        "parts": [{"type": "text", "content": user_message}],
+                    }
+                ]
             ),
         }
         tools = getattr(instance, "tools", None)
@@ -86,13 +91,20 @@ class RunConversationWrapper:
         current_state = state(instance)
         current_span = trace_api.get_current_span()
         current_attrs = getattr(current_span, "attributes", None)
-        if current_attrs and current_attrs.get(GEN_AI_SPAN_KIND) == GEN_AI_KIND_ENTRY:
-            current_state["entry_span"] = current_span
+        parent_context = trace_api.set_span_in_context(trace_api.INVALID_SPAN)
+        if current_attrs:
+            current_kind = current_attrs.get(GEN_AI_SPAN_KIND)
+            if current_kind == GEN_AI_KIND_ENTRY:
+                current_state["entry_span"] = current_span
+                parent_context = trace_api.set_span_in_context(current_span)
+            elif current_kind == GEN_AI_KIND_TOOL:
+                parent_context = trace_api.set_span_in_context(current_span)
 
         agent_cm = self._tracer.start_as_current_span(
             "invoke_agent Hermes",
             kind=SpanKind.INTERNAL,
             attributes=agent_attrs,
+            context=parent_context,
         )
         agent_span = agent_cm.__enter__()
         current_state["agent_cm"] = agent_cm
@@ -107,7 +119,18 @@ class RunConversationWrapper:
                 )
 
             output_messages = safe_json(
-                [{"role": "assistant", "content": result.get("final_response")}]
+                [
+                    {
+                        "role": "assistant",
+                        "parts": [
+                            {
+                                "type": "text",
+                                "content": result.get("final_response"),
+                            }
+                        ],
+                        "finish_reason": "stop",
+                    }
+                ]
             )
             agent_span.set_attribute("gen_ai.output.messages", output_messages)
             if current_state["entry_span"] is not None:
@@ -234,7 +257,7 @@ class LLMCallWrapper:
                 if response_id:
                     span.set_attribute("gen_ai.response.id", response_id)
 
-                output_message = response_message(response)
+                output_message = structured_response_message(instance, response)
                 span.set_attribute(
                     "gen_ai.output.messages",
                     safe_json([output_message]),

@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 from opentelemetry import trace as trace_api
@@ -30,6 +31,10 @@ def _spans_by_kind(span_exporter, span_kind: str):
 def _assert_parent(child, parent):
     assert child.parent is not None
     assert child.parent.span_id == parent.context.span_id
+
+
+def _messages(attr: str):
+    return json.loads(attr)
 
 
 class _FakeAgent:
@@ -584,21 +589,38 @@ def test_codex_responses_usage_and_finish_reason_are_normalized(
     agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
     llm_span = _spans_by_kind(span_exporter, "LLM")[0]
     step_span = _spans_by_kind(span_exporter, "STEP")[0]
+    input_messages = _messages(llm_span.attributes["gen_ai.input.messages"])
+    output_messages = _messages(llm_span.attributes["gen_ai.output.messages"])
 
-    assert llm_span.attributes["gen_ai.usage.input_tokens"] == 9
+    assert llm_span.attributes["gen_ai.usage.input_tokens"] == 12
     assert llm_span.attributes["gen_ai.usage.output_tokens"] == 7
-    assert llm_span.attributes["gen_ai.usage.total_tokens"] == 16
+    assert llm_span.attributes["gen_ai.usage.total_tokens"] == 19
     assert llm_span.attributes["gen_ai.response.finish_reason"] == "stop"
     assert llm_span.attributes["gen_ai.response.finish_reasons"] == "[\"stop\"]"
-    assert "你是一个严谨的助手。" in llm_span.attributes["gen_ai.input.messages"]
-    assert "请直接回答" in llm_span.attributes["gen_ai.input.messages"]
+    assert input_messages == [
+        {
+            "role": "system",
+            "parts": [{"type": "text", "content": "你是一个严谨的助手。"}],
+        },
+        {
+            "role": "user",
+            "parts": [{"type": "text", "content": "请直接回答"}],
+        },
+    ]
+    assert output_messages == [
+        {
+            "role": "assistant",
+            "parts": [{"type": "text", "content": "最终答案"}],
+            "finish_reason": "stop",
+        }
+    ]
     assert step_span.attributes["gen_ai.react.finish_reason"] == "stop"
-    assert agent_span.attributes["gen_ai.usage.input_tokens"] == 9
+    assert agent_span.attributes["gen_ai.usage.input_tokens"] == 12
     assert agent_span.attributes["gen_ai.usage.output_tokens"] == 7
-    assert agent_span.attributes["gen_ai.usage.total_tokens"] == 16
+    assert agent_span.attributes["gen_ai.usage.total_tokens"] == 19
 
 
-def test_chat_completions_total_tokens_uses_uncached_input_plus_output(
+def test_chat_completions_total_tokens_match_hermes_prompt_total(
     instrumentation_module,
     tracer_provider,
     meter_provider,
@@ -630,12 +652,12 @@ def test_chat_completions_total_tokens_uses_uncached_input_plus_output(
     agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
     llm_span = _spans_by_kind(span_exporter, "LLM")[0]
 
-    assert llm_span.attributes["gen_ai.usage.input_tokens"] == 10
+    assert llm_span.attributes["gen_ai.usage.input_tokens"] == 14
     assert llm_span.attributes["gen_ai.usage.output_tokens"] == 5
-    assert llm_span.attributes["gen_ai.usage.total_tokens"] == 15
-    assert agent_span.attributes["gen_ai.usage.input_tokens"] == 10
+    assert llm_span.attributes["gen_ai.usage.total_tokens"] == 19
+    assert agent_span.attributes["gen_ai.usage.input_tokens"] == 14
     assert agent_span.attributes["gen_ai.usage.output_tokens"] == 5
-    assert agent_span.attributes["gen_ai.usage.total_tokens"] == 15
+    assert agent_span.attributes["gen_ai.usage.total_tokens"] == 19
 
 
 def test_streaming_wrapper_suppresses_nested_llm_span(
