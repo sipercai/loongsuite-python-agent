@@ -16,8 +16,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import timeit
+from importlib import import_module
+from pathlib import Path
 
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
@@ -71,8 +75,6 @@ def _resolves_to_skill_md(
        *skill_dir_basename* is the last component of *skill_dir*.
        This avoids depending on cwd at all.
     """
-    import os
-
     try:
         # Use realpath to resolve symlinks (e.g. /var → /private/var on macOS)
         real_skill_dir = os.path.normpath(os.path.realpath(skill_dir))
@@ -126,8 +128,6 @@ def _enrich_skill_metadata(skill):
 
     Returns a new dict (never mutates the original).
     """
-    import os
-
     skill_dir = skill.get("dir", "")
     skill_name = skill.get("name", "")
     if not skill_dir:
@@ -142,21 +142,18 @@ def _enrich_skill_metadata(skill):
     # path fails at runtime for any reason, continue to lightweight
     # frontmatter/manifest fallbacks instead of dropping version entirely.
     try:
-        from pathlib import Path
+        skills_manager = import_module("copaw.agents.skills_manager")
 
-        from copaw.agents.skills_manager import (
-            _extract_version,
-            _read_frontmatter_safe,
+        post = skills_manager._read_frontmatter_safe(
+            Path(skill_dir), skill_name
         )
-
-        post = _read_frontmatter_safe(Path(skill_dir), skill_name)
-        version_text = _extract_version(post)
+        version_text = skills_manager._extract_version(post)
     except Exception:
         version_text = None
 
     if not version_text:
         try:
-            import frontmatter
+            frontmatter = import_module("frontmatter")
 
             skill_md_path = os.path.join(skill_dir, _SKILL_MANIFEST)
             with open(skill_md_path, "r", encoding="utf-8") as fh:
@@ -175,16 +172,15 @@ def _enrich_skill_metadata(skill):
 
     if not version_text:
         try:
-            import json
-            from pathlib import Path
-
             skill_path = Path(skill_dir)
             skill_json_path = skill_path.parent.parent / "skill.json"
             if skill_json_path.exists():
                 # CoPaw-specific runtime fallback: workspace skill.json may
                 # already contain normalized version_text even when direct
                 # helper/frontmatter extraction is unavailable in-process.
-                payload = json.loads(skill_json_path.read_text(encoding="utf-8"))
+                payload = json.loads(
+                    skill_json_path.read_text(encoding="utf-8")
+                )
                 entry = payload.get("skills", {}).get(skill_name, {})
                 metadata = entry.get("metadata", {}) or {}
                 value = metadata.get("version_text")
@@ -213,6 +209,7 @@ def _enrich_skill_metadata(skill):
         pass
 
     return enriched
+
 
 def _match_skill_for_tool(instance, tool_args):
     """Detect if a tool execution is loading a skill.
@@ -262,7 +259,9 @@ def _match_skill_for_tool(instance, tool_args):
         if not skill_dir:
             continue
 
-        if _resolves_to_skill_md(file_path, skill_dir, allow_bare=single_skill):
+        if _resolves_to_skill_md(
+            file_path, skill_dir, allow_bare=single_skill
+        ):
             return _enrich_skill_metadata(skill)
 
     return None
