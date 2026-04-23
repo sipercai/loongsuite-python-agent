@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from typing import Any, Collection
 
 from wrapt import wrap_function_wrapper
@@ -25,7 +26,6 @@ from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 
 from .metrics import HermesMetrics
-from .version import __version__
 from .wrappers import (
     LLMCallWrapper,
     RunConversationWrapper,
@@ -110,12 +110,12 @@ class HermesAgentInstrumentor(BaseInstrumentor):
         )
 
     def _uninstrument(self, **kwargs: Any) -> None:
-        import model_tools
-        import run_agent
-        import tools.delegate_tool
-        import tools.memory_tool
-        import tools.session_search_tool
-        import tools.todo_tool
+        model_tools = import_module("model_tools")
+        run_agent = import_module("run_agent")
+        delegate_tool = import_module("tools.delegate_tool")
+        memory_tool = import_module("tools.memory_tool")
+        session_search_tool = import_module("tools.session_search_tool")
+        todo_tool = import_module("tools.todo_tool")
 
         unwrap(run_agent.AIAgent, "run_conversation")
         unwrap(run_agent.AIAgent, "_interruptible_api_call")
@@ -124,7 +124,7 @@ class HermesAgentInstrumentor(BaseInstrumentor):
         unwrap(run_agent.AIAgent, "_execute_tool_calls")
         unwrap(model_tools, "handle_function_call")
         unwrap(run_agent, "handle_function_call")
-        unwrap(tools.memory_tool, "memory_tool")
-        unwrap(tools.todo_tool, "todo_tool")
-        unwrap(tools.session_search_tool, "session_search")
-        unwrap(tools.delegate_tool, "delegate_task")
+        unwrap(memory_tool, "memory_tool")
+        unwrap(todo_tool, "todo_tool")
+        unwrap(session_search_tool, "session_search")
+        unwrap(delegate_tool, "delegate_task")

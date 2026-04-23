@@ -50,13 +50,21 @@ for path in (str(HERMES_AGENT_ROOT), str(PACKAGE_SRC)):
     if path not in sys.path:
         sys.path.insert(0, path)
 
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import InMemoryMetricReader
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
-    InMemorySpanExporter,
-)
+MeterProvider = importlib.import_module(
+    "opentelemetry.sdk.metrics"
+).MeterProvider
+InMemoryMetricReader = importlib.import_module(
+    "opentelemetry.sdk.metrics.export"
+).InMemoryMetricReader
+TracerProvider = importlib.import_module(
+    "opentelemetry.sdk.trace"
+).TracerProvider
+SimpleSpanProcessor = importlib.import_module(
+    "opentelemetry.sdk.trace.export"
+).SimpleSpanProcessor
+InMemorySpanExporter = importlib.import_module(
+    "opentelemetry.sdk.trace.export.in_memory_span_exporter"
+).InMemorySpanExporter
 
 _MODULE = importlib.import_module("opentelemetry.instrumentation.hermes_agent")
 HermesAgentInstrumentor = _MODULE.HermesAgentInstrumentor
@@ -126,19 +134,16 @@ def build_agent():
     ):
         if reload_mcp:
             try:
-                from tools.mcp_tool import (
-                    discover_mcp_tools,
-                    shutdown_mcp_servers,
-                )
+                mcp_tool_module = importlib.import_module("tools.mcp_tool")
             except ImportError:
                 pass
             else:
-                shutdown_mcp_servers()
-                discover_mcp_tools()
+                mcp_tool_module.shutdown_mcp_servers()
+                mcp_tool_module.discover_mcp_tools()
 
-        from run_agent import AIAgent
+        ai_agent_class = importlib.import_module("run_agent").AIAgent
 
-        agent = AIAgent(
+        agent = ai_agent_class(
             model="qwen-turbo",
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             api_key=os.environ["DASHSCOPE_API_KEY"],
@@ -167,8 +172,8 @@ def require_live_hermes_env(monkeypatch):
             "'jiter.jiter'."
         )
 
-    import run_agent as run_agent_module
-    from agent import model_metadata as model_metadata_module
+    run_agent_module = importlib.import_module("run_agent")
+    model_metadata_module = importlib.import_module("agent.model_metadata")
 
     monkeypatch.setattr(
         run_agent_module,
@@ -249,12 +254,12 @@ def local_demo_mcp_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     _write_hermes_config(home, enable_mcp=True)
     monkeypatch.setenv("HERMES_HOME", str(home))
-    from tools.mcp_tool import discover_mcp_tools, shutdown_mcp_servers
+    mcp_tool_module = importlib.import_module("tools.mcp_tool")
 
-    shutdown_mcp_servers()
-    discover_mcp_tools()
+    mcp_tool_module.shutdown_mcp_servers()
+    mcp_tool_module.discover_mcp_tools()
     yield home
-    shutdown_mcp_servers()
+    mcp_tool_module.shutdown_mcp_servers()
 
 
 def extract_metric_points(metric_reader, metric_name: str):
