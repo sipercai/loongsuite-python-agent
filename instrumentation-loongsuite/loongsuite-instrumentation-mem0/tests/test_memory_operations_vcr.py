@@ -323,12 +323,16 @@ def test_internal_subphases_attributes(
     m.llm = FakeLLM()
     m.embedding_model = FakeEmbedder()
 
-    # Trigger operations
-    assert (
-        m.add("我叫小王，我不喜欢川菜，常住上海。", user_id="u_abc")
-        is not None
+    m.vector_store.reset()
+    m.vector_store.insert(
+        payloads=[
+            {"data": "我喜欢川菜和火锅。"},
+            {"data": "我喜欢清淡饮食。"},
+            {"data": "我常住上海。"},
+        ]
     )
-    # Using rerank=True to trigger reranker (if exists)
+
+    # Search across multiple seeded candidates so reranking deterministically runs.
     assert (
         m.search("川菜推荐", user_id="u_abc", limit=2, rerank=True) is not None
     )
@@ -372,13 +376,9 @@ def test_internal_subphases_attributes(
         if s.attributes.get("gen_ai.provider.name") is not None
     ]
     if m.reranker is not None:
-        # mem0 1.x does not always invoke the reranker path under the fake/VCR
-        # setup used here, so only validate attributes when a reranker span
-        # is actually emitted.
-        if not reranker_spans:
-            pytest.skip(
-                "mem0 did not emit reranker subphase spans under the current test setup"
-            )
+        assert reranker_spans, (
+            "When reranker is enabled, should collect reranker stage spans"
+        )
         # Verify attributes
         assert any(
             s.attributes.get("gen_ai.provider.name") is not None
@@ -560,9 +560,16 @@ def test_reranker_operations_detailed_attributes(
     m.llm = FakeLLM()
     m.embedding_model = FakeEmbedder()
 
-    m.add("测试data1", user_id="u_rerank_test")
-    m.add("测试data2", user_id="u_rerank_test")
-    m.search("测试", user_id="u_rerank_test", limit=5, rerank=True)
+    m.vector_store.reset()
+    m.vector_store.insert(
+        payloads=[
+            {"data": "测试data1"},
+            {"data": "测试data2"},
+            {"data": "测试data3"},
+        ]
+    )
+
+    m.search("测试", user_id="u_rerank_test", limit=2, rerank=True)
 
     spans = span_exporter.get_finished_spans()
     # Now uses gen_ai.provider.name instead of gen_ai.memory.reranker.provider
@@ -570,18 +577,20 @@ def test_reranker_operations_detailed_attributes(
         s for s in spans if "gen_ai.provider.name" in s.attributes
     ]
 
-    if not reranker_spans:
-        pytest.skip(
-            "mem0 did not emit reranker spans under the current fake/VCR setup"
-        )
+    assert reranker_spans, (
+        "expected mem0 reranker instrumentation to emit at least one reranker "
+        "span, but none were found"
+    )
 
     reranker_span = reranker_spans[0]
     assert reranker_span.attributes.get("gen_ai.provider.name") == "fake", (
         "should contain correct provider.name"
     )
-    # Now uses gen_ai.rerank.documents_count instead of gen_ai.memory.reranker.input_count
-    if "gen_ai.rerank.documents_count" in reranker_span.attributes:
-        documents_count = reranker_span.attributes.get(
-            "gen_ai.rerank.documents_count"
-        )
-        assert documents_count > 0, "documents_count should be greater than 0"
+    documents_count = reranker_span.attributes.get(
+        "gen_ai.rerank.documents_count"
+    )
+    assert documents_count == 2, (
+        f"documents_count should match seeded candidate count, got {documents_count}"
+    )
+    top_k = reranker_span.attributes.get("gen_ai.request.top_k")
+    assert top_k == 2, f"top_k should reflect the search limit, got {top_k}"
