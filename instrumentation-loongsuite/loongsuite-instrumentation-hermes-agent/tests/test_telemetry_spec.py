@@ -18,6 +18,7 @@ import json
 from types import SimpleNamespace
 
 from opentelemetry import trace as trace_api
+from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 
 
 def _spans_by_kind(span_exporter, span_kind: str):
@@ -197,24 +198,29 @@ def _runtime(instrumentation_module, tracer_provider, meter_provider):
         "hermes-agent-spec-tests",
         tracer_provider=tracer_provider,
     )
+    handler = ExtendedTelemetryHandler(
+        tracer_provider=tracer_provider,
+        meter_provider=meter_provider,
+    )
     metrics = instrumentation_module._HermesMetrics(
         meter_provider=meter_provider,
     )
     return SimpleNamespace(
         tracer=tracer,
-        run_wrapper=instrumentation_module._RunConversationWrapper(tracer),
+        handler=handler,
+        run_wrapper=instrumentation_module._RunConversationWrapper(handler),
         llm_wrapper=instrumentation_module._LLMCallWrapper(
-            tracer,
+            handler,
             metrics,
             streaming=False,
         ),
         streaming_llm_wrapper=instrumentation_module._LLMCallWrapper(
-            tracer,
+            handler,
             metrics,
             streaming=True,
         ),
-        tool_wrapper=instrumentation_module._ToolCallWrapper(tracer),
-        tool_batch_wrapper=instrumentation_module._ToolBatchWrapper(),
+        tool_wrapper=instrumentation_module._ToolCallWrapper(handler),
+        tool_batch_wrapper=instrumentation_module._ToolBatchWrapper(handler),
     )
 
 
@@ -278,6 +284,43 @@ def test_agent_span_does_not_backfill_agent_id_from_session_id(
     agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
     assert agent_span.attributes["gen_ai.conversation.id"] == "session-agent-id"
     assert "gen_ai.agent.id" not in agent_span.attributes
+
+
+def test_agent_provider_and_system_are_normalized_for_hermes(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(
+        session_id="session-provider",
+        provider="alibaba",
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(content="完成", finish_reason="stop"),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        return {"final_response": "完成"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("请回复：完成",), {})
+
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+    llm_span = _spans_by_kind(span_exporter, "LLM")[0]
+
+    assert agent_span.attributes["gen_ai.provider.name"] == "hermes"
+    assert agent_span.attributes["gen_ai.agent.system"] == "hermes"
+    assert llm_span.attributes["gen_ai.provider.name"] == "dashscope"
 
 
 def test_final_text_response_uses_stop_as_step_finish_reason(
@@ -461,7 +504,7 @@ def test_nested_tool_dispatch_reuses_outer_tool_span(
     span_exporter,
 ):
     runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
-    dispatch_wrapper = instrumentation_module._ToolDispatchWrapper(runtime.tracer)
+    dispatch_wrapper = instrumentation_module._ToolDispatchWrapper(runtime.handler)
     agent = _FakeAgent(session_id="session-tool-nested")
     first_tool_call = _tool_call(call_id="call-read-file")
 

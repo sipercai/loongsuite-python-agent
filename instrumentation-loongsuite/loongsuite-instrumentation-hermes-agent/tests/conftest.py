@@ -65,6 +65,10 @@ def instrumentation_module():
 
 def pytest_configure(config: pytest.Config):
     os.environ["OTEL_SEMCONV_STABILITY_OPT_IN"] = "gen_ai_latest_experimental"
+    os.environ.setdefault(
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT",
+        "SPAN_ONLY",
+    )
     config.option.api_key = os.getenv("DASHSCOPE_API_KEY", "test_dashscope_api_key")
 
 

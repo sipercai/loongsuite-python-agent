@@ -6,12 +6,12 @@ from typing import Any, Collection
 
 from wrapt import wrap_function_wrapper
 
-from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 
-from .constants import INSTRUMENTATION_DEPENDENCIES, INSTRUMENTATION_VERSION
 from .metrics import HermesMetrics
+from .version import __version__
 from .wrappers import (
     LLMCallWrapper,
     RunConversationWrapper,
@@ -21,78 +21,78 @@ from .wrappers import (
     ToolExecutionWrapper,
 )
 
+_INSTRUMENTATION_DEPENDENCIES = ("openai >= 1.0.0",)
+
 
 class HermesAgentInstrumentor(BaseInstrumentor):
     """Instrumentation for Hermes Agent."""
 
     def instrumentation_dependencies(self) -> Collection[str]:
-        return INSTRUMENTATION_DEPENDENCIES
+        return _INSTRUMENTATION_DEPENDENCIES
 
     def _instrument(self, **kwargs: Any) -> None:
         tracer_provider = kwargs.get("tracer_provider")
         meter_provider = kwargs.get("meter_provider")
-
-        tracer = trace_api.get_tracer(
-            __name__,
-            INSTRUMENTATION_VERSION,
+        handler = ExtendedTelemetryHandler(
             tracer_provider=tracer_provider,
+            meter_provider=meter_provider,
         )
         metrics = HermesMetrics(meter_provider=meter_provider)
 
         wrap_function_wrapper(
             "run_agent",
             "AIAgent.run_conversation",
-            RunConversationWrapper(tracer),
+            RunConversationWrapper(handler),
         )
         wrap_function_wrapper(
             "run_agent",
             "AIAgent._interruptible_api_call",
-            LLMCallWrapper(tracer, metrics, streaming=False),
+            LLMCallWrapper(handler, metrics, streaming=False),
         )
         wrap_function_wrapper(
             "run_agent",
             "AIAgent._interruptible_streaming_api_call",
-            LLMCallWrapper(tracer, metrics, streaming=True),
+            LLMCallWrapper(handler, metrics, streaming=True),
         )
         wrap_function_wrapper(
             "run_agent",
             "AIAgent._invoke_tool",
-            ToolCallWrapper(tracer),
+            ToolCallWrapper(handler),
         )
         wrap_function_wrapper(
             "run_agent",
             "AIAgent._execute_tool_calls",
-            ToolBatchWrapper(),
+            ToolBatchWrapper(handler),
         )
         wrap_function_wrapper(
             "model_tools",
             "handle_function_call",
-            ToolDispatchWrapper(tracer),
+            ToolDispatchWrapper(handler),
         )
         wrap_function_wrapper(
             "run_agent",
             "handle_function_call",
-            ToolDispatchWrapper(tracer),
+            ToolDispatchWrapper(handler),
         )
         wrap_function_wrapper(
             "tools.memory_tool",
             "memory_tool",
-            ToolExecutionWrapper(tracer, "memory"),
+            ToolExecutionWrapper(handler, "memory"),
         )
         wrap_function_wrapper(
             "tools.todo_tool",
             "todo_tool",
-            ToolExecutionWrapper(tracer, "todo"),
+            ToolExecutionWrapper(handler, "todo"),
         )
         wrap_function_wrapper(
             "tools.session_search_tool",
             "session_search",
-            ToolExecutionWrapper(tracer, "session_search"),
+            ToolExecutionWrapper(handler, "session_search"),
         )
         wrap_function_wrapper(
             "tools.delegate_tool",
             "delegate_task",
-            ToolExecutionWrapper(tracer, "delegate_task"),
+            ToolExecutionWrapper(handler, "delegate_task"),
         )
 
     def _uninstrument(self, **kwargs: Any) -> None:
