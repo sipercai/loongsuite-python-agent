@@ -282,7 +282,9 @@ def test_agent_span_does_not_backfill_agent_id_from_session_id(
     )
 
     agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
-    assert agent_span.attributes["gen_ai.conversation.id"] == "session-agent-id"
+    assert (
+        agent_span.attributes["gen_ai.conversation.id"] == "session-agent-id"
+    )
     assert "gen_ai.agent.id" not in agent_span.attributes
 
 
@@ -334,7 +336,9 @@ def test_final_text_response_uses_stop_as_step_finish_reason(
 
     def wrapped_run(user_message):
         runtime.llm_wrapper(
-            lambda api_kwargs: _response(content="最终答案", finish_reason="stop"),
+            lambda api_kwargs: _response(
+                content="最终答案", finish_reason="stop"
+            ),
             agent,
             (
                 {
@@ -493,7 +497,9 @@ def test_tool_span_captures_call_id_arguments_and_result(
     assert tool_span.attributes["gen_ai.operation.name"] == "execute_tool"
     assert tool_span.attributes["gen_ai.tool.name"] == "read_file"
     assert tool_span.attributes["gen_ai.tool.call.id"] == "call-read-file"
-    assert "/tmp/demo.txt" in tool_span.attributes["gen_ai.tool.call.arguments"]
+    assert (
+        "/tmp/demo.txt" in tool_span.attributes["gen_ai.tool.call.arguments"]
+    )
     assert tool_span.attributes["gen_ai.tool.call.result"] == "tool_ok"
 
 
@@ -504,7 +510,9 @@ def test_nested_tool_dispatch_reuses_outer_tool_span(
     span_exporter,
 ):
     runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
-    dispatch_wrapper = instrumentation_module._ToolDispatchWrapper(runtime.handler)
+    dispatch_wrapper = instrumentation_module._ToolDispatchWrapper(
+        runtime.handler
+    )
     agent = _FakeAgent(session_id="session-tool-nested")
     first_tool_call = _tool_call(call_id="call-read-file")
 
@@ -609,7 +617,9 @@ def test_agent_rolls_up_last_response_metadata_and_usage(
         )
         return {"final_response": "最终答案"}
 
-    runtime.run_wrapper(wrapped_run, agent, ("请在调用工具后给出最终答案",), {})
+    runtime.run_wrapper(
+        wrapped_run, agent, ("请在调用工具后给出最终答案",), {}
+    )
 
     agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
     assert agent_span.attributes["gen_ai.response.model"] == "qwen-turbo"
@@ -699,7 +709,7 @@ def test_codex_responses_usage_and_finish_reason_are_normalized(
     assert llm_span.attributes["gen_ai.usage.output_tokens"] == 7
     assert llm_span.attributes["gen_ai.usage.total_tokens"] == 19
     assert llm_span.attributes["gen_ai.response.finish_reason"] == "stop"
-    assert llm_span.attributes["gen_ai.response.finish_reasons"] == "[\"stop\"]"
+    assert llm_span.attributes["gen_ai.response.finish_reasons"] == '["stop"]'
     assert input_messages == [
         {
             "role": "system",
@@ -774,7 +784,9 @@ def test_streaming_wrapper_suppresses_nested_llm_span(
 
     runtime.streaming_llm_wrapper(
         lambda api_kwargs, **_: runtime.llm_wrapper(
-            lambda inner_api_kwargs: _response(content="完成", finish_reason="stop"),
+            lambda inner_api_kwargs: _response(
+                content="完成", finish_reason="stop"
+            ),
             agent,
             (api_kwargs,),
             {},
@@ -809,7 +821,9 @@ def test_child_agent_invocation_reuses_ingress_without_creating_child_entry(
 
     def child_run(user_message):
         runtime.llm_wrapper(
-            lambda api_kwargs: _response(content="child_result", finish_reason="stop"),
+            lambda api_kwargs: _response(
+                content="child_result", finish_reason="stop"
+            ),
             child_agent,
             (
                 {
@@ -859,7 +873,9 @@ def test_child_agent_invocation_reuses_ingress_without_creating_child_entry(
             {},
         )
         runtime.llm_wrapper(
-            lambda api_kwargs: _response(content="child_result", finish_reason="stop"),
+            lambda api_kwargs: _response(
+                content="child_result", finish_reason="stop"
+            ),
             parent_agent,
             (
                 {
@@ -881,7 +897,9 @@ def test_child_agent_invocation_reuses_ingress_without_creating_child_entry(
             "gen_ai.span.kind": "ENTRY",
         },
     ) as ingress_span:
-        runtime.run_wrapper(parent_run, parent_agent, ("委派子 agent 完成任务",), {})
+        runtime.run_wrapper(
+            parent_run, parent_agent, ("委派子 agent 完成任务",), {}
+        )
 
     entry_spans = _spans_by_kind(span_exporter, "ENTRY")
     agent_spans = _spans_by_kind(span_exporter, "AGENT")

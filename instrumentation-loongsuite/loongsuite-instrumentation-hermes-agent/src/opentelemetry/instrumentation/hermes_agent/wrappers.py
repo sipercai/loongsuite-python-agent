@@ -1,3 +1,17 @@
+# Copyright The OpenTelemetry Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Wrapt wrappers used by Hermes instrumentation."""
 
 from __future__ import annotations
@@ -11,6 +25,7 @@ from opentelemetry.util.genai.types import Error
 
 from .helpers import (
     agent_output_messages,
+    clear_state,
     create_agent_invocation,
     create_llm_invocation,
     create_tool_invocation,
@@ -19,7 +34,6 @@ from .helpers import (
     state,
     step_finish_reason,
     update_llm_invocation_from_response,
-    clear_state,
 )
 
 _ACTIVE_TOOL_NAMES = contextvars.ContextVar(
@@ -72,7 +86,9 @@ def finish_step(
 
 
 class RunConversationWrapper:
-    def __init__(self, primary, *, handler: ExtendedTelemetryHandler | None = None):
+    def __init__(
+        self, primary, *, handler: ExtendedTelemetryHandler | None = None
+    ):
         self._handler = _resolve_handler(primary, handler=handler)
 
     def __call__(self, wrapped, instance, args, kwargs):
@@ -96,7 +112,9 @@ class RunConversationWrapper:
             invocation.finish_reasons = ["stop"]
 
             if current_state["last_response_model"]:
-                invocation.response_model_name = current_state["last_response_model"]
+                invocation.response_model_name = current_state[
+                    "last_response_model"
+                ]
             if current_state["last_response_id"]:
                 invocation.response_id = current_state["last_response_id"]
             if current_state["input_tokens"] > 0:
@@ -219,7 +237,9 @@ class LLMCallWrapper:
 
             response = wrapped(*args, **kwargs)
             input_tokens, output_tokens, total_tokens = (
-                update_llm_invocation_from_response(invocation, instance, response)
+                update_llm_invocation_from_response(
+                    invocation, instance, response
+                )
             )
 
             current_state["last_response_model"] = (
@@ -239,7 +259,9 @@ class LLMCallWrapper:
                 )
 
             normalized_step_reason = step_finish_reason(instance, response)
-            current_state["pending_step_finish_reason"] = normalized_step_reason
+            current_state["pending_step_finish_reason"] = (
+                normalized_step_reason
+            )
 
             self._record_success_metrics(
                 provider=provider,
@@ -272,13 +294,17 @@ class LLMCallWrapper:
 
 
 class ToolCallWrapper:
-    def __init__(self, primary, *, handler: ExtendedTelemetryHandler | None = None):
+    def __init__(
+        self, primary, *, handler: ExtendedTelemetryHandler | None = None
+    ):
         self._handler = _resolve_handler(primary, handler=handler)
 
     def __call__(self, wrapped, instance, args, kwargs):
         _bind_handler(instance, self._handler)
         function_name = args[0] if args else kwargs.get("function_name", "")
-        function_args = args[1] if len(args) > 1 else kwargs.get("function_args")
+        function_args = (
+            args[1] if len(args) > 1 else kwargs.get("function_args")
+        )
         tool_call_id = args[3] if len(args) > 3 else kwargs.get("tool_call_id")
         active_tool_names = _ACTIVE_TOOL_NAMES.get()
         if function_name in active_tool_names:
@@ -289,7 +315,9 @@ class ToolCallWrapper:
             arguments=function_args,
             tool_call_id=tool_call_id,
         )
-        token = _ACTIVE_TOOL_NAMES.set(active_tool_names + (str(function_name),))
+        token = _ACTIVE_TOOL_NAMES.set(
+            active_tool_names + (str(function_name),)
+        )
         self._handler.start_execute_tool(invocation)
         try:
             result = wrapped(*args, **kwargs)
@@ -309,7 +337,9 @@ class ToolCallWrapper:
 class ToolDispatchWrapper(ToolCallWrapper):
     def __call__(self, wrapped, instance, args, kwargs):
         function_name = args[0] if args else kwargs.get("function_name", "")
-        function_args = args[1] if len(args) > 1 else kwargs.get("function_args")
+        function_args = (
+            args[1] if len(args) > 1 else kwargs.get("function_args")
+        )
         return super().__call__(
             wrapped,
             instance,
@@ -319,7 +349,9 @@ class ToolDispatchWrapper(ToolCallWrapper):
 
 
 class ToolBatchWrapper:
-    def __init__(self, primary=None, *, handler: ExtendedTelemetryHandler | None = None):
+    def __init__(
+        self, primary=None, *, handler: ExtendedTelemetryHandler | None = None
+    ):
         self._handler = _resolve_handler(primary, handler=handler)
 
     def __call__(self, wrapped, instance, args, kwargs):

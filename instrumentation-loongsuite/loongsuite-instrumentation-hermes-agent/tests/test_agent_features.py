@@ -95,7 +95,8 @@ def test_memory_management_example(
     )
     assert any(
         span.attributes.get("gen_ai.tool.name") == "memory"
-        and "我的最爱颜色是蓝色" in span.attributes.get("gen_ai.tool.call.arguments", "")
+        and "我的最爱颜色是蓝色"
+        in span.attributes.get("gen_ai.tool.call.arguments", "")
         for span in tool_spans
     )
 
@@ -106,9 +107,13 @@ def test_multi_agent_collaboration_example(
     instrument,
     build_agent,
     span_exporter,
-    fixture_path,
+    public_fixture_paths,
+    monkeypatch,
 ):
-    path = str(fixture_path / "multi_agent_input.txt")
+    path = public_fixture_paths["multi_agent"]
+    workspace = public_fixture_paths["workspace"]
+    monkeypatch.setenv("TERMINAL_CWD", workspace)
+    monkeypatch.chdir(workspace)
 
     agent = build_agent(
         enabled_toolsets=["delegation", "file_tools"],
@@ -128,7 +133,9 @@ def test_multi_agent_collaboration_example(
     tool_spans = _spans_by_kind(span_exporter, "TOOL")
     llm_spans = _spans_by_kind(span_exporter, "LLM")
 
-    assert not entry_spans, "Expected no ENTRY span from direct run_conversation"
+    assert not entry_spans, (
+        "Expected no ENTRY span from direct run_conversation"
+    )
     assert len(agent_spans) >= 2, "Expected parent + child agent spans"
     assert len(step_spans) >= 2, "Expected parent + child step spans"
     assert len(llm_spans) >= 2, "Expected parent + child LLM spans"
@@ -139,9 +146,12 @@ def test_multi_agent_collaboration_example(
     ]
     assert delegate_spans
     delegate_span = delegate_spans[0]
-    assert path in delegate_span.attributes.get("gen_ai.tool.call.arguments", "")
+    assert path in delegate_span.attributes.get(
+        "gen_ai.tool.call.arguments", ""
+    )
     assert any(
-        span.parent is not None and span.parent.span_id == delegate_span.context.span_id
+        span.parent is not None
+        and span.parent.span_id == delegate_span.context.span_id
         for span in agent_spans
         if span.parent is not None
     )
@@ -182,8 +192,14 @@ def test_planning_example(
 
     tool_spans = _spans_by_kind(span_exporter, "TOOL")
     step_spans = _spans_by_kind(span_exporter, "STEP")
-    assert any(span.attributes.get("gen_ai.tool.name") == "todo" for span in tool_spans)
-    assert any(span.attributes.get("gen_ai.tool.name") == "read_file" for span in tool_spans)
+    assert any(
+        span.attributes.get("gen_ai.tool.name") == "todo"
+        for span in tool_spans
+    )
+    assert any(
+        span.attributes.get("gen_ai.tool.name") == "read_file"
+        for span in tool_spans
+    )
     assert any(
         span.attributes.get("gen_ai.react.finish_reason") == "tool_calls"
         for span in step_spans
@@ -242,7 +258,10 @@ def test_rag_example(
         "然后只回复工具结果里的 answer 字段，不要解释，也不要补充别的信息。"
     )
 
-    assert "Apollo telemetry keeps ENTRY > AGENT > STEP" in result["final_response"]
+    assert (
+        "Apollo telemetry keeps ENTRY > AGENT > STEP"
+        in result["final_response"]
+    )
     tool_spans = _spans_by_kind(span_exporter, "TOOL")
     assert any(
         span.attributes.get("gen_ai.tool.name") == "mcp_demo_search_briefing"
