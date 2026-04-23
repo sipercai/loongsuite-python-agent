@@ -30,10 +30,10 @@ import timeit
 from contextvars import ContextVar
 from typing import Any, Iterator, Optional
 
-from opentelemetry.util.genai._extended_common.common_types import (
+from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
+from opentelemetry.util.genai.extended_types import (
     ReactStepInvocation,
 )
-from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 from opentelemetry.util.genai.types import Error
 
 from .utils import (
@@ -59,9 +59,13 @@ _react_step_counter: ContextVar[int] = ContextVar(
 
 # Reentrancy guards to prevent duplicate spans when Agent/BaseChatModel
 # are abstract classes and subclass calls super() (Proxy/Wrapper scenarios).
-_in_agent_run: ContextVar[bool] = ContextVar("_qwen_in_agent_run", default=False)
+_in_agent_run: ContextVar[bool] = ContextVar(
+    "_qwen_in_agent_run", default=False
+)
 _in_chat: ContextVar[bool] = ContextVar("_qwen_in_chat", default=False)
-_in_call_tool: ContextVar[bool] = ContextVar("_qwen_in_call_tool", default=False)
+_in_call_tool: ContextVar[bool] = ContextVar(
+    "_qwen_in_call_tool", default=False
+)
 
 
 def _close_active_react_step(handler: ExtendedTelemetryHandler) -> None:
@@ -196,7 +200,9 @@ def wrap_chat_model_chat(
                 and not isinstance(result, list)
             ):
                 # Streaming: wrap the iterator
-                return _wrap_streaming_llm_response(result, invocation, handler)
+                return _wrap_streaming_llm_response(
+                    result, invocation, handler
+                )
             else:
                 # Non-streaming: result is List[Message]
                 if result:
@@ -332,7 +338,9 @@ def wrap_agent_call_tool(
     tool_guard_token = _in_call_tool.set(True)
 
     try:
-        tool_name = args[0] if args else kwargs.get("tool_name", "unknown_tool")
+        tool_name = (
+            args[0] if args else kwargs.get("tool_name", "unknown_tool")
+        )
         tool_args = args[1] if len(args) > 1 else kwargs.get("tool_args", "{}")
 
         # Get tool instance for description

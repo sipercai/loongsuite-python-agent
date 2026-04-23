@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
-from opentelemetry.util.genai._extended_semconv.gen_ai_extended_attributes import (
+from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import (
     GenAiExtendedProviderNameValues,
 )
 from opentelemetry.util.genai.extended_types import (
@@ -55,6 +55,7 @@ _MODEL_TYPE_PROVIDER_MAP = {
     "qwenvl_oai": GenAIAttributes.GenAiProviderNameValues.OPENAI.value,
     "qwenomni_oai": GenAIAttributes.GenAiProviderNameValues.OPENAI.value,
 }
+
 
 def _get_provider_name(llm_instance: Any) -> str:
     """Extract provider name from a qwen-agent LLM instance.
