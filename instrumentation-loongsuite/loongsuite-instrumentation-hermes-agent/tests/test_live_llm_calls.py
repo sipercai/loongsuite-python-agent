@@ -15,12 +15,10 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 
+import pytest
 from conftest import HermesAgentInstrumentor, extract_metric_points
 from run_agent import AIAgent
-import pytest
 
 
 def _metric_value(point):
@@ -42,7 +40,11 @@ def _assert_parent(child, parent):
 
 @pytest.mark.vcr()
 def test_sync_llm_call_records_single_llm_span_and_metric(
-    require_live_hermes_env, instrument, build_agent, span_exporter, metric_reader
+    require_live_hermes_env,
+    instrument,
+    build_agent,
+    span_exporter,
+    metric_reader,
 ):
     agent = build_agent(enabled_toolsets=[], max_iterations=1)
     agent._disable_streaming = True
@@ -63,7 +65,9 @@ def test_sync_llm_call_records_single_llm_span_and_metric(
     agent_span = agent_spans[0]
     step_span = step_spans[0]
     span = llm_spans[0]
-    agent_output_messages = json.loads(agent_span.attributes["gen_ai.output.messages"])
+    agent_output_messages = json.loads(
+        agent_span.attributes["gen_ai.output.messages"]
+    )
     llm_input_messages = json.loads(span.attributes["gen_ai.input.messages"])
     assert agent_span.name == "invoke_agent Hermes"
     assert step_span.name == "react step"
@@ -119,10 +123,18 @@ def test_sync_llm_call_records_single_llm_span_and_metric(
     )
     assert duration_points, "Expected duration metric data point"
 
-    usage_points = extract_metric_points(metric_reader, "genai_llm_usage_tokens")
-    assert any(point.attributes.get("tokenType") == "input" for point in usage_points)
-    assert any(point.attributes.get("tokenType") == "output" for point in usage_points)
-    assert any(point.attributes.get("tokenType") == "total" for point in usage_points)
+    usage_points = extract_metric_points(
+        metric_reader, "genai_llm_usage_tokens"
+    )
+    assert any(
+        point.attributes.get("tokenType") == "input" for point in usage_points
+    )
+    assert any(
+        point.attributes.get("tokenType") == "output" for point in usage_points
+    )
+    assert any(
+        point.attributes.get("tokenType") == "total" for point in usage_points
+    )
 
 
 @pytest.mark.vcr()
@@ -169,9 +181,9 @@ def test_tool_call_creates_tool_span_and_multiple_llm_spans(
     build_agent,
     span_exporter,
     metric_reader,
-    fixture_path,
+    public_fixture_paths,
 ):
-    path = str(fixture_path / "read_file_input.txt")
+    path = public_fixture_paths["read_file"]
 
     agent = build_agent(enabled_toolsets=["file_tools"], max_iterations=4)
     result = agent.run_conversation(
@@ -193,22 +205,36 @@ def test_tool_call_creates_tool_span_and_multiple_llm_spans(
     step_by_round = {
         span.attributes["gen_ai.react.round"]: span for span in step_spans
     }
-    assert step_by_round[1].attributes["gen_ai.react.finish_reason"] == "tool_calls"
-    assert step_by_round[max(step_by_round)].attributes["gen_ai.react.finish_reason"] == "stop"
+    assert (
+        step_by_round[1].attributes["gen_ai.react.finish_reason"]
+        == "tool_calls"
+    )
+    assert (
+        step_by_round[max(step_by_round)].attributes[
+            "gen_ai.react.finish_reason"
+        ]
+        == "stop"
+    )
 
     read_file_spans = [
-        span for span in tool_spans if span.attributes["gen_ai.tool.name"] == "read_file"
+        span
+        for span in tool_spans
+        if span.attributes["gen_ai.tool.name"] == "read_file"
     ]
     assert read_file_spans
     assert path in read_file_spans[0].attributes["gen_ai.tool.call.arguments"]
     _assert_parent(read_file_spans[0], step_by_round[1])
 
-    llm_parent_ids = {span.parent.span_id for span in llm_spans if span.parent is not None}
+    llm_parent_ids = {
+        span.parent.span_id for span in llm_spans if span.parent is not None
+    }
     assert step_by_round[1].context.span_id in llm_parent_ids
     assert step_by_round[max(step_by_round)].context.span_id in llm_parent_ids
 
     metric_points = extract_metric_points(metric_reader, "genai_calls_count")
-    assert sum(_metric_value(point) for point in metric_points) == len(llm_spans)
+    assert sum(_metric_value(point) for point in metric_points) == len(
+        llm_spans
+    )
 
 
 @pytest.mark.vcr()
@@ -260,5 +286,7 @@ def test_sync_retry_creates_two_llm_attempt_spans(
 
     metric_points = extract_metric_points(metric_reader, "genai_calls_count")
     assert sum(_metric_value(point) for point in metric_points) == 1
-    error_points = extract_metric_points(metric_reader, "genai_calls_error_count")
+    error_points = extract_metric_points(
+        metric_reader, "genai_calls_error_count"
+    )
     assert sum(_metric_value(point) for point in error_points) == 1

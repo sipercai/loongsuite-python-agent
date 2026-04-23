@@ -31,6 +31,10 @@ FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "examples"
 LOCAL_MCP_SERVER = EXAMPLES_DIR / "local_demo_mcp_server.py"
 DEMO_KB = EXAMPLES_DIR / "demo_knowledge_base.json"
+PUBLIC_FIXTURE_ROOT = Path("/tmp/loongsuite-hermes-agent-tests")
+PUBLIC_READ_FILE_PATH = PUBLIC_FIXTURE_ROOT / "read_file_input.txt"
+PUBLIC_MULTI_AGENT_PATH = PUBLIC_FIXTURE_ROOT / "multi_agent_input.txt"
+PUBLIC_WORKSPACE_PATH = PUBLIC_FIXTURE_ROOT / "workspace"
 
 if "DASHSCOPE_API_KEY" not in os.environ:
     os.environ["DASHSCOPE_API_KEY"] = "test_dashscope_api_key"
@@ -69,7 +73,9 @@ def pytest_configure(config: pytest.Config):
         "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT",
         "SPAN_ONLY",
     )
-    config.option.api_key = os.getenv("DASHSCOPE_API_KEY", "test_dashscope_api_key")
+    config.option.api_key = os.getenv(
+        "DASHSCOPE_API_KEY", "test_dashscope_api_key"
+    )
 
 
 @pytest.fixture(scope="function", name="span_exporter")
@@ -120,7 +126,10 @@ def build_agent():
     ):
         if reload_mcp:
             try:
-                from tools.mcp_tool import discover_mcp_tools, shutdown_mcp_servers
+                from tools.mcp_tool import (
+                    discover_mcp_tools,
+                    shutdown_mcp_servers,
+                )
             except ImportError:
                 pass
             else:
@@ -137,7 +146,9 @@ def build_agent():
             quiet_mode=True,
             skip_memory=skip_memory,
             skip_context_files=True,
-            enabled_toolsets=enabled_toolsets if enabled_toolsets is not None else [],
+            enabled_toolsets=enabled_toolsets
+            if enabled_toolsets is not None
+            else [],
             max_iterations=max_iterations,
             session_db=session_db,
         )
@@ -176,6 +187,28 @@ def require_live_hermes_env(monkeypatch):
 @pytest.fixture(scope="function")
 def fixture_path():
     return FIXTURES_DIR
+
+
+def _publish_fixture(src: Path, dest: Path) -> str:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    return str(dest)
+
+
+@pytest.fixture(scope="function")
+def public_fixture_paths(fixture_path):
+    PUBLIC_WORKSPACE_PATH.mkdir(parents=True, exist_ok=True)
+    return {
+        "read_file": _publish_fixture(
+            fixture_path / "read_file_input.txt",
+            PUBLIC_READ_FILE_PATH,
+        ),
+        "multi_agent": _publish_fixture(
+            fixture_path / "multi_agent_input.txt",
+            PUBLIC_MULTI_AGENT_PATH,
+        ),
+        "workspace": str(PUBLIC_WORKSPACE_PATH),
+    }
 
 
 def _write_hermes_config(home: Path, *, enable_mcp: bool) -> None:
@@ -266,7 +299,9 @@ yaml.add_representer(LiteralBlockScalar, literal_block_scalar_presenter)
 def process_string_value(string_value):
     try:
         json_data = json.loads(string_value)
-        return LiteralBlockScalar(json.dumps(json_data, indent=2, ensure_ascii=False))
+        return LiteralBlockScalar(
+            json.dumps(json_data, indent=2, ensure_ascii=False)
+        )
     except (ValueError, TypeError):
         if isinstance(string_value, str) and len(string_value) > 80:
             return LiteralBlockScalar(string_value)
