@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Pin the default upstream core SHA used by CI to a 0.62-compatible commit, and
+  cap `mem0ai` support to `<2.0.0` while keeping Mem0 oldest/latest test
+  coverage aligned with the supported `1.x` range.
+
 ## Version 0.4.0 (2026-04-03)
 
 There are no changelog entries for this release.

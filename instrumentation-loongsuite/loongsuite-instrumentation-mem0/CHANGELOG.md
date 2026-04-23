@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Limit supported `mem0ai` versions to `>=1.0.0,<2.0.0`, test the true
+  minimum supported version in `requirements.oldest.txt`, and keep the
+  latest test environment on the supported `1.x` line.
+
 ## Version 0.4.0 (2026-04-03)
 
 There are no changelog entries for this release.
