@@ -101,16 +101,20 @@ class TestResolvesToSkillMd:
         skill_dir = tmp_path / "workspaces" / "default" / "skills" / "pdf"
         skill_dir.mkdir(parents=True)
 
-        assert _resolves_to_skill_md("skills/pdf/SKILL.md", str(skill_dir)) is True
+        assert (
+            _resolves_to_skill_md("skills/pdf/SKILL.md", str(skill_dir))
+            is True
+        )
 
     def test_bare_skill_md_requires_allow_bare(self, tmp_path):
         skill_dir = tmp_path / "skills" / "pdf"
         skill_dir.mkdir(parents=True)
 
         assert _resolves_to_skill_md("SKILL.md", str(skill_dir)) is False
-        assert _resolves_to_skill_md(
-            "SKILL.md", str(skill_dir), allow_bare=True
-        ) is True
+        assert (
+            _resolves_to_skill_md("SKILL.md", str(skill_dir), allow_bare=True)
+            is True
+        )
 
 
 class TestMatchSkillForTool:
@@ -158,25 +162,33 @@ class TestMatchSkillForTool:
             {"news": {"name": "news", "dir": str(skill_dir)}}
         )
 
-        assert _match_skill_for_tool(instance, {"file_path": str(target)}) is None
+        assert (
+            _match_skill_for_tool(instance, {"file_path": str(target)}) is None
+        )
 
     def test_bare_skill_md_only_matches_single_skill(self, tmp_path):
         one_dir = tmp_path / "skills" / "one"
         one_dir.mkdir(parents=True)
         (one_dir / "SKILL.md").touch()
 
-        single = _make_instance(
-            {"one": {"name": "one", "dir": str(one_dir)}}
-        )
+        single = _make_instance({"one": {"name": "one", "dir": str(one_dir)}})
         multiple = _make_instance(
             {
                 "one": {"name": "one", "dir": str(one_dir)},
-                "two": {"name": "two", "dir": str(tmp_path / "skills" / "two")},
+                "two": {
+                    "name": "two",
+                    "dir": str(tmp_path / "skills" / "two"),
+                },
             }
         )
 
-        assert _match_skill_for_tool(single, {"file_path": "SKILL.md"}) is not None
-        assert _match_skill_for_tool(multiple, {"file_path": "SKILL.md"}) is None
+        assert (
+            _match_skill_for_tool(single, {"file_path": "SKILL.md"})
+            is not None
+        )
+        assert (
+            _match_skill_for_tool(multiple, {"file_path": "SKILL.md"}) is None
+        )
 
 
 class TestEnrichSkillMetadata:
@@ -207,9 +219,7 @@ class TestEnrichSkillMetadata:
             "---\nname: writer\ndescription: Write docs\n---\n"
         )
         (workspace_dir / "skill.json").write_text(
-            (
-                '{"skills":{"writer":{"metadata":{"version_text":"3.0.0"}}}}'
-            )
+            ('{"skills":{"writer":{"metadata":{"version_text":"3.0.0"}}}}')
         )
 
         enriched = _enrich_skill_metadata(
@@ -241,7 +251,9 @@ class TestEnrichSkillMetadata:
 
 class TestSkillSpanAttributes:
     @pytest.mark.asyncio
-    async def test_trace_async_generator_wrapper_preserves_skill_attributes(self):
+    async def test_trace_async_generator_wrapper_preserves_skill_attributes(
+        self,
+    ):
         async def fake_tool_generator():
             yield "chunk"
 
