@@ -80,7 +80,8 @@ def test_sync_llm_call_records_single_llm_span_and_metric(
         }
     ]
     assert agent_span.attributes["gen_ai.agent.name"] == "Hermes"
-    assert agent_span.attributes["gen_ai.provider.name"] == "hermes-agent"
+    assert agent_span.attributes["gen_ai.provider.name"] == "hermes"
+    assert agent_span.attributes["gen_ai.agent.system"] == "hermes"
     assert agent_span.attributes["gen_ai.operation.name"] == "invoke_agent"
     assert agent_span.attributes["gen_ai.conversation.id"]
     assert "gen_ai.agent.id" not in agent_span.attributes

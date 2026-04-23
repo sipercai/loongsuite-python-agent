@@ -6,14 +6,14 @@ from typing import Any
 
 from opentelemetry import metrics as metrics_api
 
-from .constants import INSTRUMENTATION_VERSION
+from .version import __version__
 
 
 class HermesMetrics:
     def __init__(self, meter_provider=None):
         meter = metrics_api.get_meter(
             __name__,
-            INSTRUMENTATION_VERSION,
+            __version__,
             meter_provider=meter_provider,
         )
         self._calls_count = meter.create_counter(
