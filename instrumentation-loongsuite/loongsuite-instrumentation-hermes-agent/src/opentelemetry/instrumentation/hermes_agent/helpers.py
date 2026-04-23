@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import importlib
 from types import SimpleNamespace
 from typing import Any
 
@@ -237,7 +238,9 @@ def _normalize_codex_input_item(item: Any) -> InputMessage | None:
         text_part = _text_part(item.get("content"))
         if text_part is None:
             return None
-        return InputMessage(role=item.get("role", "assistant"), parts=[text_part])
+        return InputMessage(
+            role=item.get("role", "assistant"), parts=[text_part]
+        )
 
     return None
 
@@ -251,7 +254,9 @@ def request_input_messages(api_kwargs: Any) -> list[InputMessage]:
     instructions = api_kwargs.get("instructions")
     if isinstance(instructions, str) and instructions.strip():
         messages.append(
-            InputMessage(role="system", parts=[Text(content=instructions.strip())])
+            InputMessage(
+                role="system", parts=[Text(content=instructions.strip())]
+            )
         )
 
     raw_messages = api_kwargs.get("messages")
@@ -269,7 +274,9 @@ def request_input_messages(api_kwargs: Any) -> list[InputMessage]:
                 messages.append(normalized)
     elif isinstance(input_items, str) and input_items.strip():
         messages.append(
-            InputMessage(role="user", parts=[Text(content=input_items.strip())])
+            InputMessage(
+                role="user", parts=[Text(content=input_items.strip())]
+            )
         )
 
     return messages
@@ -346,7 +353,9 @@ def structured_response_message(instance: Any, response: Any) -> OutputMessage:
             part = _tool_call_part(
                 call_id=obj_get(item, "call_id") or obj_get(item, "id"),
                 name=obj_get(item, "name") or obj_get(item, "function_name"),
-                arguments=obj_get(item, "arguments", obj_get(item, "input", {})),
+                arguments=obj_get(
+                    item, "arguments", obj_get(item, "input", {})
+                ),
             )
             if part is not None:
                 parts.append(part)
@@ -383,7 +392,9 @@ def structured_response_message(instance: Any, response: Any) -> OutputMessage:
     )
 
 
-def response_output_messages(instance: Any, response: Any) -> list[OutputMessage]:
+def response_output_messages(
+    instance: Any, response: Any
+) -> list[OutputMessage]:
     return [structured_response_message(instance, response)]
 
 
@@ -403,7 +414,9 @@ def agent_output_messages(result: Any) -> list[OutputMessage]:
 
 
 def response_message(response: Any) -> dict[str, Any]:
-    structured = structured_response_message(SimpleNamespace(api_mode=""), response)
+    structured = structured_response_message(
+        SimpleNamespace(api_mode=""), response
+    )
     content_parts: list[str] = []
     tool_calls: list[Any] = []
     for part in structured.parts:
@@ -445,7 +458,8 @@ def tool_call_list(response: Any) -> list[Any]:
                 id=obj_get(item, "call_id") or obj_get(item, "id"),
                 type="function",
                 function=SimpleNamespace(
-                    name=obj_get(item, "name") or obj_get(item, "function_name"),
+                    name=obj_get(item, "name")
+                    or obj_get(item, "function_name"),
                     arguments=arguments,
                 ),
             )
@@ -459,12 +473,15 @@ def canonical_usage(instance: Any, response: Any) -> tuple[int, int, int]:
         return 0, 0, 0
 
     try:
-        from agent.usage_pricing import normalize_usage
-
+        normalize_usage = importlib.import_module(
+            "agent.usage_pricing"
+        ).normalize_usage
         canonical = normalize_usage(
             usage,
             provider=provider_name(instance),
-            api_mode=str(getattr(instance, "api_mode", "") or "").strip().lower(),
+            api_mode=str(getattr(instance, "api_mode", "") or "")
+            .strip()
+            .lower(),
         )
         input_tokens = to_int(getattr(canonical, "prompt_tokens", 0))
         output_tokens = to_int(getattr(canonical, "output_tokens", 0))
@@ -523,14 +540,18 @@ def step_finish_reason(instance: Any, response: Any) -> str:
     return "invalid_response"
 
 
-def create_agent_invocation(instance: Any, user_message: str) -> InvokeAgentInvocation:
+def create_agent_invocation(
+    instance: Any, user_message: str
+) -> InvokeAgentInvocation:
     invocation = InvokeAgentInvocation(
         provider=_HERMES_AGENT_SYSTEM,
         agent_name="Hermes",
         conversation_id=getattr(instance, "session_id", None),
         request_model=getattr(instance, "model", None),
         input_messages=[
-            InputMessage(role="user", parts=[Text(content=str(user_message or ""))])
+            InputMessage(
+                role="user", parts=[Text(content=str(user_message or ""))]
+            )
         ],
         tool_definitions=tool_definitions(getattr(instance, "tools", None)),
     )
@@ -545,7 +566,9 @@ def create_llm_invocation(instance: Any, api_kwargs: Any) -> LLMInvocation:
     if not isinstance(api_kwargs, dict):
         api_kwargs = {}
 
-    request_model = str(api_kwargs.get("model") or getattr(instance, "model", ""))
+    request_model = str(
+        api_kwargs.get("model") or getattr(instance, "model", "")
+    )
     max_tokens = api_kwargs.get("max_tokens")
     if max_tokens is None:
         max_tokens = api_kwargs.get("max_output_tokens")
@@ -587,11 +610,13 @@ def update_llm_invocation_from_response(
     if finish_reason:
         invocation.finish_reasons = [finish_reason]
         invocation.attributes["gen_ai.response.finish_reason"] = finish_reason
-        invocation.attributes["gen_ai.response.finish_reasons"] = "[\"%s\"]" % (
+        invocation.attributes["gen_ai.response.finish_reasons"] = '["%s"]' % (
             finish_reason,
         )
 
-    input_tokens, output_tokens, total_tokens = canonical_usage(instance, response)
+    input_tokens, output_tokens, total_tokens = canonical_usage(
+        instance, response
+    )
     if input_tokens > 0:
         invocation.input_tokens = input_tokens
     if output_tokens > 0:
@@ -651,7 +676,8 @@ def start_step(handler, instance: Any, finish_step) -> None:
     if current_state["current_step_invocation"] is not None:
         finish_step(
             instance,
-            current_state.get("pending_step_finish_reason") or "invalid_response",
+            current_state.get("pending_step_finish_reason")
+            or "invalid_response",
         )
 
     round_number = current_state["current_step_round"] + 1
