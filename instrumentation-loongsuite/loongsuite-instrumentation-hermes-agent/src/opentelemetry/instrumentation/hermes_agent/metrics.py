@@ -52,7 +52,9 @@ class HermesMetrics:
         )
 
     @staticmethod
-    def _attrs(provider: str, model: str, operation: str = "chat") -> dict[str, Any]:
+    def _attrs(
+        provider: str, model: str, operation: str = "chat"
+    ) -> dict[str, Any]:
         return {
             "callType": "gen_ai",
             "callKind": "internal",
@@ -63,10 +65,14 @@ class HermesMetrics:
             "rpc": f"{operation} {model}",
         }
 
-    def record_llm_call(self, provider: str, model: str, operation: str = "chat"):
+    def record_llm_call(
+        self, provider: str, model: str, operation: str = "chat"
+    ):
         self._calls_count.add(1, self._attrs(provider, model, operation))
 
-    def record_llm_error(self, provider: str, model: str, operation: str = "chat"):
+    def record_llm_error(
+        self, provider: str, model: str, operation: str = "chat"
+    ):
         self._calls_error_count.add(1, self._attrs(provider, model, operation))
 
     def record_llm_duration(
