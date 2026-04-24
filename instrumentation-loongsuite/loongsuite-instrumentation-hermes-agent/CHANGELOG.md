@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Version 0.5.0.dev (2026-04-24)
+
 ### Added
 
 - Initial Hermes Agent instrumentation package
