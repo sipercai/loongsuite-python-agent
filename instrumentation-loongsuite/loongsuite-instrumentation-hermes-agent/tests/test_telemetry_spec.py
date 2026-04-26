@@ -17,8 +17,12 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from opentelemetry import trace as trace_api
+from opentelemetry.trace.status import StatusCode
 from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
+from opentelemetry.util.genai.types import LLMInvocation
 
 
 def _spans_by_kind(span_exporter, span_kind: str):
@@ -339,6 +343,44 @@ def test_agent_layer_reuses_existing_entry_instead_of_creating_a_new_one(
     _assert_parent(agent_spans[0], ingress_span)
 
 
+def test_agent_layer_reuses_active_llm_span_without_creating_entry(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(
+        session_id="session-active-llm",
+        platform="dingtalk",
+        user_id="ding-user",
+    )
+    outer_llm = LLMInvocation(
+        request_model="qwen-turbo",
+        provider="dashscope",
+    )
+
+    runtime.handler.start_llm(outer_llm)
+    try:
+        runtime.run_wrapper(
+            lambda user_message: {"final_response": "nested ok"},
+            agent,
+            ("nested call",),
+            {},
+        )
+    finally:
+        runtime.handler.stop_llm(outer_llm)
+
+    entry_spans = _spans_by_kind(span_exporter, "ENTRY")
+    agent_spans = _spans_by_kind(span_exporter, "AGENT")
+    llm_spans = _spans_by_kind(span_exporter, "LLM")
+
+    assert entry_spans == []
+    assert len(agent_spans) == 1
+    assert len(llm_spans) == 1
+    _assert_parent(agent_spans[0], llm_spans[0])
+
+
 def test_api_server_agent_creates_entry_parent_span(
     instrumentation_module,
     tracer_provider,
@@ -421,6 +463,57 @@ def test_gateway_platform_agent_creates_entry_parent_span(
         output_text="收到",
     )
     _assert_parent(agent_span, entry_span)
+
+
+def test_entry_span_fails_when_agent_fail_cleanup_raises(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+    monkeypatch,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(
+        session_id="entry-fail-session",
+        platform="dingtalk",
+        user_id="entry-fail-user",
+    )
+
+    class UserError(RuntimeError):
+        pass
+
+    original_fail_invoke_agent = runtime.handler.fail_invoke_agent
+
+    def fail_invoke_agent_then_raise(invocation, error):
+        original_fail_invoke_agent(invocation, error)
+        raise RuntimeError("telemetry cleanup failed")
+
+    monkeypatch.setattr(
+        runtime.handler,
+        "fail_invoke_agent",
+        fail_invoke_agent_then_raise,
+    )
+
+    def wrapped_run(_user_message):
+        raise UserError("boom")
+
+    with pytest.raises(UserError):
+        runtime.run_wrapper(
+            wrapped_run,
+            agent,
+            ("please fail",),
+            {},
+        )
+
+    entry_spans = _spans_by_kind(span_exporter, "ENTRY")
+    agent_spans = _spans_by_kind(span_exporter, "AGENT")
+
+    assert len(entry_spans) == 1
+    assert len(agent_spans) == 1
+    assert entry_spans[0].status.status_code == StatusCode.ERROR
+    assert agent_spans[0].status.status_code == StatusCode.ERROR
+    assert entry_spans[0].attributes["error.type"] == UserError.__qualname__
+    assert agent_spans[0].attributes["error.type"] == UserError.__qualname__
 
 
 def test_entry_span_omits_messages_when_content_capture_disabled(

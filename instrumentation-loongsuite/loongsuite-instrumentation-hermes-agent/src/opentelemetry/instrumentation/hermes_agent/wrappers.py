@@ -19,6 +19,7 @@ from __future__ import annotations
 import contextvars
 import timeit
 from collections.abc import Mapping
+from contextlib import suppress
 from typing import Any
 
 from opentelemetry import trace as trace_api
@@ -51,6 +52,11 @@ _GENAI_SPAN_NAME_PREFIXES = (
     "invoke_agent",
     "execute_tool",
     "react step",
+    "chat ",
+    "generate_content ",
+    "text_completion ",
+    "embedding ",
+    "embeddings ",
 )
 
 
@@ -81,6 +87,12 @@ def _current_span_is_genai_operation() -> bool:
     if isinstance(attributes, Mapping):
         return attributes.get("gen_ai.span.kind") in _GENAI_SPAN_KINDS
     return False
+
+
+def _safely_fail_invocation(fail_callback, invocation, error: Error) -> None:
+    # Telemetry cleanup must not mask the original application exception.
+    with suppress(Exception):
+        fail_callback(invocation, error)
 
 
 def _entry_ttft_ns(entry_invocation, first_token_monotonic_s):
@@ -189,15 +201,19 @@ class RunConversationWrapper:
                 self._handler.stop_entry(entry_invocation)
             return result
         except Exception as exc:
-            finish_step(instance, "error", exc=exc)
-            self._handler.fail_invoke_agent(
+            error = Error(message=str(exc), type=type(exc))
+            with suppress(Exception):
+                finish_step(instance, "error", exc=exc)
+            _safely_fail_invocation(
+                self._handler.fail_invoke_agent,
                 invocation,
-                Error(message=str(exc), type=type(exc)),
+                error,
             )
             if entry_invocation is not None:
-                self._handler.fail_entry(
+                _safely_fail_invocation(
+                    self._handler.fail_entry,
                     entry_invocation,
-                    Error(message=str(exc), type=type(exc)),
+                    error,
                 )
             raise
         finally:
