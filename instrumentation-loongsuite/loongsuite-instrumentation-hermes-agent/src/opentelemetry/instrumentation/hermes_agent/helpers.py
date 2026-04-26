@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 from types import SimpleNamespace
 from typing import Any
 
@@ -27,6 +28,7 @@ from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import
     GenAiExtendedProviderNameValues,
 )
 from opentelemetry.util.genai.extended_types import (
+    EntryInvocation,
     ExecuteToolInvocation,
     InvokeAgentInvocation,
     ReactStepInvocation,
@@ -44,12 +46,26 @@ from opentelemetry.util.genai.types import (
 )
 
 _HERMES_AGENT_SYSTEM = "hermes"
+_GEN_AI_SKILL_NAME = "gen_ai.skill.name"
+_GEN_AI_SKILL_ID = "gen_ai.skill.id"
+_GEN_AI_SKILL_DESCRIPTION = "gen_ai.skill.description"
+_GEN_AI_SKILL_VERSION = "gen_ai.skill.version"
 
 
 def obj_get(value: Any, field: str, default: Any = None) -> Any:
     if isinstance(value, dict):
         return value.get(field, default)
     return getattr(value, field, default)
+
+
+def _normalize_platform(value: Any) -> str:
+    platform = getattr(value, "value", value)
+    return str(platform or "").strip().lower()
+
+
+def _entry_platform(instance: Any) -> str:
+    platform = _normalize_platform(getattr(instance, "platform", None))
+    return platform
 
 
 def to_int(value: Any) -> int:
@@ -562,6 +578,28 @@ def create_agent_invocation(
     return invocation
 
 
+def create_entry_invocation(
+    instance: Any, user_message: str
+) -> EntryInvocation:
+    user_id = getattr(instance, "_user_id", None) or getattr(
+        instance, "user_id", None
+    )
+    invocation = EntryInvocation(
+        session_id=getattr(instance, "session_id", None),
+        user_id=str(user_id) if user_id else None,
+        input_messages=[
+            InputMessage(
+                role="user", parts=[Text(content=str(user_message or ""))]
+            )
+        ],
+    )
+    return invocation
+
+
+def should_create_entry_for_agent(instance: Any) -> bool:
+    return bool(_entry_platform(instance))
+
+
 def create_llm_invocation(instance: Any, api_kwargs: Any) -> LLMInvocation:
     if not isinstance(api_kwargs, dict):
         api_kwargs = {}
@@ -642,7 +680,79 @@ def create_tool_invocation(
         invocation.tool_call_arguments = arguments
     if tool_call_id:
         invocation.tool_call_id = tool_call_id
+    apply_skill_attributes(invocation, tool_name, arguments=arguments)
     return invocation
+
+
+def _json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except (TypeError, ValueError):
+            return {}
+        if isinstance(parsed, dict):
+            return parsed
+    return {}
+
+
+def _skill_tool_name(tool_name: str) -> bool:
+    return tool_name in {"skill_view", "skill_manage"}
+
+
+def _skill_metadata_from_result(result: Any) -> dict[str, Any]:
+    data = _json_object(result)
+    if not data or data.get("success") is False:
+        return {}
+
+    metadata = data.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+    hermes_metadata = metadata.get("hermes")
+    if not isinstance(hermes_metadata, dict):
+        hermes_metadata = {}
+
+    return {
+        "name": data.get("name"),
+        "description": data.get("description"),
+        "version": data.get("version")
+        or metadata.get("version")
+        or hermes_metadata.get("version"),
+        "id": data.get("id")
+        or metadata.get("id")
+        or hermes_metadata.get("id")
+        or data.get("name"),
+    }
+
+
+def apply_skill_attributes(
+    invocation: ExecuteToolInvocation,
+    tool_name: str,
+    *,
+    arguments: Any = None,
+    result: Any = None,
+) -> None:
+    if not _skill_tool_name(tool_name):
+        return
+
+    argument_data = _json_object(arguments)
+    result_data = _skill_metadata_from_result(result)
+    skill_name = result_data.get("name") or argument_data.get("name")
+    skill_id = result_data.get("id") or skill_name
+    skill_description = result_data.get("description")
+    skill_version = result_data.get("version")
+
+    if skill_name:
+        invocation.attributes[_GEN_AI_SKILL_NAME] = str(skill_name)
+    if skill_id:
+        invocation.attributes[_GEN_AI_SKILL_ID] = str(skill_id)
+    if skill_description:
+        invocation.attributes[_GEN_AI_SKILL_DESCRIPTION] = str(
+            skill_description
+        )
+    if skill_version:
+        invocation.attributes[_GEN_AI_SKILL_VERSION] = str(skill_version)
 
 
 def state(instance: Any) -> dict[str, Any]:
