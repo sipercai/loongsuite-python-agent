@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Create `ENTRY` spans for Hermes `AIAgent` platform requests,
+  then parent the agent invocation under the entry span.
+- Add `gen_ai.skill.*` semantic attributes to Hermes skill tool spans when
+  `skill_view` or `skill_manage` is executed.
+
 ## Version 0.5.0.dev (2026-04-24)
 
 ### Added

@@ -38,6 +38,59 @@ def _messages(attr: str):
     return json.loads(attr)
 
 
+def _assert_standard_entry_span(
+    span,
+    *,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    input_text: str | None = None,
+    output_text: str | None = None,
+    capture_content: bool = True,
+    has_ttft: bool = False,
+):
+    attributes = span.attributes
+
+    assert span.name == "enter_ai_application_system"
+    assert attributes["gen_ai.span.kind"] == "ENTRY"
+    assert attributes["gen_ai.operation.name"] == "enter"
+    if session_id is not None:
+        assert attributes["gen_ai.session.id"] == session_id
+    if user_id is not None:
+        assert attributes["gen_ai.user.id"] == user_id
+
+    if capture_content:
+        input_messages = _messages(attributes["gen_ai.input.messages"])
+        output_messages = _messages(attributes["gen_ai.output.messages"])
+        if input_text is not None:
+            assert input_messages == [
+                {
+                    "role": "user",
+                    "parts": [{"type": "text", "content": input_text}],
+                }
+            ]
+        if output_text is not None:
+            assert output_messages == [
+                {
+                    "role": "assistant",
+                    "parts": [{"type": "text", "content": output_text}],
+                    "finish_reason": "stop",
+                }
+            ]
+    else:
+        assert "gen_ai.input.messages" not in attributes
+        assert "gen_ai.output.messages" not in attributes
+
+    if has_ttft:
+        assert attributes["gen_ai.response.time_to_first_token"] > 0
+    else:
+        assert "gen_ai.response.time_to_first_token" not in attributes
+
+    assert "gen_ai.provider.name" not in attributes
+    assert "gen_ai.agent.system" not in attributes
+    assert "gen_ai.request.model" not in attributes
+    assert not any(key.startswith("hermes.") for key in attributes)
+
+
 class _FakeAgent:
     def __init__(
         self,
@@ -47,13 +100,16 @@ class _FakeAgent:
         provider: str = "dashscope",
         base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1",
         tools=None,
+        platform: str | None = None,
+        user_id: str | None = None,
     ):
         self.session_id = session_id
         self.model = model
         self.provider = provider
         self.base_url = base_url
         self.tools = tools or []
-        self._user_id = None
+        self.platform = platform
+        self._user_id = user_id
 
 
 def _tool_call(
@@ -263,6 +319,170 @@ def test_agent_layer_reuses_existing_entry_instead_of_creating_a_new_one(
     assert len(agent_spans) == 1
     assert agent_spans[0].attributes["gen_ai.operation.name"] == "invoke_agent"
     _assert_parent(agent_spans[0], ingress_span)
+
+
+def test_api_server_agent_creates_entry_parent_span(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(
+        session_id="api-session",
+        platform="api_server",
+        user_id="api-user",
+    )
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(content="PONG", finish_reason="stop"),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        return {"final_response": "PONG"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("只回复 PONG",), {})
+
+    entry_span = _spans_by_kind(span_exporter, "ENTRY")[0]
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+
+    _assert_standard_entry_span(
+        entry_span,
+        session_id="api-session",
+        user_id="api-user",
+        input_text="只回复 PONG",
+        output_text="PONG",
+    )
+    _assert_parent(agent_span, entry_span)
+
+
+def test_gateway_platform_agent_creates_entry_parent_span(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(
+        session_id="dingtalk-session",
+        platform="dingtalk",
+        user_id="ding-user",
+    )
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(content="收到", finish_reason="stop"),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        return {"final_response": "收到"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("帮我看下",), {})
+
+    entry_span = _spans_by_kind(span_exporter, "ENTRY")[0]
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+
+    _assert_standard_entry_span(
+        entry_span,
+        session_id="dingtalk-session",
+        user_id="ding-user",
+        input_text="帮我看下",
+        output_text="收到",
+    )
+    _assert_parent(agent_span, entry_span)
+
+
+def test_entry_span_omits_messages_when_content_capture_disabled(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "NO_CONTENT"
+    )
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(
+        session_id="no-content-session",
+        platform="dingtalk",
+        user_id="no-content-user",
+    )
+
+    runtime.run_wrapper(
+        lambda user_message: {"final_response": "完成"},
+        agent,
+        ("请回复：完成",),
+        {},
+    )
+
+    entry_span = _spans_by_kind(span_exporter, "ENTRY")[0]
+    _assert_standard_entry_span(
+        entry_span,
+        session_id="no-content-session",
+        user_id="no-content-user",
+        capture_content=False,
+    )
+
+
+def test_cli_platform_agent_creates_entry_parent_span(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="cli-session", platform="cli")
+
+    runtime.run_wrapper(
+        lambda user_message: {"final_response": "完成"},
+        agent,
+        ("请回复：完成",),
+        {},
+    )
+
+    entry_span = _spans_by_kind(span_exporter, "ENTRY")[0]
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+    _assert_standard_entry_span(
+        entry_span,
+        session_id="cli-session",
+        input_text="请回复：完成",
+        output_text="完成",
+    )
+    _assert_parent(agent_span, entry_span)
+
+
+def test_agent_without_platform_does_not_create_entry_span(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="library-session")
+
+    runtime.run_wrapper(
+        lambda user_message: {"final_response": "完成"},
+        agent,
+        ("请回复：完成",),
+        {},
+    )
+
+    assert _spans_by_kind(span_exporter, "ENTRY") == []
+    assert len(_spans_by_kind(span_exporter, "AGENT")) == 1
 
 
 def test_agent_span_does_not_backfill_agent_id_from_session_id(
@@ -503,6 +723,47 @@ def test_tool_span_captures_call_id_arguments_and_result(
     assert tool_span.attributes["gen_ai.tool.call.result"] == "tool_ok"
 
 
+def test_skill_tool_span_captures_skill_semantic_attributes(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-skill")
+
+    runtime.tool_wrapper(
+        lambda *args, **kwargs: json.dumps(
+            {
+                "success": True,
+                "name": "loongsuite-pr-review",
+                "description": "Review LoongSuite PR readiness.",
+                "metadata": {"version": "1.2.3"},
+            }
+        ),
+        agent,
+        (
+            "skill_view",
+            {"name": "loongsuite-pr-review"},
+            "task-1",
+            "call-skill-view",
+        ),
+        {},
+    )
+
+    tool_span = _spans_by_kind(span_exporter, "TOOL")[0]
+
+    assert tool_span.attributes["gen_ai.tool.name"] == "skill_view"
+    assert tool_span.attributes["gen_ai.skill.name"] == (
+        "loongsuite-pr-review"
+    )
+    assert tool_span.attributes["gen_ai.skill.id"] == "loongsuite-pr-review"
+    assert tool_span.attributes["gen_ai.skill.description"] == (
+        "Review LoongSuite PR readiness."
+    )
+    assert tool_span.attributes["gen_ai.skill.version"] == "1.2.3"
+
+
 def test_nested_tool_dispatch_reuses_outer_tool_span(
     instrumentation_module,
     tracer_provider,
@@ -636,7 +897,11 @@ def test_streaming_ttft_rolls_up_to_agent_span(
     span_exporter,
 ):
     runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
-    agent = _FakeAgent(session_id="session-stream")
+    agent = _FakeAgent(
+        session_id="session-stream",
+        platform="api_server",
+        user_id="stream-user",
+    )
 
     def wrapped_run(user_message):
         runtime.streaming_llm_wrapper(
@@ -654,12 +919,22 @@ def test_streaming_ttft_rolls_up_to_agent_span(
 
     runtime.run_wrapper(wrapped_run, agent, ("请数到 3",), {})
 
+    entry_span = _spans_by_kind(span_exporter, "ENTRY")[0]
     agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
     llm_span = _spans_by_kind(span_exporter, "LLM")[0]
 
     assert llm_span.attributes["gen_ai.operation.name"] == "chat"
     assert llm_span.attributes["gen_ai.response.time_to_first_token"] > 0
     assert agent_span.attributes["gen_ai.response.time_to_first_token"] > 0
+    _assert_standard_entry_span(
+        entry_span,
+        session_id="session-stream",
+        user_id="stream-user",
+        input_text="请数到 3",
+        output_text="1 2 3",
+        has_ttft=True,
+    )
+    _assert_parent(agent_span, entry_span)
 
 
 def test_codex_responses_usage_and_finish_reason_are_normalized(
@@ -816,7 +1091,7 @@ def test_child_agent_invocation_reuses_ingress_without_creating_child_entry(
 ):
     runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
     parent_agent = _FakeAgent(session_id="session-parent")
-    child_agent = _FakeAgent(session_id="session-child")
+    child_agent = _FakeAgent(session_id="session-child", platform="dingtalk")
     delegate_call = _tool_call(call_id="call-delegate", name="delegate_task")
 
     def child_run(user_message):

@@ -18,18 +18,23 @@ from __future__ import annotations
 
 import contextvars
 import timeit
+from collections.abc import Mapping
 from typing import Any
 
+from opentelemetry import trace as trace_api
 from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 from opentelemetry.util.genai.types import Error
 
 from .helpers import (
     agent_output_messages,
+    apply_skill_attributes,
     clear_state,
     create_agent_invocation,
+    create_entry_invocation,
     create_llm_invocation,
     create_tool_invocation,
     provider_name,
+    should_create_entry_for_agent,
     start_step,
     state,
     step_finish_reason,
@@ -39,6 +44,13 @@ from .helpers import (
 _ACTIVE_TOOL_NAMES = contextvars.ContextVar(
     "opentelemetry_hermes_active_tool_names",
     default=(),
+)
+_GENAI_SPAN_KINDS = {"ENTRY", "AGENT", "STEP", "LLM", "TOOL"}
+_GENAI_SPAN_NAME_PREFIXES = (
+    "enter_ai_application_system",
+    "invoke_agent",
+    "execute_tool",
+    "react step",
 )
 
 
@@ -58,6 +70,30 @@ def _bind_handler(instance: Any, handler: ExtendedTelemetryHandler) -> None:
     if instance is None:
         return
     state(instance)["handler"] = handler
+
+
+def _current_span_is_genai_operation() -> bool:
+    current_span = trace_api.get_current_span()
+    span_name = str(getattr(current_span, "name", None) or "")
+    if span_name.startswith(_GENAI_SPAN_NAME_PREFIXES):
+        return True
+    attributes = getattr(current_span, "attributes", None)
+    if isinstance(attributes, Mapping):
+        return attributes.get("gen_ai.span.kind") in _GENAI_SPAN_KINDS
+    return False
+
+
+def _entry_ttft_ns(entry_invocation, first_token_monotonic_s):
+    if (
+        entry_invocation is None
+        or entry_invocation.monotonic_start_s is None
+        or first_token_monotonic_s is None
+    ):
+        return None
+    return int(
+        max(first_token_monotonic_s - entry_invocation.monotonic_start_s, 0)
+        * 1_000_000_000
+    )
 
 
 def finish_step(
@@ -96,6 +132,18 @@ class RunConversationWrapper:
         user_message = args[0] if args else kwargs.get("user_message", "")
 
         current_state = state(instance)
+        entry_invocation = None
+        if (
+            should_create_entry_for_agent(instance)
+            and not _current_span_is_genai_operation()
+            and not _ACTIVE_TOOL_NAMES.get()
+        ):
+            entry_invocation = create_entry_invocation(
+                instance, str(user_message or "")
+            )
+            current_state["entry_invocation"] = entry_invocation
+            self._handler.start_entry(entry_invocation)
+
         invocation = create_agent_invocation(instance, str(user_message or ""))
         current_state["agent_invocation"] = invocation
         self._handler.start_invoke_agent(invocation)
@@ -108,8 +156,11 @@ class RunConversationWrapper:
                     current_state.get("pending_step_finish_reason") or "stop",
                 )
 
-            invocation.output_messages = agent_output_messages(result)
+            output_messages = agent_output_messages(result)
+            invocation.output_messages = output_messages
             invocation.finish_reasons = ["stop"]
+            if entry_invocation is not None:
+                entry_invocation.output_messages = output_messages
 
             if current_state["last_response_model"]:
                 invocation.response_model_name = current_state[
@@ -125,8 +176,17 @@ class RunConversationWrapper:
                 invocation.monotonic_first_token_s = current_state[
                     "first_token_monotonic_s"
                 ]
+                if entry_invocation is not None:
+                    entry_invocation.response_time_to_first_token = (
+                        _entry_ttft_ns(
+                            entry_invocation,
+                            current_state["first_token_monotonic_s"],
+                        )
+                    )
 
             self._handler.stop_invoke_agent(invocation)
+            if entry_invocation is not None:
+                self._handler.stop_entry(entry_invocation)
             return result
         except Exception as exc:
             finish_step(instance, "error", exc=exc)
@@ -134,6 +194,11 @@ class RunConversationWrapper:
                 invocation,
                 Error(message=str(exc), type=type(exc)),
             )
+            if entry_invocation is not None:
+                self._handler.fail_entry(
+                    entry_invocation,
+                    Error(message=str(exc), type=type(exc)),
+                )
             raise
         finally:
             clear_state(instance)
@@ -322,6 +387,12 @@ class ToolCallWrapper:
         try:
             result = wrapped(*args, **kwargs)
             invocation.tool_call_result = result
+            apply_skill_attributes(
+                invocation,
+                str(function_name or ""),
+                arguments=function_args,
+                result=result,
+            )
             self._handler.stop_execute_tool(invocation)
             return result
         except Exception as exc:
@@ -421,6 +492,15 @@ class ToolExecutionWrapper:
                 "tasks": kwargs.get("tasks"),
                 "max_iterations": kwargs.get("max_iterations"),
             }
+        if self._tool_name == "skill_view":
+            return {
+                "name": kwargs.get("name")
+                if "name" in kwargs
+                else (args[0] if len(args) > 0 else None),
+                "file_path": kwargs.get("file_path")
+                if "file_path" in kwargs
+                else (args[1] if len(args) > 1 else None),
+            }
         return None
 
     def __call__(self, wrapped, instance, args, kwargs):
@@ -438,6 +518,12 @@ class ToolExecutionWrapper:
         try:
             result = wrapped(*args, **kwargs)
             invocation.tool_call_result = result
+            apply_skill_attributes(
+                invocation,
+                self._tool_name,
+                arguments=invocation.tool_call_arguments,
+                result=result,
+            )
             self._handler.stop_execute_tool(invocation)
             return result
         except Exception as exc:
