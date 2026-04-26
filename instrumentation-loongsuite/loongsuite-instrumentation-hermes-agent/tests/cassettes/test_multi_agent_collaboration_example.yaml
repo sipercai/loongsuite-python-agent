@@ -311,7 +311,7 @@ interactions:
 
         data: {"model":"qwen-turbo","id":"chatcmpl-bc9e1d96-0d24-9c1c-b08d-163e1964d72f","choices":[{"delta":{"content":"","tool_calls":[{"index":0,"id":"","type":"function","function":{"arguments":"Read the content of"}}],"role":null},"index":0}],"created":1776325101,"object":"chat.completion.chunk","usage":null}
 
-        data: {"model":"qwen-turbo","id":"chatcmpl-bc9e1d96-0d24-9c1c-b08d-163e1964d72f","choices":[{"delta":{"content":"","tool_calls":[{"index":0,"id":"","type":"function","function":{"arguments":" the file /Users"}}],"role":null},"index":0}],"created":1776325101,"object":"chat.completion.chunk","usage":null}
+        data: {"model":"qwen-turbo","id":"chatcmpl-bc9e1d96-0d24-9c1c-b08d-163e1964d72f","choices":[{"delta":{"content":"","tool_calls":[{"index":0,"id":"","type":"function","function":{"arguments":" the file /tmp"}}],"role":null},"index":0}],"created":1776325101,"object":"chat.completion.chunk","usage":null}
 
         data: {"model":"qwen-turbo","id":"chatcmpl-bc9e1d96-0d24-9c1c-b08d-163e1964d72f","choices":[{"delta":{"content":"","tool_calls":[{"index":0,"id":"","type":"function","function":{"arguments":"/tmp/loongsuite-hermes-agent-tests"}}],"role":null},"index":0}],"created":1776325101,"object":"chat.completion.chunk","usage":null}
 
@@ -477,7 +477,7 @@ interactions:
 
         data: {"model":"qwen-turbo","id":"chatcmpl-c804d9ff-1423-947b-bba1-791e92b1308f","choices":[{"delta":{"content":"  \nThe content of","role":null},"index":0}],"created":1776325103,"object":"chat.completion.chunk","usage":null}
 
-        data: {"model":"qwen-turbo","id":"chatcmpl-c804d9ff-1423-947b-bba1-791e92b1308f","choices":[{"delta":{"content":" the file `/Users","role":null},"index":0}],"created":1776325103,"object":"chat.completion.chunk","usage":null}
+        data: {"model":"qwen-turbo","id":"chatcmpl-c804d9ff-1423-947b-bba1-791e92b1308f","choices":[{"delta":{"content":" the file `/tmp","role":null},"index":0}],"created":1776325103,"object":"chat.completion.chunk","usage":null}
 
         data: {"model":"qwen-turbo","id":"chatcmpl-c804d9ff-1423-947b-bba1-791e92b1308f","choices":[{"delta":{"content":"/tmp/loongsuite-hermes-agent-tests","role":null},"index":0}],"created":1776325103,"object":"chat.completion.chunk","usage":null}
 
@@ -895,7 +895,7 @@ interactions:
 
         data: {"model":"qwen-turbo","id":"chatcmpl-1cdb5fb4-4f35-9846-a63a-df18982c3815","choices":[{"delta":{"content":"  \nThe content of","role":null},"index":0}],"created":1776325105,"object":"chat.completion.chunk","usage":null}
 
-        data: {"model":"qwen-turbo","id":"chatcmpl-1cdb5fb4-4f35-9846-a63a-df18982c3815","choices":[{"delta":{"content":" the file `/Users","role":null},"index":0}],"created":1776325105,"object":"chat.completion.chunk","usage":null}
+        data: {"model":"qwen-turbo","id":"chatcmpl-1cdb5fb4-4f35-9846-a63a-df18982c3815","choices":[{"delta":{"content":" the file `/tmp","role":null},"index":0}],"created":1776325105,"object":"chat.completion.chunk","usage":null}
 
         data: {"model":"qwen-turbo","id":"chatcmpl-1cdb5fb4-4f35-9846-a63a-df18982c3815","choices":[{"delta":{"content":"/tmp/loongsuite-hermes-agent-tests","role":null},"index":0}],"created":1776325105,"object":"chat.completion.chunk","usage":null}
 

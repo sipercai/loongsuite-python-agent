@@ -231,6 +231,7 @@ def _write_hermes_config(home: Path, *, enable_mcp: bool) -> None:
                 "args": [str(LOCAL_MCP_SERVER)],
                 "env": {
                     "HERMES_DEMO_KB_PATH": str(DEMO_KB),
+                    "LOONGSUITE_PYTHON_SITE_BOOTSTRAP": "False",
                 },
             }
         }
