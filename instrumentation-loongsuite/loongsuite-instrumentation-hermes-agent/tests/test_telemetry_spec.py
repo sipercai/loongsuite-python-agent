@@ -91,6 +91,17 @@ def _assert_standard_entry_span(
     assert not any(key.startswith("hermes.") for key in attributes)
 
 
+def _assert_no_captured_content(span):
+    attributes = span.attributes
+    for key in (
+        "gen_ai.input.messages",
+        "gen_ai.output.messages",
+        "gen_ai.tool.call.arguments",
+        "gen_ai.tool.call.result",
+    ):
+        assert key not in attributes
+
+
 class _FakeAgent:
     def __init__(
         self,
@@ -276,7 +287,14 @@ def _runtime(instrumentation_module, tracer_provider, meter_provider):
             streaming=True,
         ),
         tool_wrapper=instrumentation_module._ToolCallWrapper(handler),
+        tool_dispatch_wrapper=instrumentation_module._ToolDispatchWrapper(
+            handler
+        ),
         tool_batch_wrapper=instrumentation_module._ToolBatchWrapper(handler),
+        delegate_tool_wrapper=instrumentation_module._ToolExecutionWrapper(
+            handler,
+            "delegate_task",
+        ),
     )
 
 
@@ -421,9 +439,66 @@ def test_entry_span_omits_messages_when_content_capture_disabled(
         platform="dingtalk",
         user_id="no-content-user",
     )
+    first_tool_call = _tool_call(call_id="call-no-content")
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(
+                content=None,
+                finish_reason="tool_calls",
+                tool_calls=[first_tool_call],
+            ),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        runtime.tool_batch_wrapper(
+            lambda: runtime.tool_wrapper(
+                lambda *args, **kwargs: "tool_ok",
+                agent,
+                (
+                    "read_file",
+                    {"path": "/tmp/demo.txt"},
+                    "task-1",
+                    first_tool_call.id,
+                ),
+                {},
+            ),
+            agent,
+            (),
+            {},
+        )
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(
+                content="完成",
+                finish_reason="stop",
+                response_id="resp-final-no-content",
+            ),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [
+                        {"role": "user", "content": user_message},
+                        {
+                            "role": "tool",
+                            "tool_call_id": first_tool_call.id,
+                            "content": "tool_ok",
+                        },
+                    ],
+                },
+            ),
+            {},
+        )
+        return {"final_response": "完成"}
 
     runtime.run_wrapper(
-        lambda user_message: {"final_response": "完成"},
+        wrapped_run,
         agent,
         ("请回复：完成",),
         {},
@@ -436,6 +511,12 @@ def test_entry_span_omits_messages_when_content_capture_disabled(
         user_id="no-content-user",
         capture_content=False,
     )
+    for span in (
+        _spans_by_kind(span_exporter, "AGENT")
+        + _spans_by_kind(span_exporter, "LLM")
+        + _spans_by_kind(span_exporter, "TOOL")
+    ):
+        _assert_no_captured_content(span)
 
 
 def test_cli_platform_agent_creates_entry_parent_span(
@@ -723,6 +804,76 @@ def test_tool_span_captures_call_id_arguments_and_result(
     assert tool_span.attributes["gen_ai.tool.call.result"] == "tool_ok"
 
 
+def test_tool_dispatch_span_captures_positional_call_id(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-dispatch")
+    received = {}
+
+    def wrapped_dispatch(*args, **kwargs):
+        received["args"] = args
+        received["kwargs"] = kwargs
+        return "dispatch_ok"
+
+    runtime.tool_dispatch_wrapper(
+        wrapped_dispatch,
+        agent,
+        ("read_file", {"path": "/tmp/demo.txt"}, "task-1", "call-dispatch"),
+        {},
+    )
+
+    tool_span = _spans_by_kind(span_exporter, "TOOL")[0]
+
+    assert received["args"] == (
+        "read_file",
+        {"path": "/tmp/demo.txt"},
+        "task-1",
+        "call-dispatch",
+    )
+    assert received["kwargs"] == {}
+    assert tool_span.attributes["gen_ai.tool.name"] == "read_file"
+    assert tool_span.attributes["gen_ai.tool.call.id"] == "call-dispatch"
+
+
+def test_delegate_task_tool_execution_captures_positional_arguments(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-delegate-positional")
+
+    runtime.delegate_tool_wrapper(
+        lambda *args, **kwargs: "delegate_ok",
+        agent,
+        (
+            "修复测试",
+            "失败日志在 pytest.log",
+            ["file_tools"],
+            [{"goal": "定位失败"}],
+            3,
+        ),
+        {},
+    )
+
+    tool_span = _spans_by_kind(span_exporter, "TOOL")[0]
+    arguments = json.loads(tool_span.attributes["gen_ai.tool.call.arguments"])
+
+    assert tool_span.attributes["gen_ai.tool.name"] == "delegate_task"
+    assert arguments == {
+        "goal": "修复测试",
+        "context": "失败日志在 pytest.log",
+        "toolsets": ["file_tools"],
+        "tasks": [{"goal": "定位失败"}],
+        "max_iterations": 3,
+    }
+
+
 def test_skill_tool_span_captures_skill_semantic_attributes(
     instrumentation_module,
     tracer_provider,
@@ -762,6 +913,48 @@ def test_skill_tool_span_captures_skill_semantic_attributes(
         "Review LoongSuite PR readiness."
     )
     assert tool_span.attributes["gen_ai.skill.version"] == "1.2.3"
+
+
+def test_skill_manage_tool_span_captures_skill_semantic_attributes(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-skill-manage")
+
+    runtime.tool_wrapper(
+        lambda *args, **kwargs: json.dumps(
+            {
+                "success": True,
+                "name": "loongsuite-ci-review",
+                "description": "Review LoongSuite CI readiness.",
+                "metadata": {"id": "skill-ci", "version": "2.0.0"},
+            }
+        ),
+        agent,
+        (
+            "skill_manage",
+            {"action": "create", "name": "loongsuite-ci-review"},
+            "task-1",
+            "call-skill-manage",
+        ),
+        {},
+    )
+
+    tool_span = _spans_by_kind(span_exporter, "TOOL")[0]
+
+    assert tool_span.attributes["gen_ai.tool.name"] == "skill_manage"
+    assert tool_span.attributes["gen_ai.tool.call.id"] == ("call-skill-manage")
+    assert tool_span.attributes["gen_ai.skill.name"] == (
+        "loongsuite-ci-review"
+    )
+    assert tool_span.attributes["gen_ai.skill.id"] == "skill-ci"
+    assert tool_span.attributes["gen_ai.skill.description"] == (
+        "Review LoongSuite CI readiness."
+    )
+    assert tool_span.attributes["gen_ai.skill.version"] == "2.0.0"
 
 
 def test_nested_tool_dispatch_reuses_outer_tool_span(

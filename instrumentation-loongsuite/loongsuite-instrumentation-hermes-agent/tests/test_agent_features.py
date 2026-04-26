@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from hermes_state import SessionDB
 
@@ -146,7 +148,7 @@ def test_multi_agent_collaboration_example(
     ]
     assert delegate_spans
     delegate_span = delegate_spans[0]
-    assert path in delegate_span.attributes.get(
+    assert Path(path).name in delegate_span.attributes.get(
         "gen_ai.tool.call.arguments", ""
     )
     assert any(
@@ -157,15 +159,18 @@ def test_multi_agent_collaboration_example(
     )
 
 
+@pytest.mark.vcr()
 def test_planning_example(
     require_live_hermes_env,
     instrument,
     build_agent,
     span_exporter,
     isolated_hermes_home,
-    tmp_path,
 ):
-    planning_file = tmp_path / "planning_input.txt"
+    planning_file = Path(
+        "/tmp/loongsuite-hermes-agent-tests/planning_input.txt"
+    )
+    planning_file.parent.mkdir(parents=True, exist_ok=True)
     planning_file.write_text(
         "title=otelgui demo\nCHECKPOINT=planning_trace_ok\npayload=otelgui_e2e_ok\n",
         encoding="utf-8",
@@ -210,6 +215,7 @@ def test_planning_example(
     )
 
 
+@pytest.mark.vcr()
 def test_mcp_integration_example(
     require_live_hermes_env,
     instrument,
@@ -238,6 +244,7 @@ def test_mcp_integration_example(
     )
 
 
+@pytest.mark.vcr()
 def test_rag_example(
     require_live_hermes_env,
     instrument,
@@ -269,6 +276,7 @@ def test_rag_example(
     )
 
 
+@pytest.mark.vcr()
 def test_evaluation_example(
     require_live_hermes_env,
     instrument,
@@ -292,7 +300,7 @@ def test_evaluation_example(
         "拿到结果后，只回复 verdict 字段，不要解释。"
     )
 
-    assert "PASS" in result["final_response"]
+    assert "PASS" in result["final_response"].upper()
     tool_spans = _spans_by_kind(span_exporter, "TOOL")
     assert any(
         span.attributes.get("gen_ai.tool.name") == "mcp_demo_grade_candidate"

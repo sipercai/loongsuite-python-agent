@@ -364,13 +364,18 @@ class ToolCallWrapper:
     ):
         self._handler = _resolve_handler(primary, handler=handler)
 
-    def __call__(self, wrapped, instance, args, kwargs):
+    def _call_with_tool_span(
+        self,
+        wrapped,
+        instance,
+        args,
+        kwargs,
+        *,
+        function_name,
+        function_args,
+        tool_call_id,
+    ):
         _bind_handler(instance, self._handler)
-        function_name = args[0] if args else kwargs.get("function_name", "")
-        function_args = (
-            args[1] if len(args) > 1 else kwargs.get("function_args")
-        )
-        tool_call_id = args[3] if len(args) > 3 else kwargs.get("tool_call_id")
         active_tool_names = _ACTIVE_TOOL_NAMES.get()
         if function_name in active_tool_names:
             return wrapped(*args, **kwargs)
@@ -404,6 +409,22 @@ class ToolCallWrapper:
         finally:
             _ACTIVE_TOOL_NAMES.reset(token)
 
+    def __call__(self, wrapped, instance, args, kwargs):
+        function_name = args[0] if args else kwargs.get("function_name", "")
+        function_args = (
+            args[1] if len(args) > 1 else kwargs.get("function_args")
+        )
+        tool_call_id = args[3] if len(args) > 3 else kwargs.get("tool_call_id")
+        return self._call_with_tool_span(
+            wrapped,
+            instance,
+            args,
+            kwargs,
+            function_name=function_name,
+            function_args=function_args,
+            tool_call_id=tool_call_id,
+        )
+
 
 class ToolDispatchWrapper(ToolCallWrapper):
     def __call__(self, wrapped, instance, args, kwargs):
@@ -411,11 +432,15 @@ class ToolDispatchWrapper(ToolCallWrapper):
         function_args = (
             args[1] if len(args) > 1 else kwargs.get("function_args")
         )
-        return super().__call__(
+        tool_call_id = args[3] if len(args) > 3 else kwargs.get("tool_call_id")
+        return self._call_with_tool_span(
             wrapped,
             instance,
-            (function_name, function_args),
+            args,
             kwargs,
+            function_name=function_name,
+            function_args=function_args,
+            tool_call_id=tool_call_id,
         )
 
 
@@ -486,20 +511,21 @@ class ToolExecutionWrapper:
             }
         if self._tool_name == "delegate_task":
             return {
-                "goal": kwargs.get("goal"),
-                "context": kwargs.get("context"),
-                "toolsets": kwargs.get("toolsets"),
-                "tasks": kwargs.get("tasks"),
-                "max_iterations": kwargs.get("max_iterations"),
-            }
-        if self._tool_name == "skill_view":
-            return {
-                "name": kwargs.get("name")
-                if "name" in kwargs
+                "goal": kwargs.get("goal")
+                if "goal" in kwargs
                 else (args[0] if len(args) > 0 else None),
-                "file_path": kwargs.get("file_path")
-                if "file_path" in kwargs
+                "context": kwargs.get("context")
+                if "context" in kwargs
                 else (args[1] if len(args) > 1 else None),
+                "toolsets": kwargs.get("toolsets")
+                if "toolsets" in kwargs
+                else (args[2] if len(args) > 2 else None),
+                "tasks": kwargs.get("tasks")
+                if "tasks" in kwargs
+                else (args[3] if len(args) > 3 else None),
+                "max_iterations": kwargs.get("max_iterations")
+                if "max_iterations" in kwargs
+                else (args[4] if len(args) > 4 else None),
             }
         return None
 
