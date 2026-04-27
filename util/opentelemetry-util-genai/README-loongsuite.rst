@@ -1,7 +1,7 @@
 OpenTelemetry Util for GenAI - LoongSuite 扩展
 =================================================
 
-本文档描述 LoongSuite 对 OpenTelemetry GenAI Util 的扩展：适用范围、接入步骤与配置项。**对外发行**时 PyPI 包名为 **loongsuite-util-genai**；Python 导入命名空间仍为 ``opentelemetry.util.genai``（与上游 GenAI Util 一致，见下节）。本仓库源码目录为 ``util/opentelemetry-util-genai``。
+本文档描述 LoongSuite 对 OpenTelemetry GenAI Util 的扩展：适用范围、接入步骤与配置项。\ **对外发行**\ 时 PyPI 包名为 \ **loongsuite-util-genai**\ ；Python 导入命名空间仍为 \ ``opentelemetry.util.genai``\ （与上游 GenAI Util 一致，见下节）。本仓库源码目录为 \ ``util/opentelemetry-util-genai``\ 。
 
 ------------------------------------------------------------------------
 1. 概述
