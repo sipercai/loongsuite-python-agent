@@ -38,7 +38,7 @@ langgraph
 langgraph-prebuilt
 langchain_core<1.0.0
 pytest
-wrapt
+wrapt<2.0.0
 
 -e opentelemetry-instrumentation
 -e util/opentelemetry-util-genai

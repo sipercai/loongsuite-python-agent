@@ -23,7 +23,7 @@ pytest-cov
 pytest-vcr>=1.0.2
 vcrpy>=5.1.0
 pyyaml>=6.0
-wrapt
+wrapt<2.0.0
 opentelemetry-api==1.37
 opentelemetry-sdk==1.37
 opentelemetry-instrumentation==0.58b0
