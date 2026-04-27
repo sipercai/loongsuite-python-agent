@@ -12,17 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This variant of the requirements aims to test the system using
-# the copaw latest supported version of external dependencies.
+"""Compatibility re-export for legacy CoPaw imports."""
 
-copaw==1.0.0
-pytest
-pytest-asyncio
-wrapt
-opentelemetry-api
-opentelemetry-sdk
-opentelemetry-semantic-conventions
-opentelemetry-instrumentation
+from opentelemetry.instrumentation.qwenpaw.patch import (
+    make_query_handler_wrapper,
+)
 
--e instrumentation-loongsuite/loongsuite-instrumentation-copaw
--e util/opentelemetry-util-genai
+__all__ = ["make_query_handler_wrapper"]

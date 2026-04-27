@@ -72,8 +72,9 @@ def main(base_instrumentation_path):
 
             metric_column = "Yes" if supports_metrics else "No"
 
+            supported_packages = "; ".join(instruments_all)
             table.append(
-                f"| [{instrumentation}](./{instrumentation}) | {','.join(instruments_all)} | {metric_column} | {semconv_status}"
+                f"| [{instrumentation}](./{instrumentation}) | {supported_packages} | {metric_column} | {semconv_status}"
             )
         except Exception as e:
             logger.warning(f"Failed to process {instrumentation}: {e}")
