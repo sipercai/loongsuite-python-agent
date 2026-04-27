@@ -105,7 +105,8 @@ GEN_AI_RERANK_OUTPUT_DOCUMENTS: Final = "gen_ai.rerank.output_documents"
 The reranked documents returned by the reranking operation.
 """
 
-# Skill attributes (per loongsuite-semantic-conventions PR #19)
+# Skill attributes, refer to
+# https://github.com/alibaba/loongsuite-semantic-conventions/pull/19
 GEN_AI_SKILL_NAME: Final = "gen_ai.skill.name"
 """
 The name of the GenAI skill being invoked.
