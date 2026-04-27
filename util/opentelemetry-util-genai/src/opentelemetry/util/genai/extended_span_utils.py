@@ -98,6 +98,26 @@ from opentelemetry.util.genai.utils import (
 # -------------------- Invoke Agent Attribute Helpers --------------------
 
 
+def _has_meaningful_text(value: str | None) -> bool:
+    """Return True when *value* contains non-whitespace text."""
+    return value is not None and value.strip() != ""
+
+
+def _apply_skill_attributes(
+    attributes: dict[str, Any], invocation: ExecuteToolInvocation
+) -> None:
+    """Write non-blank skill metadata onto execute_tool attributes."""
+    skill_fields = (
+        (GEN_AI_SKILL_NAME, invocation.skill_name),
+        (GEN_AI_SKILL_ID, invocation.skill_id),
+        (GEN_AI_SKILL_DESCRIPTION, invocation.skill_description),
+        (GEN_AI_SKILL_VERSION, invocation.skill_version),
+    )
+    for key, value in skill_fields:
+        if _has_meaningful_text(value):
+            attributes[key] = value
+
+
 def _get_invoke_agent_common_attributes(
     invocation: InvokeAgentInvocation,
 ) -> dict[str, Any]:
@@ -515,17 +535,13 @@ def _apply_execute_tool_finish_attributes(
     )
 
     # Skill attributes (conditionally set when this tool execution loaded a skill)
-    if invocation.skill_name is not None:
-        attributes[GEN_AI_SKILL_NAME] = invocation.skill_name
-    if invocation.skill_id is not None:
-        attributes[GEN_AI_SKILL_ID] = invocation.skill_id
-    if invocation.skill_description is not None:
-        attributes[GEN_AI_SKILL_DESCRIPTION] = invocation.skill_description
-    if invocation.skill_version is not None:
-        attributes[GEN_AI_SKILL_VERSION] = invocation.skill_version
+    _apply_skill_attributes(attributes, invocation)
 
     # Custom attributes
     attributes.update(invocation.attributes)
+
+    # Explicit skill fields take precedence over generic custom attributes.
+    _apply_skill_attributes(attributes, invocation)
 
     # Set all attributes on the span
     if attributes:
