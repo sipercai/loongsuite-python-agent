@@ -752,6 +752,42 @@ def test_final_text_response_uses_stop_as_step_finish_reason(
     assert step_span.attributes["gen_ai.react.finish_reason"] == "stop"
 
 
+def test_agent_span_uses_last_step_finish_reason(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-length")
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(
+                content="部分答案", finish_reason="length"
+            ),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        return {"final_response": "部分答案"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("请回复一个长答案",), {})
+
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+    step_span = _spans_by_kind(span_exporter, "STEP")[0]
+
+    assert step_span.attributes["gen_ai.react.finish_reason"] == "length"
+    assert list(agent_span.attributes["gen_ai.response.finish_reasons"]) == [
+        "length"
+    ]
+
+
 def test_react_steps_restore_agent_context_between_rounds(
     instrumentation_module,
     tracer_provider,

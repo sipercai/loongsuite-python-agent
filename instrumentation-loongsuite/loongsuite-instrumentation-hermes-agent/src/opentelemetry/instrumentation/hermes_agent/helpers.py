@@ -644,8 +644,8 @@ def update_llm_invocation_from_response(
     if finish_reason:
         invocation.finish_reasons = [finish_reason]
         invocation.attributes["gen_ai.response.finish_reason"] = finish_reason
-        invocation.attributes["gen_ai.response.finish_reasons"] = '["%s"]' % (
-            finish_reason,
+        invocation.attributes["gen_ai.response.finish_reasons"] = json.dumps(
+            [finish_reason]
         )
 
     input_tokens, output_tokens, total_tokens = canonical_usage(
@@ -758,6 +758,7 @@ def state(instance: Any) -> dict[str, Any]:
             "current_step_invocation": None,
             "current_step_round": 0,
             "pending_step_finish_reason": None,
+            "last_step_finish_reason": None,
             "last_response_model": None,
             "last_response_id": None,
             "input_tokens": 0,
