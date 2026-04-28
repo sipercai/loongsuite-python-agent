@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Detect skill-load tool executions by matching reads of registered skills'
+  top-level `SKILL.md`, and enrich the corresponding `execute_tool` span with
+  `gen_ai.skill.name`, `gen_ai.skill.id`, `gen_ai.skill.description`, and
+  `gen_ai.skill.version`.
+
+### Fixed
+
+- Pin `wrapt` to `< 2.0.0` for AgentScope instrumentation compatibility with
+  the current wrapper API usage.
+
 ## Version 0.4.0 (2026-04-03)
 
 There are no changelog entries for this release.
