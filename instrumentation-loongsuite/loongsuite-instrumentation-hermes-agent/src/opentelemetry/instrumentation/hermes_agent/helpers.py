@@ -46,10 +46,6 @@ from opentelemetry.util.genai.types import (
 )
 
 _HERMES_AGENT_SYSTEM = "hermes"
-_GEN_AI_SKILL_NAME = "gen_ai.skill.name"
-_GEN_AI_SKILL_ID = "gen_ai.skill.id"
-_GEN_AI_SKILL_DESCRIPTION = "gen_ai.skill.description"
-_GEN_AI_SKILL_VERSION = "gen_ai.skill.version"
 
 
 def obj_get(value: Any, field: str, default: Any = None) -> Any:
@@ -744,15 +740,13 @@ def apply_skill_attributes(
     skill_version = result_data.get("version")
 
     if skill_name:
-        invocation.attributes[_GEN_AI_SKILL_NAME] = str(skill_name)
+        invocation.skill_name = str(skill_name)
     if skill_id:
-        invocation.attributes[_GEN_AI_SKILL_ID] = str(skill_id)
+        invocation.skill_id = str(skill_id)
     if skill_description:
-        invocation.attributes[_GEN_AI_SKILL_DESCRIPTION] = str(
-            skill_description
-        )
+        invocation.skill_description = str(skill_description)
     if skill_version:
-        invocation.attributes[_GEN_AI_SKILL_VERSION] = str(skill_version)
+        invocation.skill_version = str(skill_version)
 
 
 def state(instance: Any) -> dict[str, Any]:
