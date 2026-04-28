@@ -18,7 +18,7 @@
 copaw==1.0.0
 pytest
 pytest-asyncio
-wrapt<2.0.0
+wrapt>=1.17.3,<2.0.0
 opentelemetry-api
 opentelemetry-sdk
 opentelemetry-semantic-conventions
