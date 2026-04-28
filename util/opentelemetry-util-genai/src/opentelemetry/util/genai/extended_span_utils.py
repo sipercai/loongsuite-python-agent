@@ -54,6 +54,10 @@ from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import
     GEN_AI_RETRIEVAL_DOCUMENTS,
     GEN_AI_RETRIEVAL_QUERY_TEXT,
     GEN_AI_SESSION_ID,
+    GEN_AI_SKILL_DESCRIPTION,
+    GEN_AI_SKILL_ID,
+    GEN_AI_SKILL_NAME,
+    GEN_AI_SKILL_VERSION,
     GEN_AI_SPAN_KIND,
     GEN_AI_TOOL_CALL_ARGUMENTS,
     GEN_AI_TOOL_CALL_RESULT,
@@ -92,6 +96,26 @@ from opentelemetry.util.genai.utils import (
 # ==================== Helper Functions for Getting Attributes ====================
 
 # -------------------- Invoke Agent Attribute Helpers --------------------
+
+
+def _has_meaningful_text(value: str | None) -> bool:
+    """Return True when *value* contains non-whitespace text."""
+    return value is not None and value.strip() != ""
+
+
+def _apply_skill_attributes(
+    attributes: dict[str, Any], invocation: ExecuteToolInvocation
+) -> None:
+    """Write non-blank skill metadata onto execute_tool attributes."""
+    skill_fields = (
+        (GEN_AI_SKILL_NAME, invocation.skill_name),
+        (GEN_AI_SKILL_ID, invocation.skill_id),
+        (GEN_AI_SKILL_DESCRIPTION, invocation.skill_description),
+        (GEN_AI_SKILL_VERSION, invocation.skill_version),
+    )
+    for key, value in skill_fields:
+        if _has_meaningful_text(value):
+            attributes[key] = value
 
 
 def _get_invoke_agent_common_attributes(
@@ -510,8 +534,14 @@ def _apply_execute_tool_finish_attributes(
         )
     )
 
+    # Skill attributes (conditionally set when this tool execution loaded a skill)
+    _apply_skill_attributes(attributes, invocation)
+
     # Custom attributes
     attributes.update(invocation.attributes)
+
+    # Explicit skill fields take precedence over generic custom attributes.
+    _apply_skill_attributes(attributes, invocation)
 
     # Set all attributes on the span
     if attributes:
