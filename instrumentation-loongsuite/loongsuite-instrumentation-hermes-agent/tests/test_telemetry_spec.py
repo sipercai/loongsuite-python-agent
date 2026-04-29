@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 from types import SimpleNamespace
 
@@ -104,6 +105,91 @@ def _assert_no_captured_content(span):
         "gen_ai.tool.call.result",
     ):
         assert key not in attributes
+
+
+def test_instrumentation_skips_missing_hermes_targets(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    monkeypatch,
+):
+    instrumentor_module = importlib.import_module(
+        "opentelemetry.instrumentation.hermes_agent.instrumentor"
+    )
+    wrapped_targets = []
+
+    def fake_wrap_function_wrapper(module_name, name, wrapper):
+        if module_name == "tools.session_search_tool":
+            raise ModuleNotFoundError(
+                "No module named 'tools.session_search_tool'",
+                name="tools.session_search_tool",
+            )
+        if module_name == "tools.delegate_tool":
+            raise AttributeError("delegate_task")
+        wrapped_targets.append((module_name, name))
+
+    monkeypatch.setattr(
+        instrumentor_module,
+        "wrap_function_wrapper",
+        fake_wrap_function_wrapper,
+    )
+
+    instrumentation_module.HermesAgentInstrumentor()._instrument(
+        tracer_provider=tracer_provider,
+        meter_provider=meter_provider,
+    )
+
+    assert ("run_agent", "AIAgent.run_conversation") in wrapped_targets
+    assert ("tools.memory_tool", "memory_tool") in wrapped_targets
+    assert not any(
+        module_name == "tools.session_search_tool"
+        for module_name, _ in wrapped_targets
+    )
+
+
+def test_uninstrumentation_skips_missing_hermes_targets(
+    instrumentation_module,
+    monkeypatch,
+):
+    instrumentor_module = importlib.import_module(
+        "opentelemetry.instrumentation.hermes_agent.instrumentor"
+    )
+    ai_agent = type("AIAgent", (), {})
+    modules = {
+        "model_tools": SimpleNamespace(),
+        "run_agent": SimpleNamespace(AIAgent=ai_agent),
+        "tools.delegate_tool": SimpleNamespace(),
+        "tools.memory_tool": SimpleNamespace(),
+        "tools.todo_tool": SimpleNamespace(),
+    }
+    unwrapped_targets = []
+
+    def fake_import_module(module_name):
+        if module_name == "tools.session_search_tool":
+            raise ModuleNotFoundError(
+                "No module named 'tools.session_search_tool'",
+                name="tools.session_search_tool",
+            )
+        return modules[module_name]
+
+    def fake_unwrap(parent, attribute):
+        if parent is modules["tools.delegate_tool"]:
+            raise AttributeError(attribute)
+        unwrapped_targets.append((parent, attribute))
+
+    monkeypatch.setattr(
+        instrumentor_module, "import_module", fake_import_module
+    )
+    monkeypatch.setattr(instrumentor_module, "unwrap", fake_unwrap)
+
+    instrumentation_module.HermesAgentInstrumentor()._uninstrument()
+
+    assert (ai_agent, "run_conversation") in unwrapped_targets
+    assert (modules["tools.memory_tool"], "memory_tool") in unwrapped_targets
+    assert not any(
+        parent is modules["tools.delegate_tool"]
+        for parent, _ in unwrapped_targets
+    )
 
 
 class _FakeAgent:
@@ -750,6 +836,42 @@ def test_final_text_response_uses_stop_as_step_finish_reason(
     assert step_span.name == "react step"
     assert step_span.attributes["gen_ai.operation.name"] == "react"
     assert step_span.attributes["gen_ai.react.finish_reason"] == "stop"
+
+
+def test_agent_span_uses_last_step_finish_reason(
+    instrumentation_module,
+    tracer_provider,
+    meter_provider,
+    span_exporter,
+):
+    runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
+    agent = _FakeAgent(session_id="session-length")
+
+    def wrapped_run(user_message):
+        runtime.llm_wrapper(
+            lambda api_kwargs: _response(
+                content="部分答案", finish_reason="length"
+            ),
+            agent,
+            (
+                {
+                    "model": agent.model,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            ),
+            {},
+        )
+        return {"final_response": "部分答案"}
+
+    runtime.run_wrapper(wrapped_run, agent, ("请回复一个长答案",), {})
+
+    agent_span = _spans_by_kind(span_exporter, "AGENT")[0]
+    step_span = _spans_by_kind(span_exporter, "STEP")[0]
+
+    assert step_span.attributes["gen_ai.react.finish_reason"] == "length"
+    assert list(agent_span.attributes["gen_ai.response.finish_reasons"]) == [
+        "length"
+    ]
 
 
 def test_react_steps_restore_agent_context_between_rounds(

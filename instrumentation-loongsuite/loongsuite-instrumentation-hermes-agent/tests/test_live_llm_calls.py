@@ -50,7 +50,6 @@ def test_sync_llm_call_records_single_llm_span_and_metric(
     agent._disable_streaming = True
 
     result = agent.run_conversation("请只回复：同步成功")
-    print(result["final_response"])
 
     assert result["final_response"] == "同步成功"
 

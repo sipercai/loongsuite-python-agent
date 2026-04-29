@@ -121,6 +121,7 @@ def finish_step(
         return
 
     invocation.finish_reason = finish_reason
+    current_state["last_step_finish_reason"] = finish_reason
     if exc is None:
         handler.stop_react_step(invocation)
     else:
@@ -162,15 +163,17 @@ class RunConversationWrapper:
 
         try:
             result = wrapped(*args, **kwargs)
+            agent_finish_reason = (
+                current_state.get("pending_step_finish_reason")
+                or current_state.get("last_step_finish_reason")
+                or "stop"
+            )
             if current_state["current_step_invocation"] is not None:
-                finish_step(
-                    instance,
-                    current_state.get("pending_step_finish_reason") or "stop",
-                )
+                finish_step(instance, agent_finish_reason)
 
             output_messages = agent_output_messages(result)
             invocation.output_messages = output_messages
-            invocation.finish_reasons = ["stop"]
+            invocation.finish_reasons = [agent_finish_reason]
             if entry_invocation is not None:
                 entry_invocation.output_messages = output_messages
 
