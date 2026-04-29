@@ -41,7 +41,7 @@ pytest-cov
 pytest-vcr>=1.0.2
 vcrpy>=5.1.0
 pyyaml>=6.0
-wrapt<2.0.0
+wrapt>=1.17.3,<2.0.0
 
 -e opentelemetry-instrumentation
 -e instrumentation-loongsuite/loongsuite-instrumentation-agentscope

@@ -114,12 +114,14 @@ def _enrich_skill_metadata(skill):
     """Enrich a matched skill dict with version and id from SKILL.md.
 
     AgentScope's ``AgentSkill`` only stores ``name``, ``description``,
-    and ``dir``.  This function reads the SKILL.md frontmatter to extract
-    ``version`` and builds a **runtime / deployment-scoped** ``id``.
+    and ``dir``. This function best-effort extracts ``version`` from
+    SKILL.md/frontmatter-related sources and builds a
+    **runtime / deployment-scoped** ``id`` when ``dir`` is available.
 
-    The enrichment is best-effort: if the frontmatter cannot be read
-    (e.g. file missing, parse error, or running without CoPaw), the
-    original skill dict is returned unchanged.
+    The enrichment is best-effort: if frontmatter/version data cannot be
+    read (e.g. file missing, parse error, or running without CoPaw), the
+    returned dict may still include a path-derived ``id`` when possible,
+    but ``version`` is only added when successfully determined.
 
     When CoPaw is available, its ``_read_frontmatter_safe`` and
     ``_extract_version`` helpers are preferred because they are the
@@ -253,7 +255,7 @@ def _match_skill_for_tool(instance, tool_args):
     # Only allow it when exactly one skill exists.
     single_skill = len(instance.skills) == 1
 
-    # Check if the path resolves to SKILL.md of any registered skill
+    matches = []
     for skill in instance.skills.values():
         skill_dir = skill.get("dir", "")
         if not skill_dir:
@@ -262,7 +264,10 @@ def _match_skill_for_tool(instance, tool_args):
         if _resolves_to_skill_md(
             file_path, skill_dir, allow_bare=single_skill
         ):
-            return _enrich_skill_metadata(skill)
+            matches.append(_enrich_skill_metadata(skill))
+
+    if len(matches) == 1:
+        return matches[0]
 
     return None
 

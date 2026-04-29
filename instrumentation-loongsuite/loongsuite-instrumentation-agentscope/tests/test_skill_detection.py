@@ -190,6 +190,30 @@ class TestMatchSkillForTool:
             _match_skill_for_tool(multiple, {"file_path": "SKILL.md"}) is None
         )
 
+    def test_workspace_relative_match_returns_none_when_ambiguous(
+        self, tmp_path
+    ):
+        default_dir = tmp_path / "workspaces" / "default" / "skills" / "pdf"
+        demo_dir = tmp_path / "workspaces" / "demo" / "skills" / "pdf"
+        default_dir.mkdir(parents=True)
+        demo_dir.mkdir(parents=True)
+        (default_dir / "SKILL.md").touch()
+        (demo_dir / "SKILL.md").touch()
+
+        instance = _make_instance(
+            {
+                "default_pdf": {"name": "pdf", "dir": str(default_dir)},
+                "demo_pdf": {"name": "pdf", "dir": str(demo_dir)},
+            }
+        )
+
+        assert (
+            _match_skill_for_tool(
+                instance, {"file_path": "skills/pdf/SKILL.md"}
+            )
+            is None
+        )
+
 
 class TestEnrichSkillMetadata:
     def test_reads_version_from_frontmatter(self, tmp_path):
