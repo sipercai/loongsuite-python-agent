@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Compatibility tests for primary QwenPaw and legacy CoPaw imports."""
+"""Compatibility tests for QwenPaw primary and legacy import paths."""
 
 from __future__ import annotations
 

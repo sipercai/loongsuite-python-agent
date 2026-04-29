@@ -14,4 +14,4 @@
 | [loongsuite-instrumentation-mcp](./loongsuite-instrumentation-mcp) | mcp >= 1.3.0, <= 1.25.0 | No | development
 | [loongsuite-instrumentation-mem0](./loongsuite-instrumentation-mem0) | mem0ai >= 1.0.0, < 2.0.0 | No | development
 | [loongsuite-instrumentation-qwen-agent](./loongsuite-instrumentation-qwen-agent) | qwen-agent >= 0.0.20 | No | development
-| [loongsuite-instrumentation-qwenpaw](./loongsuite-instrumentation-qwenpaw) | qwenpaw >= 1.1.0; copaw >= 0.1.0, <= 1.0.2 | No | development
+| [loongsuite-instrumentation-qwenpaw](./loongsuite-instrumentation-qwenpaw) | qwenpaw >= 1.1.0 | No | development

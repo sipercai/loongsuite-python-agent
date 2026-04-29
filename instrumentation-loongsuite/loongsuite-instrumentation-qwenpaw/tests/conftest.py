@@ -63,7 +63,7 @@ def _import_runner_module():
             return importlib.import_module(module_name)
         except ImportError:
             continue
-    pytest.skip("Neither qwenpaw nor copaw is installed")
+    pytest.skip("No supported QwenPaw runtime package is installed")
 
 
 @pytest.fixture(name="runner_module")

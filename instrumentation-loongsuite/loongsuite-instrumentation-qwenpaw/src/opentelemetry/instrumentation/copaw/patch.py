@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Compatibility re-export for legacy CoPaw imports."""
+"""Compatibility re-export for legacy imports."""
 
 from opentelemetry.instrumentation.qwenpaw.patch import (
     make_query_handler_wrapper,

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # This variant of the requirements aims to test the system using
-# the latest supported legacy CoPaw runtime.
+# the last supported legacy runtime.
 
 copaw==1.0.2
 pytest

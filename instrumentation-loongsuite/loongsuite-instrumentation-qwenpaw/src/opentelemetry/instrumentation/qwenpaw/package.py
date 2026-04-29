@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
-from typing import Collection
+from typing import Collection, Iterator
 
 from packaging.requirements import Requirement
 
@@ -29,25 +29,24 @@ _runtime_targets = (
 )
 
 
-def get_installed_instrumentation_dependencies() -> Collection[str]:
-    installed: list[str] = []
-    for requirement, distribution_name, _ in _runtime_targets:
+def _get_matched_runtime_targets() -> Iterator[tuple[str, str, str]]:
+    for runtime_target in _runtime_targets:
+        requirement, distribution_name, _ = runtime_target
         try:
             installed_version = version(distribution_name)
         except PackageNotFoundError:
             continue
         if Requirement(requirement).specifier.contains(installed_version):
-            installed.append(requirement)
-    return tuple(installed)
+            yield runtime_target
+
+
+def get_installed_instrumentation_dependencies() -> Collection[str]:
+    return tuple(
+        requirement for requirement, _, _ in _get_matched_runtime_targets()
+    )
 
 
 def get_installed_runner_modules() -> Collection[str]:
-    modules: list[str] = []
-    for requirement, distribution_name, module_name in _runtime_targets:
-        try:
-            installed_version = version(distribution_name)
-        except PackageNotFoundError:
-            continue
-        if Requirement(requirement).specifier.contains(installed_version):
-            modules.append(module_name)
-    return tuple(modules)
+    return tuple(
+        module_name for _, _, module_name in _get_matched_runtime_targets()
+    )

@@ -1,30 +1,23 @@
 # LoongSuite QwenPaw Instrumentation
 
-LoongSuite instrumentation for [QwenPaw](https://github.com/agentscope-ai/QwenPaw)
-with backward compatibility for
-[CoPaw](https://github.com/agentscope-ai/CoPaw) (personal assistant built on
-AgentScope).
+LoongSuite instrumentation for
+[QwenPaw](https://github.com/agentscope-ai/QwenPaw), a personal assistant built
+on AgentScope.
 
-This package uses the new `qwenpaw` instrumentation name and can instrument
-both runtimes:
-
-- `qwenpaw` from `1.1.0`
-- `copaw` up to `1.0.2`
+Compatibility note: CoPaw was renamed to QwenPaw. Installations pinned to
+`copaw<=1.0.2` are still supported during the transition.
 
 ## Getting Started
 
 QwenPaw is started as its own app (CLI / process entrypoint), not as a library
 you embed with a few lines of `python your_script.py`. The practical approach
-is to install QwenPaw / CoPaw, enable LoongSuite **Site-bootstrap** so
-instrumentation loads before the app imports run, then start it with
-`qwenpaw app` or `copaw app`.
+is to install QwenPaw, enable LoongSuite **Site-bootstrap** so instrumentation
+loads before the app imports run, then start it with `qwenpaw app`.
 
-### Step 1 — Install QwenPaw or CoPaw
+### Step 1 — Install QwenPaw
 
 ```bash
 pip install qwenpaw
-# or
-pip install copaw
 ```
 
 ### Step 2 — Site-bootstrap
@@ -32,8 +25,8 @@ pip install copaw
 **Site-bootstrap** installs a **`.pth` hook** under `site-packages` so a small
 bootstrap module runs very early in the interpreter, before the app imports.
 That path applies the same OpenTelemetry **auto-instrumentation** as
-`loongsuite-instrument` / `sitecustomize`, so you do **not** edit QwenPaw /
-CoPaw source or wrap the CLI in a custom launcher. Installing
+`loongsuite-instrument` / `sitecustomize`, so you do **not** edit QwenPaw
+source or wrap the CLI in a custom launcher. Installing
 `loongsuite-site-bootstrap` does **not** install instrumentations by itself;
 pair it with `loongsuite-bootstrap` (or equivalent `pip install` of the
 packages you need).
@@ -52,7 +45,7 @@ pip install loongsuite-instrumentation-qwenpaw loongsuite-instrumentation-agents
 
 **2.3 — Enable the hook**
 
-In every shell or service manager that starts QwenPaw / CoPaw, set:
+In every shell or service manager that starts QwenPaw, set:
 
 ```bash
 export LOONGSUITE_PYTHON_SITE_BOOTSTRAP=True
@@ -96,39 +89,36 @@ After a successful run you should see a line on stdout such as:
 Do not start Python with `python -S` (that disables `site` and `.pth` processing).
 
 > **Beta / scope:** With the hook enabled, **every** Python process in that
-> environment that imports `site` may load the bootstrap—not only `qwenpaw app`
-> or `copaw app`.
+> environment that imports `site` may load the bootstrap—not only `qwenpaw app`.
 > Use a dedicated virtual environment for production if you need isolation.
 
-### Step 3 — Run QwenPaw / CoPaw
+### Step 3 — Run QwenPaw
 
 With Site-bootstrap enabled in the same shell/session, start the app as usual:
 
 ```bash
 qwenpaw app
-# or
-copaw app
 ```
 
 Telemetry for `AgentRunner.query_handler` (Entry span) is then active without
-modifying QwenPaw / CoPaw source code.
+modifying QwenPaw source code.
 
 ### Optional: programmatic hook
 
 If you control an embedding process and prefer not to use site-bootstrap, you
 can call `QwenPawInstrumentor().instrument()` (and `uninstrument()` when done)
-before QwenPaw / CoPaw runs in that process—the hook point is still
+before QwenPaw runs in that process—the hook point is still
 `AgentRunner.query_handler`. You must still configure the global
 `TracerProvider` / export (for example via OpenTelemetry env vars) consistently
 with the rest of your app.
 
 ## What this package instruments
 
-When you enable LoongSuite for QwenPaw / CoPaw, each user or channel “turn”
-that goes through the app conversation runner produces **one application Entry
-trace** for that turn (span name `enter_ai_application_system`). It covers the
-full path on the app side—approval, built-in commands, or a normal agent
-run—not only the LLM call inside the agent.
+When you enable LoongSuite for QwenPaw, each user or channel “turn” that goes
+through the app conversation runner produces **one application Entry trace** for
+that turn (span name `enter_ai_application_system`). It covers the full path on
+the app side—approval, built-in commands, or a normal agent run—not only the LLM
+call inside the agent.
 
 **Recorded on that span (when the data is available):**
 

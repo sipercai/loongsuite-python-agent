@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-LoongSuite QwenPaw instrumentation with CoPaw compatibility.
+LoongSuite QwenPaw instrumentation.
 
 Instruments ``AgentRunner.query_handler`` with ``ExtendedTelemetryHandler.entry``
 (``enter_ai_application_system``). Agent / tool / LLM spans come from AgentScope
@@ -26,7 +26,7 @@ Usage
     from opentelemetry.instrumentation.qwenpaw import QwenPawInstrumentor
 
     QwenPawInstrumentor().instrument()
-    # ... run QwenPaw / CoPaw app ...
+    # ... run QwenPaw app ...
     QwenPawInstrumentor().uninstrument()
 """
 
@@ -56,7 +56,7 @@ __all__ = ["QwenPawInstrumentor", "CoPawInstrumentor"]
 
 
 class QwenPawInstrumentor(BaseInstrumentor):
-    """LoongSuite instrumentor for QwenPaw / CoPaw Entry telemetry."""
+    """LoongSuite instrumentor for QwenPaw Entry telemetry."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -79,7 +79,7 @@ class QwenPawInstrumentor(BaseInstrumentor):
         runner_modules = tuple(get_installed_runner_modules())
         if not runner_modules:
             raise ModuleNotFoundError(
-                "Neither copaw nor qwenpaw runtime package is installed"
+                "No supported QwenPaw runtime package is installed"
             )
 
         for module_name in runner_modules:
