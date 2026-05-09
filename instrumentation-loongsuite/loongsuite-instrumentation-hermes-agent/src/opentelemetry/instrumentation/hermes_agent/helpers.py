@@ -16,10 +16,23 @@
 
 from __future__ import annotations
 
+import contextvars
 import importlib
 import json
 from types import SimpleNamespace
 from typing import Any
+
+# Per-call state stored in a ContextVar so that concurrent agent invocations
+# (e.g. TUI multi-tab, parallel subagents) do not share / overwrite each
+# other's react-step / token / response metadata. ``state(instance)`` keeps
+# its previous signature for backward compatibility; the ``instance``
+# argument is intentionally unused now.
+_HERMES_STATE: contextvars.ContextVar["dict[str, Any] | None"] = (
+    contextvars.ContextVar(
+        "opentelemetry_hermes_state",
+        default=None,
+    )
+)
 
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
@@ -750,7 +763,18 @@ def apply_skill_attributes(
 
 
 def state(instance: Any) -> dict[str, Any]:
-    current = getattr(instance, "_otel_hermes_state", None)
+    """Return the per-call telemetry state for the current execution context.
+
+    The state dict is stored in ``_HERMES_STATE`` (a ``ContextVar``) instead
+    of being attached to ``instance``, so that concurrent invocations on the
+    same agent instance (e.g. TUI multi-tab, parallel subagents, asyncio
+    ``gather``) get isolated state and do not corrupt each other's react-step
+    span / token counters / response metadata.
+
+    The ``instance`` parameter is kept for backward compatibility with all
+    existing call sites; it is intentionally unused.
+    """
+    current = _HERMES_STATE.get()
     if current is None:
         current = {
             "handler": None,
@@ -767,12 +791,18 @@ def state(instance: Any) -> dict[str, Any]:
             "first_token_monotonic_s": None,
             "active_llm_depth": 0,
         }
-        setattr(instance, "_otel_hermes_state", current)
+        _HERMES_STATE.set(current)
     return current
 
 
 def clear_state(instance: Any) -> None:
-    setattr(instance, "_otel_hermes_state", None)
+    """Drop the per-call state for the current execution context.
+
+    ``instance`` is kept for backward compatibility; the state is now
+    isolated per ``ContextVar`` and clearing it only affects the current
+    asyncio task / thread, never sibling concurrent invocations.
+    """
+    _HERMES_STATE.set(None)
 
 
 def start_step(handler, instance: Any, finish_step) -> None:
