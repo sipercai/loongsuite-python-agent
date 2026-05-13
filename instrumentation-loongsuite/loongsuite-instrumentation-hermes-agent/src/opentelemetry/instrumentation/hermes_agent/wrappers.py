@@ -29,12 +29,13 @@ from opentelemetry.util.genai.types import Error
 from .helpers import (
     agent_output_messages,
     apply_skill_attributes,
-    clear_state,
     create_agent_invocation,
     create_entry_invocation,
     create_llm_invocation,
     create_tool_invocation,
     provider_name,
+    push_state,
+    reset_state,
     should_create_entry_for_agent,
     start_step,
     state,
@@ -144,6 +145,7 @@ class RunConversationWrapper:
         _bind_handler(instance, self._handler)
         user_message = args[0] if args else kwargs.get("user_message", "")
 
+        state_token = push_state(instance)
         current_state = state(instance)
         entry_invocation = None
         if (
@@ -220,7 +222,7 @@ class RunConversationWrapper:
                 )
             raise
         finally:
-            clear_state(instance)
+            reset_state(state_token)
 
 
 class LLMCallWrapper:

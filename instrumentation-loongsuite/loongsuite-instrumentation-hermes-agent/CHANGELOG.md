@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `gen_ai.skill.*` semantic attributes to Hermes skill tool spans when
   `skill_view` or `skill_manage` is executed.
 
+### Fixed
+
+- Fix nested-agent state corruption: `RunConversationWrapper` now uses a
+  push/reset token pattern (`push_state` / `reset_state`) so each invocation
+  gets an isolated `_HERMES_STATE` ContextVar frame. Parent agent state is
+  restored when a child agent returns, preventing child runs from overwriting
+  parent `last_response_id`, token counters, and step metadata.
+
 ## Version 0.5.0.dev (2026-04-24)
 
 ### Added

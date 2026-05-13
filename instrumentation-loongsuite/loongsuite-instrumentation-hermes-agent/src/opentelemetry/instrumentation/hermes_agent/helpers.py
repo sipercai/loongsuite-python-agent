@@ -22,18 +22,6 @@ import json
 from types import SimpleNamespace
 from typing import Any
 
-# Per-call state stored in a ContextVar so that concurrent agent invocations
-# (e.g. TUI multi-tab, parallel subagents) do not share / overwrite each
-# other's react-step / token / response metadata. ``state(instance)`` keeps
-# its previous signature for backward compatibility; the ``instance``
-# argument is intentionally unused now.
-_HERMES_STATE: contextvars.ContextVar["dict[str, Any] | None"] = (
-    contextvars.ContextVar(
-        "opentelemetry_hermes_state",
-        default=None,
-    )
-)
-
 from opentelemetry.semconv._incubating.attributes import (
     gen_ai_attributes as GenAIAttributes,
 )
@@ -56,6 +44,18 @@ from opentelemetry.util.genai.types import (
     Text,
     ToolCall,
     ToolCallResponse,
+)
+
+# Per-invocation state stored as a stack via ContextVar so that:
+#   - Sibling concurrent calls (different asyncio tasks) get isolated state.
+#   - Nested calls (parent agent → child agent) each get their own frame;
+#     the child's frame is pushed on entry and the parent's frame is restored
+#     on exit via ContextVar.reset(token).
+_HERMES_STATE: contextvars.ContextVar["dict[str, Any] | None"] = (
+    contextvars.ContextVar(
+        "opentelemetry_hermes_state",
+        default=None,
+    )
 )
 
 _HERMES_AGENT_SYSTEM = "hermes"
@@ -762,35 +762,54 @@ def apply_skill_attributes(
         invocation.skill_version = str(skill_version)
 
 
-def state(instance: Any) -> dict[str, Any]:
+def _new_state() -> "dict[str, Any]":
+    return {
+        "handler": None,
+        "agent_invocation": None,
+        "current_step_invocation": None,
+        "current_step_round": 0,
+        "pending_step_finish_reason": None,
+        "last_step_finish_reason": None,
+        "last_response_model": None,
+        "last_response_id": None,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "first_token_monotonic_s": None,
+        "active_llm_depth": 0,
+    }
+
+
+def push_state(instance: Any) -> "contextvars.Token[dict[str, Any] | None]":
+    """Push a fresh, isolated state frame for the current invocation.
+
+    Returns a token that must be passed to ``reset_state`` in the
+    corresponding ``finally`` block to restore the caller's frame.  This
+    correctly handles nested agent calls (parent → child): each invocation
+    gets its own frame, and the parent's frame is restored when the child
+    returns.
+    """
+    return _HERMES_STATE.set(_new_state())
+
+
+def reset_state(
+    token: "contextvars.Token[dict[str, Any] | None]",
+) -> None:
+    """Restore the state to the frame that existed before ``push_state``."""
+    _HERMES_STATE.reset(token)
+
+
+def state(instance: Any) -> "dict[str, Any]":
     """Return the per-call telemetry state for the current execution context.
 
-    The state dict is stored in ``_HERMES_STATE`` (a ``ContextVar``) instead
-    of being attached to ``instance``, so that concurrent invocations on the
-    same agent instance (e.g. TUI multi-tab, parallel subagents, asyncio
-    ``gather``) get isolated state and do not corrupt each other's react-step
-    span / token counters / response metadata.
-
-    The ``instance`` parameter is kept for backward compatibility with all
-    existing call sites; it is intentionally unused.
+    Always call ``push_state`` at ``RunConversationWrapper`` entry before
+    reading state.  If called outside that scope (e.g. in a unit test that
+    has not called push_state), a fresh frame is created automatically as a
+    safe fallback.
     """
     current = _HERMES_STATE.get()
     if current is None:
-        current = {
-            "handler": None,
-            "agent_invocation": None,
-            "current_step_invocation": None,
-            "current_step_round": 0,
-            "pending_step_finish_reason": None,
-            "last_step_finish_reason": None,
-            "last_response_model": None,
-            "last_response_id": None,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "total_tokens": 0,
-            "first_token_monotonic_s": None,
-            "active_llm_depth": 0,
-        }
+        current = _new_state()
         _HERMES_STATE.set(current)
     return current
 
@@ -798,9 +817,9 @@ def state(instance: Any) -> dict[str, Any]:
 def clear_state(instance: Any) -> None:
     """Drop the per-call state for the current execution context.
 
-    ``instance`` is kept for backward compatibility; the state is now
-    isolated per ``ContextVar`` and clearing it only affects the current
-    asyncio task / thread, never sibling concurrent invocations.
+    Kept for backward compatibility; prefer ``reset_state(token)`` at
+    ``RunConversationWrapper`` boundaries which correctly restores the parent
+    frame instead of setting to None.
     """
     _HERMES_STATE.set(None)
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import threading
 from types import SimpleNamespace
 
 import pytest
@@ -1622,16 +1623,7 @@ def test_state_is_isolated_across_concurrent_invocations(
 ):
     """Concurrent calls on the same AIAgent must produce isolated react-step
     and token state.
-
-    Regression test for the silent trace corruption that occurred when
-    ``helpers.state(instance)`` stored its per-call state on the instance
-    itself: two concurrent invocations on a shared agent overwrote each
-    other's ``current_step_invocation`` / token counters, leaking step spans
-    and mixing token usage across traces. The fix moves the state into a
-    ``ContextVar`` so each thread / asyncio Task sees an independent dict.
     """
-    import threading
-
     runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
     shared_agent = _FakeAgent(session_id="session-shared")
     barrier = threading.Barrier(2)
