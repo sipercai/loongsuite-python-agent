@@ -31,9 +31,13 @@ Two pieces of shared state are kept off the instance:
    did not opt into instrumentation). The state is never written to
    ``agent`` attributes.
 
-2. ``_REACT_HOOK_REGISTRY`` is a process-global ``id(agent) -> ref count``
-   map guarded by ``_REACT_HOOK_REGISTRY_LOCK``. The first concurrent call
-   on an agent registers four hooks under the fixed name
+2. ``_REACT_HOOK_REGISTRY`` is a process-global
+   ``WeakKeyDictionary[agent -> ref count]`` map guarded by
+   ``_REACT_HOOK_REGISTRY_LOCK``.  Using agent objects as keys (rather
+   than ``id(agent)``) avoids stale entries when CPython recycles memory
+   addresses; weak references let the entry be collected automatically if
+   the agent is garbage-collected without a paired release.  The first
+   concurrent call on an agent registers four hooks under the fixed name
    ``_REACT_HOOK_NAME``; subsequent concurrent calls only bump the ref
    count. Hooks are removed only after the **last** outstanding call on
    that agent unwinds. This is required because AgentScope's hook
@@ -516,8 +520,9 @@ class AgentScopeChatModelWrapper:
 class AgentScopeAgentWrapper:
     """Wrapper for AgentBase that hijacks __init__ to replace __call__.
 
-    Instrumentation assumes at most one in-flight ``__call__`` per agent
-    instance, consistent with AgentScope's ``AgentBase`` implementation.
+    Supports concurrent ``await agent(...)`` calls on the same instance:
+    per-call state is isolated via ``_REACT_STATE`` ContextVar and hook
+    lifetime is managed through ``_acquire_react_hooks``/``_release_react_hooks``.
     """
 
     _original_methods = {}
@@ -588,19 +593,15 @@ class AgentScopeAgentWrapper:
                     state: _ReactStepState | None = None
                     state_token = None
                     if is_react:
-                        # Per-call state lives in a ContextVar so concurrent
-                        # ``__call__`` invocations on the same agent each see
-                        # an independent ``_ReactStepState``. Hooks fire under
-                        # a single shared registration on the instance and
-                        # dispatch to the active state via ``_REACT_STATE``.
                         state = _ReactStepState(
                             owner=call_self,
                             original_context=_get_current_context(),
                         )
                         state_token = _REACT_STATE.set(state)
-                        _acquire_react_hooks(call_self, self._handler)
 
                     try:
+                        if is_react:
+                            _acquire_react_hooks(call_self, self._handler)
                         result = await original_call(
                             call_self, *call_args, **call_kwargs
                         )

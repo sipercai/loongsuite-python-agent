@@ -258,7 +258,14 @@ async def test_hook_registry_releases_after_last_invocation():
 @pytest.mark.asyncio
 async def test_hook_registry_keeps_hooks_during_overlapping_calls():
     """Hooks must stay registered while a sibling concurrent call still
-    needs them; they are removed only after the **last** call unwinds."""
+    needs them; they are removed only after the **last** call unwinds.
+
+    Note: in production, concurrent calls run in separate asyncio tasks
+    with independent ContextVar copies.  This test exercises the refcount
+    logic in a single context, so tokens must be reset in LIFO order
+    (token_b before token_a).  The "first/second unwind" labels refer to
+    the refcount transitions, not to specific production call identities.
+    """
     agent = _FakeAgent()
     handler = _RecordingHandler()
 
@@ -276,8 +283,8 @@ async def test_hook_registry_keeps_hooks_during_overlapping_calls():
     for hook_type in agent._hooks:
         assert _REACT_HOOK_NAME in agent._hooks[hook_type]
 
-    # First call unwinds -> refcount drops to 1, hooks must remain so
-    # that the second call's pending ``_reasoning`` / ``_acting`` keep firing.
+    # First unwind (LIFO: token_b is the most recent .set()) -> refcount
+    # drops from 2 to 1, hooks must remain for the other outstanding call.
     _release_react_hooks(agent)
     _REACT_STATE.reset(token_b)
     assert _REACT_HOOK_REGISTRY.get(agent) == 1
@@ -287,7 +294,7 @@ async def test_hook_registry_keeps_hooks_during_overlapping_calls():
             "was still in flight"
         )
 
-    # Second call unwinds -> hooks finally removed.
+    # Second unwind (token_a) -> refcount drops to 0, hooks removed.
     _release_react_hooks(agent)
     _REACT_STATE.reset(token_a)
     assert agent not in _REACT_HOOK_REGISTRY
