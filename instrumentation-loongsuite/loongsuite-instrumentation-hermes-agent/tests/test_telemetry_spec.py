@@ -1624,7 +1624,9 @@ def test_nested_agent_response_id_does_not_leak_to_parent(
     runtime = _runtime(instrumentation_module, tracer_provider, meter_provider)
     parent_agent = _FakeAgent(session_id="session-parent-rid")
     child_agent = _FakeAgent(session_id="session-child-rid")
-    delegate_call = _tool_call(call_id="call-delegate-rid", name="delegate_task")
+    delegate_call = _tool_call(
+        call_id="call-delegate-rid", name="delegate_task"
+    )
 
     def child_run(user_message):
         runtime.llm_wrapper(
