@@ -35,9 +35,9 @@ class _MsgWithToolBlocks:
 def react_state():
     """Per-test ReactStepState bound to the ``_REACT_STATE`` ContextVar.
 
-    Hooks now read state via ``_REACT_STATE.get()`` instead of
-    ``getattr(agent, "_react_step_state")``; tests must publish state on
-    the ContextVar and reset it on teardown to keep tests isolated.
+    Hooks read state via ``_REACT_STATE.get()`` and validate ``state.owner
+    is agent_self``. Tests must set ``react_state.owner = agent`` before
+    firing hooks so the owner check passes.
     """
     state = _ReactStepState(original_context=None)
     token = _REACT_STATE.set(state)
@@ -53,6 +53,7 @@ def test_nested_reasoning_only_outermost_opens_step_and_counts_tools(
     handler = MagicMock()
     state = react_state
     agent = SimpleNamespace()
+    react_state.owner = agent
     pre = _make_pre_reasoning_hook(handler)
     post = _make_post_reasoning_hook(handler)
 
@@ -81,6 +82,7 @@ def test_nested_acting_only_outermost_decrements_pending(react_state):
     state.pending_acting_count = 2
     state.active_step = MagicMock()
     agent = SimpleNamespace()
+    react_state.owner = agent
     pre_a = _make_pre_acting_hook()
     post_a = _make_post_acting_hook(handler)
 
@@ -129,3 +131,40 @@ def test_hook_no_ops_when_react_state_not_set():
 
     assert handler.start_react_step.call_count == 0
     assert handler.stop_react_step.call_count == 0
+
+
+def test_hook_no_ops_when_owner_mismatch():
+    """Hooks must ignore state owned by a different agent instance.
+
+    Regression: when a child agent is called from within a parent agent's
+    execution context, both share the same ContextVar value.  Before the
+    owner check, the child hook would read and mutate the parent's
+    _ReactStepState (clearing pending_acting_count, bumping react_round),
+    causing the parent step to close prematurely.
+    """
+    handler = MagicMock()
+    parent_agent = SimpleNamespace()
+    child_agent = SimpleNamespace()
+
+    parent_state = _ReactStepState(original_context=None, owner=parent_agent)
+    token = _REACT_STATE.set(parent_state)
+    try:
+        pre = _make_pre_reasoning_hook(handler)
+        post = _make_post_reasoning_hook(handler)
+        pre_a = _make_pre_acting_hook()
+        post_a = _make_post_acting_hook(handler)
+
+        # Child hooks fire in the parent's context — must all no-op.
+        pre(child_agent, {})
+        post(child_agent, {}, _MsgWithToolBlocks(3))
+        pre_a(child_agent, {})
+        post_a(child_agent, {}, None)
+
+        assert parent_state.react_round == 0, "child hook mutated parent react_round"
+        assert parent_state.reasoning_nesting == 0
+        assert parent_state.acting_nesting == 0
+        assert parent_state.pending_acting_count == 0
+        assert handler.start_react_step.call_count == 0
+        assert handler.stop_react_step.call_count == 0
+    finally:
+        _REACT_STATE.reset(token)

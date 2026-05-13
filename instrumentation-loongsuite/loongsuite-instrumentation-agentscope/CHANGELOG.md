@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pin `wrapt` to `< 2.0.0` for AgentScope instrumentation compatibility with
   the current wrapper API usage.
+- Fix cross-agent state leak: add `owner` field to `_ReactStepState` and
+  validate `state.owner is agent_self` in all ReAct hooks, so a child agent
+  called within a parent agent's execution context can no longer read or
+  mutate the parent's step state via the shared `_REACT_STATE` ContextVar.
 
 ## Version 0.4.0 (2026-04-03)
 

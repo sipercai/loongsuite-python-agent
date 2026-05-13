@@ -135,7 +135,7 @@ async def _drive_one_invocation(
     - ``_release_react_hooks`` + ``_REACT_STATE.reset(token)`` mirror the
       wrapper's ``finally`` cleanup.
     """
-    state = _ReactStepState(original_context=None)
+    state = _ReactStepState(owner=agent, original_context=None)
     token = _REACT_STATE.set(state)
     _acquire_react_hooks(agent, handler)
     try:
@@ -263,13 +263,13 @@ async def test_hook_registry_keeps_hooks_during_overlapping_calls():
     handler = _RecordingHandler()
 
     # First call enters the critical region.
-    state_a = _ReactStepState(original_context=None)
+    state_a = _ReactStepState(owner=agent, original_context=None)
     token_a = _REACT_STATE.set(state_a)
     _acquire_react_hooks(agent, handler)
     assert _REACT_HOOK_REGISTRY.get(agent) == 1
 
     # Second concurrent call enters; refcount must bump, hooks unchanged.
-    state_b = _ReactStepState(original_context=None)
+    state_b = _ReactStepState(owner=agent, original_context=None)
     token_b = _REACT_STATE.set(state_b)
     _acquire_react_hooks(agent, handler)
     assert _REACT_HOOK_REGISTRY.get(agent) == 2

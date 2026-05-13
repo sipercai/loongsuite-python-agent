@@ -132,8 +132,14 @@ class _ReactStepState:
     instance, so concurrent ``__call__`` invocations on the same agent
     each see their own state and never overwrite each other's
     ``active_step`` / round counter / pending acting count.
+
+    ``owner`` is the agent instance that created this state.  Every hook
+    checks ``state.owner is agent_self`` before mutating state, so a child
+    agent's hooks cannot accidentally read or modify a parent agent's state
+    when both share the same asyncio execution context.
     """
 
+    owner: Any = field(default=None)
     react_round: int = 0
     active_step: ReactStepInvocation | None = None
     original_context: Any = field(default=None)
@@ -158,7 +164,7 @@ def _make_pre_reasoning_hook(
 
     def hook(agent_self: Any, kwargs: dict) -> None:
         state = _REACT_STATE.get()
-        if state is None:
+        if state is None or state.owner is not agent_self:
             return None
 
         state.reasoning_nesting += 1
@@ -192,7 +198,7 @@ def _make_post_reasoning_hook(
 
     def hook(agent_self: Any, kwargs: dict, output: Any) -> None:
         state = _REACT_STATE.get()
-        if state is None:
+        if state is None or state.owner is not agent_self:
             return None
         try:
             if (
@@ -217,7 +223,7 @@ def _make_pre_acting_hook() -> Any:
 
     def hook(agent_self: Any, kwargs: dict) -> None:
         state = _REACT_STATE.get()
-        if state is None:
+        if state is None or state.owner is not agent_self:
             return None
         state.acting_nesting += 1
         return None
@@ -236,7 +242,7 @@ def _make_post_acting_hook(
 
     def hook(agent_self: Any, kwargs: dict, output: Any) -> None:
         state = _REACT_STATE.get()
-        if state is None:
+        if state is None or state.owner is not agent_self:
             return None
         try:
             if state.acting_nesting == 1 and state.active_step is not None:
@@ -588,6 +594,7 @@ class AgentScopeAgentWrapper:
                         # a single shared registration on the instance and
                         # dispatch to the active state via ``_REACT_STATE``.
                         state = _ReactStepState(
+                            owner=call_self,
                             original_context=_get_current_context(),
                         )
                         state_token = _REACT_STATE.set(state)
