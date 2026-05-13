@@ -160,7 +160,9 @@ def test_hook_no_ops_when_owner_mismatch():
         pre_a(child_agent, {})
         post_a(child_agent, {}, None)
 
-        assert parent_state.react_round == 0, "child hook mutated parent react_round"
+        assert parent_state.react_round == 0, (
+            "child hook mutated parent react_round"
+        )
         assert parent_state.reasoning_nesting == 0
         assert parent_state.acting_nesting == 0
         assert parent_state.pending_acting_count == 0

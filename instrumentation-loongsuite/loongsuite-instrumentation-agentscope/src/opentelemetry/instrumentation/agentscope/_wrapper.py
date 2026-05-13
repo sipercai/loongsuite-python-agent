@@ -313,9 +313,7 @@ def _acquire_react_hooks(
                 # because we never bumped it past this point.
                 for hook_type in installed:
                     try:
-                        agent.remove_instance_hook(
-                            hook_type, _REACT_HOOK_NAME
-                        )
+                        agent.remove_instance_hook(hook_type, _REACT_HOOK_NAME)
                     except Exception:
                         logger.warning(
                             "AgentScope instrumentation: failed to roll "
@@ -349,9 +347,7 @@ def _release_react_hooks(agent: Any) -> None:
         if count <= 0:
             for hook_type in _REACT_HOOK_TYPES:
                 try:
-                    agent.remove_instance_hook(
-                        hook_type, _REACT_HOOK_NAME
-                    )
+                    agent.remove_instance_hook(hook_type, _REACT_HOOK_NAME)
                 except (ValueError, KeyError):
                     # AgentScope already lost the hook (e.g. user code
                     # called remove_instance_hook directly or rebuilt the

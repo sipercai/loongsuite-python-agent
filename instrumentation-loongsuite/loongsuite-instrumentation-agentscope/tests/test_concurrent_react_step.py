@@ -39,8 +39,8 @@ from opentelemetry.instrumentation.agentscope._wrapper import (
     _REACT_HOOK_NAME,
     _REACT_HOOK_REGISTRY,
     _REACT_STATE,
-    _ReactStepState,
     _acquire_react_hooks,
+    _ReactStepState,
     _release_react_hooks,
 )
 
@@ -193,8 +193,12 @@ async def test_state_isolated_across_concurrent_invocations():
     n_arrived_lock = threading.Lock()
 
     results = await asyncio.gather(
-        _drive_one_invocation(agent, handler, barrier, n_arrived, n_arrived_lock),
-        _drive_one_invocation(agent, handler, barrier, n_arrived, n_arrived_lock),
+        _drive_one_invocation(
+            agent, handler, barrier, n_arrived, n_arrived_lock
+        ),
+        _drive_one_invocation(
+            agent, handler, barrier, n_arrived, n_arrived_lock
+        ),
     )
 
     # Each invocation observed its own round counter advancing 1 -> 2,
@@ -237,8 +241,12 @@ async def test_hook_registry_releases_after_last_invocation():
     n_arrived_lock = threading.Lock()
 
     await asyncio.gather(
-        _drive_one_invocation(agent, handler, barrier, n_arrived, n_arrived_lock),
-        _drive_one_invocation(agent, handler, barrier, n_arrived, n_arrived_lock),
+        _drive_one_invocation(
+            agent, handler, barrier, n_arrived, n_arrived_lock
+        ),
+        _drive_one_invocation(
+            agent, handler, barrier, n_arrived, n_arrived_lock
+        ),
     )
 
     assert agent not in _REACT_HOOK_REGISTRY, (
