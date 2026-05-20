@@ -1,0 +1,226 @@
+# Copyright The OpenTelemetry Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import asyncio
+import json
+from types import SimpleNamespace
+
+import litellm
+
+from opentelemetry.instrumentation.litellm import LiteLLMInstrumentor
+
+
+def _chat_response(model: str, content: str):
+    return SimpleNamespace(
+        id=f"chatcmpl-{model}",
+        model=model,
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(
+                    role="assistant",
+                    content=content,
+                    tool_calls=None,
+                ),
+                finish_reason="stop",
+            )
+        ],
+        usage=SimpleNamespace(
+            prompt_tokens=4,
+            completion_tokens=3,
+            total_tokens=7,
+        ),
+    )
+
+
+def _chunk(choices, usage=None):
+    return SimpleNamespace(
+        id="chatcmpl-stream",
+        model="qwen-turbo",
+        choices=choices,
+        usage=usage,
+    )
+
+
+def _choice(index, content=None, finish_reason=None, tool_calls=None):
+    return SimpleNamespace(
+        index=index,
+        delta=SimpleNamespace(content=content, tool_calls=tool_calls),
+        finish_reason=finish_reason,
+    )
+
+
+def _tool_delta(index, tool_call_id=None, name=None, arguments=None):
+    return SimpleNamespace(
+        index=index,
+        id=tool_call_id,
+        function=SimpleNamespace(name=name, arguments=arguments),
+    )
+
+
+def test_completion_positional_args_feed_genai_invocation(
+    monkeypatch, tracer_provider, span_exporter
+):
+    def fake_completion(model, messages, **kwargs):
+        assert model == "qwen-turbo"
+        assert messages[0]["content"] == "hello"
+        assert kwargs["temperature"] == 0.2
+        return _chat_response(model, "hello back")
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        litellm.completion(
+            "qwen-turbo",
+            [{"role": "user", "content": "hello"}],
+            temperature=0.2,
+        )
+    finally:
+        instrumentor.uninstrument()
+
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    span = spans[0]
+    assert span.attributes["gen_ai.span.kind"] == "LLM"
+    assert span.attributes["gen_ai.provider.name"] == "dashscope"
+    assert span.attributes["gen_ai.request.model"] == "qwen-turbo"
+
+    input_messages = json.loads(span.attributes["gen_ai.input.messages"])
+    assert input_messages[0]["role"] == "user"
+    assert input_messages[0]["parts"][0]["content"] == "hello"
+
+
+def test_streaming_completion_records_ttft_choices_and_tool_calls(
+    monkeypatch, tracer_provider, span_exporter
+):
+    chunks = [
+        _chunk(
+            [
+                _choice(0, content="hel"),
+                _choice(1, content="bon"),
+            ]
+        ),
+        _chunk(
+            [
+                _choice(
+                    0,
+                    content="lo",
+                    tool_calls=[
+                        _tool_delta(
+                            0,
+                            tool_call_id="call_1",
+                            name="lookup",
+                            arguments='{"q":',
+                        )
+                    ],
+                ),
+                _choice(1, content="jour"),
+            ]
+        ),
+        _chunk(
+            [
+                _choice(
+                    0,
+                    finish_reason="tool_calls",
+                    tool_calls=[
+                        _tool_delta(0, arguments='"weather"}')
+                    ],
+                ),
+                _choice(1, finish_reason="stop"),
+            ],
+            usage=SimpleNamespace(
+                prompt_tokens=6,
+                completion_tokens=5,
+                total_tokens=11,
+            ),
+        ),
+    ]
+
+    def fake_completion(*args, **kwargs):
+        assert kwargs["stream"] is True
+        assert kwargs["stream_options"] == {"include_usage": True}
+        return iter(chunks)
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        response = litellm.completion(
+            model="qwen-turbo",
+            messages=[{"role": "user", "content": "stream please"}],
+            stream=True,
+            n=2,
+        )
+        assert len(list(response)) == 3
+    finally:
+        instrumentor.uninstrument()
+
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    span = spans[0]
+    assert "gen_ai.response.time_to_first_token" in span.attributes
+    assert span.attributes["gen_ai.request.choice.count"] == 2
+    assert span.attributes["gen_ai.usage.input_tokens"] == 6
+    assert span.attributes["gen_ai.usage.output_tokens"] == 5
+
+    output_messages = json.loads(span.attributes["gen_ai.output.messages"])
+    assert len(output_messages) == 2
+    assert output_messages[0]["parts"][0]["content"] == "hello"
+    assert output_messages[1]["parts"][0]["content"] == "bonjour"
+    tool_call = output_messages[0]["parts"][1]
+    assert tool_call["type"] == "tool_call"
+    assert tool_call["id"] == "call_1"
+    assert tool_call["name"] == "lookup"
+    assert tool_call["arguments"] == {"q": "weather"}
+
+
+def test_async_completion_concurrent_calls_keep_separate_spans(
+    monkeypatch, tracer_provider, span_exporter
+):
+    async def fake_acompletion(model, messages, **kwargs):
+        await asyncio.sleep(0.01 if model == "qwen-turbo" else 0)
+        return _chat_response(model, f"reply to {messages[0]['content']}")
+
+    monkeypatch.setattr(litellm, "acompletion", fake_acompletion)
+
+    async def run_calls():
+        return await asyncio.gather(
+            litellm.acompletion(
+                "qwen-turbo",
+                [{"role": "user", "content": "first"}],
+            ),
+            litellm.acompletion(
+                "qwen-plus",
+                [{"role": "user", "content": "second"}],
+            ),
+        )
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        asyncio.run(run_calls())
+    finally:
+        instrumentor.uninstrument()
+
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 2
+    observed = {
+        json.loads(span.attributes["gen_ai.input.messages"])[0]["parts"][0][
+            "content"
+        ]: span.attributes["gen_ai.request.model"]
+        for span in spans
+    }
+    assert observed == {"first": "qwen-turbo", "second": "qwen-plus"}
