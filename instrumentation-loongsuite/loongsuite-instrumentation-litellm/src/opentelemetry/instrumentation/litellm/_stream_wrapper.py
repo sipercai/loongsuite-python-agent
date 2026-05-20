@@ -17,9 +17,154 @@ Stream wrapper for LiteLLM streaming responses.
 """
 
 import logging
+import timeit
 from typing import Any, Iterator, Optional
 
+from opentelemetry.instrumentation.litellm._utils import (
+    get_litellm_value,
+    parse_tool_call_arguments,
+)
+from opentelemetry.util.genai.types import OutputMessage, Text, ToolCall
+
 logger = logging.getLogger(__name__)
+
+
+class _StreamAccumulator:
+    """Accumulate LiteLLM streaming deltas into GenAI output messages."""
+
+    def __init__(self, invocation: Any = None):
+        self.invocation = invocation
+        self._choice_states: dict[int, dict[str, Any]] = {}
+
+    def record_chunk(self, chunk: Any) -> None:
+        choices = get_litellm_value(chunk, "choices") or []
+        if not choices:
+            return
+
+        saw_token = False
+        for default_index, choice in enumerate(choices):
+            index = get_litellm_value(choice, "index", default_index)
+            if not isinstance(index, int):
+                index = default_index
+
+            state = self._choice_states.setdefault(
+                index,
+                {
+                    "role": "assistant",
+                    "content": [],
+                    "finish_reason": None,
+                    "tool_calls": {},
+                },
+            )
+
+            finish_reason = get_litellm_value(choice, "finish_reason")
+            if finish_reason:
+                state["finish_reason"] = finish_reason
+
+            delta = get_litellm_value(choice, "delta")
+            if delta is None:
+                continue
+
+            role = get_litellm_value(delta, "role")
+            if role:
+                state["role"] = role
+
+            content = get_litellm_value(delta, "content")
+            if content:
+                state["content"].append(content)
+                saw_token = True
+
+            tool_calls = get_litellm_value(delta, "tool_calls")
+            if tool_calls:
+                saw_token = True
+                self._record_tool_calls(state, tool_calls)
+
+        if saw_token and self.invocation is not None:
+            first_token_time = getattr(
+                self.invocation, "monotonic_first_token_s", None
+            )
+            if first_token_time is None:
+                self.invocation.monotonic_first_token_s = (
+                    timeit.default_timer()
+                )
+
+    def get_output_messages(self) -> list[OutputMessage]:
+        output_messages = []
+        for index in sorted(self._choice_states):
+            state = self._choice_states[index]
+            parts = []
+            content = "".join(state["content"])
+            if content:
+                parts.append(Text(content=content))
+
+            for tool_index in sorted(state["tool_calls"]):
+                tool_call = state["tool_calls"][tool_index]
+                arguments = parse_tool_call_arguments(
+                    tool_call.get("arguments", "")
+                )
+                if (
+                    tool_call.get("id")
+                    or tool_call.get("name")
+                    or arguments not in (None, "")
+                ):
+                    parts.append(
+                        ToolCall(
+                            id=tool_call.get("id"),
+                            name=tool_call.get("name", ""),
+                            arguments=arguments,
+                        )
+                    )
+
+            if not parts:
+                continue
+
+            output_messages.append(
+                OutputMessage(
+                    role=state["role"] or "assistant",
+                    parts=parts,
+                    finish_reason=state["finish_reason"] or "stop",
+                )
+            )
+        return output_messages
+
+    def finish_reasons(self) -> list[str]:
+        finish_reasons = []
+        for state in self._choice_states.values():
+            if state["finish_reason"]:
+                finish_reasons.append(state["finish_reason"])
+        return finish_reasons
+
+    @staticmethod
+    def _record_tool_calls(
+        state: dict[str, Any], tool_calls: list[Any]
+    ) -> None:
+        for fallback_index, tool_call in enumerate(tool_calls):
+            tool_index = get_litellm_value(tool_call, "index", fallback_index)
+            if not isinstance(tool_index, int):
+                tool_index = fallback_index
+
+            stored = state["tool_calls"].setdefault(
+                tool_index,
+                {"id": None, "name": "", "arguments": ""},
+            )
+
+            tool_id = get_litellm_value(tool_call, "id")
+            if tool_id:
+                stored["id"] = tool_id
+
+            function = get_litellm_value(tool_call, "function")
+            function_name = get_litellm_value(function, "name")
+            if function_name:
+                stored["name"] = function_name
+
+            arguments = get_litellm_value(function, "arguments")
+            if isinstance(arguments, str):
+                if isinstance(stored["arguments"], str):
+                    stored["arguments"] += arguments
+                else:
+                    stored["arguments"] = arguments
+            elif arguments:
+                stored["arguments"] = arguments
 
 
 class StreamWrapper:
@@ -31,10 +176,17 @@ class StreamWrapper:
     Supports context manager protocol for reliable cleanup.
     """
 
-    def __init__(self, stream: Iterator, span: Any, callback: callable):
+    def __init__(
+        self,
+        stream: Iterator,
+        span: Any,
+        callback: callable,
+        invocation: Any = None,
+    ):
         self.stream = stream
         self.span = span
         self.callback = callback
+        self._accumulator = _StreamAccumulator(invocation)
         self.last_chunk = None  # Only keep last chunk to avoid memory leak
         self.chunk_count = 0
         self._finalized = False
@@ -48,17 +200,7 @@ class StreamWrapper:
         try:
             chunk = next(self.stream)
 
-            # Accumulate content from delta for output messages
-            if hasattr(chunk, "choices") and chunk.choices:
-                choice = chunk.choices[0]
-                if hasattr(choice, "delta"):
-                    delta = choice.delta
-                    # Accumulate text content
-                    if hasattr(delta, "content") and delta.content:
-                        self.accumulated_content.append(delta.content)
-                    # Accumulate tool calls
-                    if hasattr(delta, "tool_calls") and delta.tool_calls:
-                        self.accumulated_tool_calls.extend(delta.tool_calls)
+            self._accumulator.record_chunk(chunk)
 
             # Only keep the last chunk (contains usage info)
             self.last_chunk = chunk
@@ -101,7 +243,8 @@ class StreamWrapper:
         self._finalized = True
         try:
             # Call the callback with only the last chunk
-            # Note: The callback is responsible for calling handler.stop_llm() or handler.fail_llm()
+            # Note: The callback is responsible for calling handler.stop_llm()
+            # or handler.fail_llm().
             # which will end the span. We no longer call span.end() here.
             if self.callback:
                 self.callback(self.span, self.last_chunk, error)
@@ -110,6 +253,12 @@ class StreamWrapper:
             self.last_chunk = None
         except Exception as e:
             logger.debug(f"Error finalizing stream: {e}")
+
+    def get_output_messages(self) -> list[OutputMessage]:
+        return self._accumulator.get_output_messages()
+
+    def finish_reasons(self) -> list[str]:
+        return self._accumulator.finish_reasons()
 
 
 class AsyncStreamWrapper:
@@ -125,10 +274,17 @@ class AsyncStreamWrapper:
     3. Letting the wrapper detect stream exhaustion
     """
 
-    def __init__(self, stream, span: Any, callback: callable):
+    def __init__(
+        self,
+        stream,
+        span: Any,
+        callback: callable,
+        invocation: Any = None,
+    ):
         self.stream = stream
         self.span = span
         self.callback = callback
+        self._accumulator = _StreamAccumulator(invocation)
         self.last_chunk = None  # Only keep last chunk to avoid memory leak
         self.chunk_count = 0
         self._finalized = False
@@ -150,19 +306,7 @@ class AsyncStreamWrapper:
         """
         try:
             async for chunk in self.stream:
-                # Accumulate content from delta for output messages
-                if hasattr(chunk, "choices") and chunk.choices:
-                    choice = chunk.choices[0]
-                    if hasattr(choice, "delta"):
-                        delta = choice.delta
-                        # Accumulate text content
-                        if hasattr(delta, "content") and delta.content:
-                            self.accumulated_content.append(delta.content)
-                        # Accumulate tool calls
-                        if hasattr(delta, "tool_calls") and delta.tool_calls:
-                            self.accumulated_tool_calls.extend(
-                                delta.tool_calls
-                            )
+                self._accumulator.record_chunk(chunk)
 
                 # Only keep the last chunk (contains usage info)
                 self.last_chunk = chunk
@@ -213,7 +357,8 @@ class AsyncStreamWrapper:
         self._finalized = True
         try:
             # Call the callback with only the last chunk
-            # Note: The callback is responsible for calling handler.stop_llm() or handler.fail_llm()
+            # Note: The callback is responsible for calling handler.stop_llm()
+            # or handler.fail_llm().
             # which will end the span. We no longer call span.end() here.
             if self.callback:
                 try:
@@ -225,3 +370,9 @@ class AsyncStreamWrapper:
             self.last_chunk = None
         except Exception as e:
             logger.debug(f"Error finalizing async stream: {e}")
+
+    def get_output_messages(self) -> list[OutputMessage]:
+        return self._accumulator.get_output_messages()
+
+    def finish_reasons(self) -> list[str]:
+        return self._accumulator.finish_reasons()
