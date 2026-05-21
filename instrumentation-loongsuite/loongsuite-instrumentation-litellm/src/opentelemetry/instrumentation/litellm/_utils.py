@@ -21,6 +21,7 @@ import json
 import logging
 from collections.abc import Callable, Mapping
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import (
     GenAiOperationNameValues,
@@ -40,6 +41,19 @@ logger = logging.getLogger(__name__)
 
 _COMPLETION_POSITIONAL_PARAMETERS = ("model", "messages")
 _EMBEDDING_POSITIONAL_PARAMETERS = ("model", "input")
+_BASE_URL_PROVIDER_MAP = (
+    ("dashscope.aliyuncs.com", "dashscope"),
+    ("api.openai.com", "openai"),
+    ("api.deepseek.com", "deepseek"),
+    ("anthropic.com", "anthropic"),
+    ("generativelanguage.googleapis.com", "google"),
+)
+_BASE_URL_KWARG_NAMES = (
+    "api_base",
+    "base_url",
+    "api_endpoint",
+    "endpoint",
+)
 
 
 def get_litellm_value(obj: Any, key: str, default: Any = None) -> Any:
@@ -103,7 +117,7 @@ def parse_tool_call_arguments(arguments: Any) -> Any:
     if isinstance(arguments, str) and arguments:
         try:
             return json.loads(arguments)
-        except Exception:
+        except (TypeError, ValueError):
             return arguments
     return arguments
 
@@ -146,7 +160,7 @@ def apply_litellm_embedding_response_to_invocation(
         invocation.response_model_name = response_model
 
     usage = get_litellm_value(response, "usage")
-    _apply_usage_to_invocation(invocation, usage)
+    _apply_usage_to_invocation(invocation, usage, include_output_tokens=False)
 
     data = get_litellm_value(response, "data")
     if not data:
@@ -172,7 +186,12 @@ def extract_finish_reasons_from_litellm_response(response: Any) -> list[str]:
     return finish_reasons
 
 
-def _apply_usage_to_invocation(invocation: Any, usage: Any) -> None:
+def _apply_usage_to_invocation(
+    invocation: Any,
+    usage: Any,
+    *,
+    include_output_tokens: bool = True,
+) -> None:
     if not usage:
         return
 
@@ -180,12 +199,17 @@ def _apply_usage_to_invocation(invocation: Any, usage: Any) -> None:
     output_tokens = get_litellm_value(usage, "completion_tokens")
     total_tokens = get_litellm_value(usage, "total_tokens")
 
-    if output_tokens is None and input_tokens is not None and total_tokens:
+    if (
+        include_output_tokens
+        and output_tokens is None
+        and input_tokens is not None
+        and total_tokens
+    ):
         output_tokens = max(total_tokens - input_tokens, 0)
 
     if input_tokens is not None:
         invocation.input_tokens = input_tokens
-    if output_tokens is not None:
+    if include_output_tokens and output_tokens is not None:
         invocation.output_tokens = output_tokens
 
     prompt_details = get_litellm_value(usage, "prompt_tokens_details")
@@ -316,6 +340,41 @@ def parse_provider_from_model(model: str) -> Optional[str]:
         return "google"
 
     return "unknown"
+
+
+def parse_provider_from_base_url(base_url: Any) -> Optional[str]:
+    """Infer provider from known OpenAI-compatible service endpoints."""
+    if not base_url or not isinstance(base_url, str):
+        return None
+
+    try:
+        host = urlparse(base_url).hostname or base_url
+    except ValueError:
+        host = base_url
+
+    host = host.lower()
+    for fragment, provider in _BASE_URL_PROVIDER_MAP:
+        if fragment in host:
+            return provider
+    return None
+
+
+def resolve_litellm_provider(model: Any, kwargs: Mapping[str, Any]) -> str:
+    """Resolve the actual GenAI provider for a LiteLLM request."""
+    for name in _BASE_URL_KWARG_NAMES:
+        provider = parse_provider_from_base_url(kwargs.get(name))
+        if provider:
+            return provider
+
+    provider = parse_provider_from_model(model)
+    if provider not in (None, "unknown"):
+        return provider
+
+    custom_provider = kwargs.get("custom_llm_provider")
+    if custom_provider:
+        return custom_provider
+
+    return provider or "unknown"
 
 
 def parse_model_name(model: str) -> str:
@@ -506,10 +565,7 @@ def create_llm_invocation_from_litellm(**kwargs):
 
     # Parse model name (remove provider prefix if present)
     model = kwargs.get("model", "unknown_model")
-    provider = parse_provider_from_model(model)
-    if provider in (None, "unknown"):
-        provider = kwargs.get("custom_llm_provider") or provider
-    provider = provider or "unknown"
+    provider = resolve_litellm_provider(model, kwargs)
     messages = kwargs.get("messages", [])
 
     # Convert messages to GenAI format
@@ -519,7 +575,7 @@ def create_llm_invocation_from_litellm(**kwargs):
 
     invocation = LLMInvocation(
         request_model=request_model,
-        provider=provider or "unknown",
+        provider=provider,
         operation_name=GenAiOperationNameValues.CHAT.value,
         input_messages=input_messages,
     )
@@ -590,17 +646,14 @@ def create_embedding_invocation_from_litellm(**kwargs):
 
     # Extract request parameters
     model = kwargs.get("model", "unknown")
-    provider = parse_provider_from_model(model)
-    if provider in (None, "unknown"):
-        provider = kwargs.get("custom_llm_provider") or provider
-    provider = provider or "unknown"
+    provider = resolve_litellm_provider(model, kwargs)
 
     # Parse model name (remove provider prefix if present)
     request_model = parse_model_name(model)
 
     invocation = EmbeddingInvocation(
         request_model=request_model,
-        provider=provider or "unknown",
+        provider=provider,
     )
 
     # Set encoding formats if present

@@ -30,21 +30,36 @@ API_BASE = os.getenv(
     "LITELLM_API_BASE",
     "https://dashscope.aliyuncs.com/compatible-mode/v1",
 )
+CUSTOM_PROVIDER = os.getenv("LITELLM_CUSTOM_LLM_PROVIDER", "openai")
 
 
 def _configure_provider() -> None:
-    if os.getenv("DASHSCOPE_API_KEY") and not os.getenv("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = os.environ["DASHSCOPE_API_KEY"]
-
-    os.environ.setdefault("OPENAI_API_BASE", API_BASE)
-    os.environ.setdefault("DASHSCOPE_API_BASE", API_BASE)
     litellm.telemetry = False
+
+
+def _provider_kwargs() -> dict[str, str]:
+    api_key = (
+        os.getenv("LITELLM_API_KEY")
+        or os.getenv("DASHSCOPE_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+    )
+    if not api_key:
+        raise SystemExit(
+            "Missing required API key: set LITELLM_API_KEY, "
+            "DASHSCOPE_API_KEY, or OPENAI_API_KEY"
+        )
+
+    return {
+        "custom_llm_provider": CUSTOM_PROVIDER,
+        "api_key": api_key,
+        "api_base": API_BASE,
+    }
 
 
 def run_non_streaming() -> None:
     response = litellm.completion(
         model=MODEL,
-        custom_llm_provider="openai",
+        **_provider_kwargs(),
         messages=[
             {
                 "role": "user",
@@ -60,7 +75,7 @@ def run_non_streaming() -> None:
 def run_streaming() -> None:
     stream = litellm.completion(
         model=MODEL,
-        custom_llm_provider="openai",
+        **_provider_kwargs(),
         messages=[
             {
                 "role": "user",
@@ -91,7 +106,7 @@ async def run_concurrent() -> None:
     async def call(prompt: str):
         return await litellm.acompletion(
             model=MODEL,
-            custom_llm_provider="openai",
+            **_provider_kwargs(),
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
             max_tokens=32,
@@ -100,7 +115,9 @@ async def run_concurrent() -> None:
     responses = await asyncio.gather(*(call(prompt) for prompt in prompts))
     print(
         "concurrent:",
-        ", ".join(response.choices[0].message.content[:24] for response in responses),
+        ", ".join(
+            response.choices[0].message.content[:24] for response in responses
+        ),
     )
 
 
