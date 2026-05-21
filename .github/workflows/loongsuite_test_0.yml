@@ -31,9 +31,29 @@ env:
   PIP_EXISTS_ACTION: w
 
 jobs:
+  loongsuite_changes:
+    name: LoongSuite changed packages
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.detect.outputs.full }}
+      packages: ${{ steps.detect.outputs.packages }}
+      reason: ${{ steps.detect.outputs.reason }}
+    steps:
+      - name: Checkout repo @ SHA - ${{ github.sha }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect LoongSuite changes
+        id: detect
+        run: python .github/scripts/detect_loongsuite_changes.py
 
   py310-test-loongsuite-instrumentation-agentscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -53,6 +73,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-agentscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -72,6 +96,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-agentscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -91,6 +119,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-agentscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -110,6 +142,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-agentscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -129,6 +165,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-agentscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -148,6 +188,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-agentscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -167,6 +211,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-agentscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-agentscope-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -186,6 +234,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-dashscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-oldest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -205,6 +257,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-dashscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-latest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -224,6 +280,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-dashscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -243,6 +303,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-dashscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -262,6 +326,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-dashscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -281,6 +349,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-dashscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -300,6 +372,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-dashscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -319,6 +395,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-dashscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -338,6 +418,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-dashscope-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -357,6 +441,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-dashscope-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-dashscope-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -376,6 +464,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -395,6 +487,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -414,6 +510,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -433,6 +533,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -452,6 +556,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -471,6 +579,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -490,6 +602,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -509,6 +625,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -528,6 +648,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-google-adk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-oldest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -547,6 +671,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-google-adk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-latest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -566,6 +694,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-google-adk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -585,6 +717,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-google-adk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -604,6 +740,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-google-adk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -623,6 +763,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-google-adk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -642,6 +786,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-google-adk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -661,6 +809,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-google-adk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -680,6 +832,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-google-adk-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -699,6 +855,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-google-adk-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-google-adk-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -718,6 +878,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-langchain-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-oldest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -737,6 +901,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-langchain-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-latest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -756,6 +924,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-langchain-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -775,6 +947,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-langchain-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -794,6 +970,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-langchain-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -813,6 +993,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-langchain-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -832,6 +1016,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-langchain-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -851,6 +1039,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-langchain-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -870,6 +1062,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-langchain-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -889,6 +1085,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-langchain-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langchain-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -908,6 +1108,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-langgraph-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-oldest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -927,6 +1131,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-langgraph-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-latest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -946,6 +1154,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-langgraph-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -965,6 +1177,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-langgraph-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -984,6 +1200,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-langgraph-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1003,6 +1223,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-langgraph-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1022,6 +1246,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-langgraph-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1041,6 +1269,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-langgraph-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1060,6 +1292,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-langgraph-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1079,6 +1315,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-langgraph-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-langgraph-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1098,6 +1338,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-qwen-agent-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-oldest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1117,6 +1361,10 @@ jobs:
 
   py39-test-loongsuite-instrumentation-qwen-agent-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-latest 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1136,6 +1384,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-qwen-agent-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1155,6 +1407,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-qwen-agent-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1174,6 +1430,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-qwen-agent-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1193,6 +1453,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-qwen-agent-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1212,6 +1476,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-qwen-agent-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1231,6 +1499,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-qwen-agent-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1250,6 +1522,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-qwen-agent-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1269,6 +1545,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-qwen-agent-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwen-agent-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1288,6 +1568,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-mem0-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-oldest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1307,6 +1591,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-mem0-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1326,6 +1614,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-mem0-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-oldest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1345,6 +1637,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-mem0-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1364,6 +1660,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-mem0-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-oldest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1383,6 +1683,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-mem0-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1402,6 +1706,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-mem0-oldest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-oldest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1421,6 +1729,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-mem0-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-mem0-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1440,6 +1752,10 @@ jobs:
 
   py39-test-util-genai_ubuntu-latest:
     name: LoongSuite util-genai 3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1459,6 +1775,10 @@ jobs:
 
   py310-test-util-genai_ubuntu-latest:
     name: LoongSuite util-genai 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1478,6 +1798,10 @@ jobs:
 
   py311-test-util-genai_ubuntu-latest:
     name: LoongSuite util-genai 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1497,6 +1821,10 @@ jobs:
 
   py312-test-util-genai_ubuntu-latest:
     name: LoongSuite util-genai 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1516,6 +1844,10 @@ jobs:
 
   py313-test-util-genai_ubuntu-latest:
     name: LoongSuite util-genai 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1535,6 +1867,10 @@ jobs:
 
   py314-test-util-genai_ubuntu-latest:
     name: LoongSuite util-genai 3.14 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1554,6 +1890,10 @@ jobs:
 
   pypy3-test-util-genai_ubuntu-latest:
     name: LoongSuite util-genai pypy-3.9 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1573,6 +1913,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-litellm_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-litellm 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-litellm|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1592,6 +1936,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-litellm_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-litellm 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-litellm|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1611,6 +1959,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-litellm_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-litellm 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-litellm|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1630,6 +1982,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-litellm_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-litellm 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-litellm|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1649,6 +2005,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-crewai_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-crewai 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-crewai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1668,6 +2028,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-crewai_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-crewai 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-crewai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1687,6 +2051,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-crewai_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-crewai 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-crewai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1706,6 +2074,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-crewai_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-crewai 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-crewai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1725,6 +2097,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-qwenpaw-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-latest 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1744,6 +2120,10 @@ jobs:
 
   py310-test-loongsuite-instrumentation-qwenpaw-legacy_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-legacy 3.10 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1763,6 +2143,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-qwenpaw-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-latest 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1782,6 +2166,10 @@ jobs:
 
   py311-test-loongsuite-instrumentation-qwenpaw-legacy_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-legacy 3.11 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1801,6 +2189,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-qwenpaw-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-latest 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1820,6 +2212,10 @@ jobs:
 
   py312-test-loongsuite-instrumentation-qwenpaw-legacy_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-legacy 3.12 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1839,6 +2235,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-qwenpaw-latest_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-latest 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1858,6 +2258,10 @@ jobs:
 
   py313-test-loongsuite-instrumentation-qwenpaw-legacy_ubuntu-latest:
     name: LoongSuite loongsuite-instrumentation-qwenpaw-legacy 3.13 Ubuntu
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

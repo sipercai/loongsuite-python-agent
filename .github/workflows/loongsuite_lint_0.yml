@@ -31,9 +31,29 @@ env:
   PIP_EXISTS_ACTION: w
 
 jobs:
+  loongsuite_changes:
+    name: LoongSuite changed packages
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.detect.outputs.full }}
+      packages: ${{ steps.detect.outputs.packages }}
+      reason: ${{ steps.detect.outputs.reason }}
+    steps:
+      - name: Checkout repo @ SHA - ${{ github.sha }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect LoongSuite changes
+        id: detect
+        run: python .github/scripts/detect_loongsuite_changes.py
 
   lint-loongsuite-instrumentation-agentscope:
     name: LoongSuite loongsuite-instrumentation-agentscope
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-agentscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -53,6 +73,10 @@ jobs:
 
   lint-loongsuite-instrumentation-dashscope:
     name: LoongSuite loongsuite-instrumentation-dashscope
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-dashscope|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -72,6 +96,10 @@ jobs:
 
   lint-loongsuite-instrumentation-claude-agent-sdk:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-claude-agent-sdk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -91,6 +119,10 @@ jobs:
 
   lint-loongsuite-instrumentation-google-adk:
     name: LoongSuite loongsuite-instrumentation-google-adk
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-google-adk|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -110,6 +142,10 @@ jobs:
 
   lint-loongsuite-instrumentation-langchain:
     name: LoongSuite loongsuite-instrumentation-langchain
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langchain|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -129,6 +165,10 @@ jobs:
 
   lint-loongsuite-instrumentation-langgraph:
     name: LoongSuite loongsuite-instrumentation-langgraph
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-langgraph|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -148,6 +188,10 @@ jobs:
 
   lint-loongsuite-instrumentation-qwen-agent:
     name: LoongSuite loongsuite-instrumentation-qwen-agent
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwen-agent|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -167,6 +211,10 @@ jobs:
 
   lint-loongsuite-instrumentation-mem0:
     name: LoongSuite loongsuite-instrumentation-mem0
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-mem0|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -186,6 +234,10 @@ jobs:
 
   lint-util-genai:
     name: LoongSuite util-genai
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|util-genai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -205,6 +257,10 @@ jobs:
 
   lint-loongsuite-instrumentation-litellm:
     name: LoongSuite loongsuite-instrumentation-litellm
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-litellm|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -224,6 +280,10 @@ jobs:
 
   lint-loongsuite-instrumentation-crewai:
     name: LoongSuite loongsuite-instrumentation-crewai
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-crewai|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -243,6 +303,10 @@ jobs:
 
   lint-loongsuite-instrumentation-qwenpaw:
     name: LoongSuite loongsuite-instrumentation-qwenpaw
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|loongsuite-instrumentation-qwenpaw|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

@@ -16,6 +16,15 @@ _tox_lint_env_regex = re_compile(r"lint-(?P<name>[-\w]+)")
 _tox_contrib_env_regex = re_compile(
     r"py39-test-(?P<name>[-\w]+\w)-?(?P<contrib_requirements>\d+)?"
 )
+_loongsuite_test_variant_suffixes = ("-oldest", "-latest", "-legacy")
+
+
+def _get_loongsuite_package_name(name: str) -> str:
+    for suffix in _loongsuite_test_variant_suffixes:
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+
+    return name
 
 
 def get_tox_envs(tox_ini_path: Path) -> list:
@@ -90,6 +99,7 @@ def get_test_job_datas(tox_envs: list, operating_systems: list) -> list:
                         f"{aliased_python_version} "
                         f"{os_alias[operating_system]}"
                     ),
+                    "package": _get_loongsuite_package_name(groups["name"]),
                     "python_version": aliased_python_version,
                     "tox_env": tox_env,
                     "os": operating_system,
@@ -114,6 +124,7 @@ def get_lint_job_datas(tox_envs: list) -> list:
             {
                 "name": f"{tox_env}",
                 "ui_name": f"{tox_lint_env_match.groupdict()['name']}",
+                "package": tox_lint_env_match.groupdict()["name"],
                 "tox_env": tox_env,
             }
         )

@@ -31,10 +31,31 @@ env:
   PIP_EXISTS_ACTION: w
 
 jobs:
+  loongsuite_changes:
+    name: LoongSuite changed packages
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${% raw %}{{ steps.detect.outputs.full }}{% endraw %}
+      packages: ${% raw %}{{ steps.detect.outputs.packages }}{% endraw %}
+      reason: ${% raw %}{{ steps.detect.outputs.reason }}{% endraw %}
+    steps:
+      - name: Checkout repo @ SHA - ${% raw %}{{ github.sha }}{% endraw %}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect LoongSuite changes
+        id: detect
+        run: python .github/scripts/detect_loongsuite_changes.py
+
   {%- for job_data in job_datas %}
 
   {{ job_data.name }}:
     name: LoongSuite {{ job_data.ui_name }}
+    needs: loongsuite_changes
+    if: |
+      needs.loongsuite_changes.outputs.full == 'true' ||
+      contains(needs.loongsuite_changes.outputs.packages, '|{{ job_data.package }}|')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
