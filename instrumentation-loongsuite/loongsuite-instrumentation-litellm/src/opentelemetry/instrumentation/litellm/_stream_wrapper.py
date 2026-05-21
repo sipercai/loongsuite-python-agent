@@ -129,7 +129,8 @@ class _StreamAccumulator:
 
     def finish_reasons(self) -> list[str]:
         finish_reasons = []
-        for state in self._choice_states.values():
+        for index in sorted(self._choice_states):
+            state = self._choice_states[index]
             if state["finish_reason"]:
                 finish_reasons.append(state["finish_reason"])
         return finish_reasons
@@ -159,12 +160,11 @@ class _StreamAccumulator:
 
             arguments = get_litellm_value(function, "arguments")
             if isinstance(arguments, str):
-                if isinstance(stored["arguments"], str):
-                    stored["arguments"] += arguments
-                else:
-                    stored["arguments"] = arguments
+                stored["arguments"] += arguments
             elif arguments:
-                stored["arguments"] = arguments
+                logger.debug(
+                    "Skipping non-string LiteLLM streamed tool-call arguments"
+                )
 
 
 class StreamWrapper:
@@ -190,8 +190,6 @@ class StreamWrapper:
         self.last_chunk = None  # Only keep last chunk to avoid memory leak
         self.chunk_count = 0
         self._finalized = False
-        self.accumulated_content = []  # Accumulate content for output messages
-        self.accumulated_tool_calls = []  # Accumulate tool calls
 
     def __iter__(self):
         return self
@@ -289,8 +287,6 @@ class AsyncStreamWrapper:
         self.chunk_count = 0
         self._finalized = False
         self._stream_exhausted = False
-        self.accumulated_content = []  # Accumulate content for output messages
-        self.accumulated_tool_calls = []  # Accumulate tool calls
 
     def __aiter__(self):
         # Return an async generator that wraps the stream and ensures finalization

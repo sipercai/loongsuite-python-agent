@@ -43,6 +43,18 @@ def _chat_response(model: str, content: str):
     )
 
 
+def _embedding_response(model: str):
+    return SimpleNamespace(
+        id=f"embd-{model}",
+        model=model,
+        data=[{"embedding": [0.1, 0.2, 0.3]}],
+        usage=SimpleNamespace(
+            prompt_tokens=5,
+            total_tokens=5,
+        ),
+    )
+
+
 def _chunk(choices, usage=None):
     return SimpleNamespace(
         id="chatcmpl-stream",
@@ -102,6 +114,67 @@ def test_completion_positional_args_feed_genai_invocation(
     assert input_messages[0]["parts"][0]["content"] == "hello"
 
 
+def test_provider_prefers_known_base_url_over_custom_adapter(
+    monkeypatch, tracer_provider, span_exporter
+):
+    def fake_completion(model, messages, **kwargs):
+        assert model == "custom-compatible-model"
+        assert kwargs["custom_llm_provider"] == "openai"
+        assert "dashscope.aliyuncs.com" in kwargs["api_base"]
+        return _chat_response(model, "compatible response")
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        litellm.completion(
+            model="custom-compatible-model",
+            custom_llm_provider="openai",
+            api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            messages=[{"role": "user", "content": "hello"}],
+        )
+    finally:
+        instrumentor.uninstrument()
+
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    assert spans[0].attributes["gen_ai.provider.name"] == "dashscope"
+
+
+def test_embedding_usage_records_input_tokens_only(
+    monkeypatch, tracer_provider, span_exporter
+):
+    def fake_embedding(model, input_, **kwargs):
+        assert model == "text-embedding-v1"
+        assert input_ == "embed me"
+        return _embedding_response(model)
+
+    monkeypatch.setattr(litellm, "embedding", fake_embedding)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        litellm.embedding(
+            "text-embedding-v1",
+            "embed me",
+            custom_llm_provider="openai",
+            api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        )
+    finally:
+        instrumentor.uninstrument()
+
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    span = spans[0]
+    assert span.attributes["gen_ai.span.kind"] == "EMBEDDING"
+    assert span.attributes["gen_ai.provider.name"] == "dashscope"
+    assert span.attributes["gen_ai.usage.input_tokens"] == 5
+    assert span.attributes["gen_ai.usage.total_tokens"] == 5
+    assert "gen_ai.usage.output_tokens" not in span.attributes
+    assert span.attributes["gen_ai.embeddings.dimension.count"] == 3
+
+
 def test_streaming_completion_records_ttft_choices_and_tool_calls(
     monkeypatch, tracer_provider, span_exporter
 ):
@@ -133,10 +206,16 @@ def test_streaming_completion_records_ttft_choices_and_tool_calls(
             [
                 _choice(
                     0,
+                    tool_calls=[_tool_delta(0, arguments={"ignored": True})],
+                ),
+            ]
+        ),
+        _chunk(
+            [
+                _choice(
+                    0,
                     finish_reason="tool_calls",
-                    tool_calls=[
-                        _tool_delta(0, arguments='"weather"}')
-                    ],
+                    tool_calls=[_tool_delta(0, arguments='"weather"}')],
                 ),
                 _choice(1, finish_reason="stop"),
             ],
@@ -164,7 +243,7 @@ def test_streaming_completion_records_ttft_choices_and_tool_calls(
             stream=True,
             n=2,
         )
-        assert len(list(response)) == 3
+        assert len(list(response)) == 4
     finally:
         instrumentor.uninstrument()
 
