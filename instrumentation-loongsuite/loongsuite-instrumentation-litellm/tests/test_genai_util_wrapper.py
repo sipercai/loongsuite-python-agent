@@ -18,6 +18,8 @@ from types import SimpleNamespace
 
 import litellm
 
+from opentelemetry import context as otel_context
+from opentelemetry.context import _SUPPRESS_INSTRUMENTATION_KEY
 from opentelemetry.instrumentation.litellm import LiteLLMInstrumentor
 
 
@@ -64,10 +66,20 @@ def _chunk(choices, usage=None):
     )
 
 
-def _choice(index, content=None, finish_reason=None, tool_calls=None):
+def _choice(
+    index,
+    content=None,
+    finish_reason=None,
+    tool_calls=None,
+    reasoning_content=None,
+):
     return SimpleNamespace(
         index=index,
-        delta=SimpleNamespace(content=content, tool_calls=tool_calls),
+        delta=SimpleNamespace(
+            content=content,
+            reasoning_content=reasoning_content,
+            tool_calls=tool_calls,
+        ),
         finish_reason=finish_reason,
     )
 
@@ -78,6 +90,42 @@ def _tool_delta(index, tool_call_id=None, name=None, arguments=None):
         id=tool_call_id,
         function=SimpleNamespace(name=name, arguments=arguments),
     )
+
+
+class _ClosableIterator:
+    def __init__(self, chunks):
+        self._iterator = iter(chunks)
+        self.closed = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self._iterator)
+
+    def close(self):
+        self.closed = True
+
+
+class _AsyncClosableStream:
+    def __init__(self, chunks):
+        self._chunks = list(chunks)
+        self._index = 0
+        self.closed = False
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self._index >= len(self._chunks):
+            raise StopAsyncIteration
+
+        chunk = self._chunks[self._index]
+        self._index += 1
+        return chunk
+
+    async def aclose(self):
+        self.closed = True
 
 
 def test_completion_positional_args_feed_genai_invocation(
@@ -114,6 +162,49 @@ def test_completion_positional_args_feed_genai_invocation(
     assert input_messages[0]["parts"][0]["content"] == "hello"
 
 
+def test_provider_prefers_custom_provider_over_model_heuristic_and_system_split(
+    monkeypatch, tracer_provider, span_exporter
+):
+    def fake_completion(model, messages, **kwargs):
+        assert model == "gpt-4"
+        assert kwargs["custom_llm_provider"] == "azure"
+        assert messages[0]["role"] == "system"
+        return _chat_response(model, "azure response")
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        litellm.completion(
+            model="gpt-4",
+            custom_llm_provider="azure",
+            messages=[
+                {"role": "system", "content": "system rules"},
+                {"role": "developer", "content": "developer rules"},
+                {"role": "user", "content": "hello"},
+            ],
+        )
+    finally:
+        instrumentor.uninstrument()
+
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    span = spans[0]
+    assert span.attributes["gen_ai.provider.name"] == "azure"
+
+    input_messages = json.loads(span.attributes["gen_ai.input.messages"])
+    assert [message["role"] for message in input_messages] == ["user"]
+
+    system_instructions = json.loads(
+        span.attributes["gen_ai.system_instructions"]
+    )
+    assert [part["content"] for part in system_instructions] == [
+        "system rules",
+        "developer rules",
+    ]
+
+
 def test_provider_prefers_known_base_url_over_custom_adapter(
     monkeypatch, tracer_provider, span_exporter
 ):
@@ -140,6 +231,104 @@ def test_provider_prefers_known_base_url_over_custom_adapter(
     spans = span_exporter.get_finished_spans()
     assert len(spans) == 1
     assert spans[0].attributes["gen_ai.provider.name"] == "dashscope"
+
+
+def test_completion_usage_falls_back_to_total_minus_prompt_tokens(
+    monkeypatch, tracer_provider, span_exporter
+):
+    def fake_completion(model, messages, **kwargs):
+        assert model == "qwen-turbo"
+        return SimpleNamespace(
+            id="chatcmpl-fallback-usage",
+            model=model,
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        role="assistant",
+                        content="fallback usage",
+                        tool_calls=None,
+                    ),
+                    finish_reason="stop",
+                )
+            ],
+            usage=SimpleNamespace(prompt_tokens=4, total_tokens=9),
+        )
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        litellm.completion(
+            model="qwen-turbo",
+            messages=[{"role": "user", "content": "hello"}],
+        )
+    finally:
+        instrumentor.uninstrument()
+
+    span = span_exporter.get_finished_spans()[0]
+    assert span.attributes["gen_ai.usage.input_tokens"] == 4
+    assert span.attributes["gen_ai.usage.output_tokens"] == 5
+    assert span.attributes["gen_ai.usage.total_tokens"] == 9
+
+
+def test_suppressed_instrumentation_skips_completion_span(
+    monkeypatch, tracer_provider, span_exporter
+):
+    def fake_completion(model, messages, **kwargs):
+        return _chat_response(model, "not traced")
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    token = None
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        ctx = otel_context.set_value(_SUPPRESS_INSTRUMENTATION_KEY, True)
+        token = otel_context.attach(ctx)
+        litellm.completion(
+            model="qwen-turbo",
+            messages=[{"role": "user", "content": "hello"}],
+        )
+    finally:
+        if token is not None:
+            otel_context.detach(token)
+        instrumentor.uninstrument()
+
+    assert not span_exporter.get_finished_spans()
+
+
+def test_no_content_mode_omits_messages_but_keeps_metadata(
+    monkeypatch, tracer_provider, span_exporter
+):
+    monkeypatch.setenv(
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "NO_CONTENT"
+    )
+
+    def fake_completion(model, messages, **kwargs):
+        return _chat_response(model, "content hidden")
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        litellm.completion(
+            model="qwen-turbo",
+            messages=[
+                {"role": "system", "content": "secret system"},
+                {"role": "user", "content": "secret user"},
+            ],
+        )
+    finally:
+        instrumentor.uninstrument()
+
+    span = span_exporter.get_finished_spans()[0]
+    assert span.attributes["gen_ai.span.kind"] == "LLM"
+    assert span.attributes["gen_ai.request.model"] == "qwen-turbo"
+    assert "gen_ai.input.messages" not in span.attributes
+    assert "gen_ai.output.messages" not in span.attributes
+    assert "gen_ai.system_instructions" not in span.attributes
 
 
 def test_embedding_usage_records_input_tokens_only(
@@ -264,6 +453,149 @@ def test_streaming_completion_records_ttft_choices_and_tool_calls(
     assert tool_call["id"] == "call_1"
     assert tool_call["name"] == "lookup"
     assert tool_call["arguments"] == {"q": "weather"}
+
+
+def test_streaming_reasoning_multimodal_content_and_empty_choice(
+    monkeypatch, tracer_provider, span_exporter
+):
+    chunks = [
+        _chunk(
+            [
+                _choice(0, reasoning_content="thinking"),
+                _choice(1, finish_reason="stop"),
+            ]
+        ),
+        _chunk([_choice(0, content={"unexpected": True})]),
+        _chunk(
+            [
+                _choice(
+                    0,
+                    content=[
+                        {"type": "text", "text": "hello"},
+                        {"type": "image_url", "image_url": {"url": "x"}},
+                        " world",
+                    ],
+                    finish_reason="stop",
+                )
+            ],
+            usage=SimpleNamespace(
+                prompt_tokens=3,
+                completion_tokens=2,
+                total_tokens=5,
+            ),
+        ),
+    ]
+
+    def fake_completion(*args, **kwargs):
+        assert kwargs["stream"] is True
+        return iter(chunks)
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        response = litellm.completion(
+            model="qwen-turbo",
+            messages=[{"role": "user", "content": "reason"}],
+            stream=True,
+            n=2,
+        )
+        assert len(list(response)) == 3
+    finally:
+        instrumentor.uninstrument()
+
+    span = span_exporter.get_finished_spans()[0]
+    assert "gen_ai.response.time_to_first_token" in span.attributes
+    output_messages = json.loads(span.attributes["gen_ai.output.messages"])
+    assert len(output_messages) == 2
+    assert output_messages[0]["parts"][0] == {
+        "content": "thinking",
+        "type": "reasoning",
+    }
+    assert output_messages[0]["parts"][1] == {
+        "content": "hello world",
+        "type": "text",
+    }
+    assert output_messages[1]["parts"] == [{"content": "", "type": "text"}]
+
+
+def test_streaming_close_closes_underlying_stream_and_finalizes(
+    monkeypatch, tracer_provider, span_exporter
+):
+    stream = _ClosableIterator(
+        [
+            _chunk([_choice(0, content="partial")]),
+            _chunk([_choice(0, content=" ignored", finish_reason="stop")]),
+        ]
+    )
+
+    def fake_completion(*args, **kwargs):
+        assert kwargs["stream"] is True
+        return stream
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        response = litellm.completion(
+            model="qwen-turbo",
+            messages=[{"role": "user", "content": "stream"}],
+            stream=True,
+        )
+        next(response)
+        response.close()
+    finally:
+        instrumentor.uninstrument()
+
+    assert stream.closed is True
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    output_messages = json.loads(spans[0].attributes["gen_ai.output.messages"])
+    assert output_messages[0]["parts"][0]["content"] == "partial"
+
+
+def test_async_streaming_aclose_closes_stream_and_finalizes(
+    monkeypatch, tracer_provider, span_exporter
+):
+    captured = {}
+
+    async def fake_acompletion(*args, **kwargs):
+        assert kwargs["stream"] is True
+        stream = _AsyncClosableStream(
+            [
+                _chunk([_choice(0, content="async partial")]),
+                _chunk([_choice(0, content=" ignored", finish_reason="stop")]),
+            ]
+        )
+        captured["stream"] = stream
+        return stream
+
+    monkeypatch.setattr(litellm, "acompletion", fake_acompletion)
+
+    async def run_call():
+        response = await litellm.acompletion(
+            model="qwen-turbo",
+            messages=[{"role": "user", "content": "stream"}],
+            stream=True,
+        )
+        iterator = response.__aiter__()
+        await iterator.__anext__()
+        await iterator.aclose()
+
+    instrumentor = LiteLLMInstrumentor()
+    instrumentor.instrument(tracer_provider=tracer_provider)
+    try:
+        asyncio.run(run_call())
+    finally:
+        instrumentor.uninstrument()
+
+    assert captured["stream"].closed is True
+    spans = span_exporter.get_finished_spans()
+    assert len(spans) == 1
+    output_messages = json.loads(spans[0].attributes["gen_ai.output.messages"])
+    assert output_messages[0]["parts"][0]["content"] == "async partial"
 
 
 def test_async_completion_concurrent_calls_keep_separate_spans(

@@ -25,7 +25,7 @@ Configuration
 The instrumentation can be enabled/disabled using environment variables:
 
 * ``ENABLE_LITELLM_INSTRUMENTOR``: Enable/disable instrumentation (default: true)
-* ``OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental``: Enable GenAI semantic conventions
+* ``OTEL_SEMCONV_STABILITY_OPT_IN``: Set to ``gen_ai_latest_experimental`` to enable GenAI semantic conventions
 * ``OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT``: Set to ``NO_CONTENT``, ``SPAN_ONLY``, ``EVENT_ONLY``, or ``SPAN_AND_EVENT``
 
 Usage
@@ -81,6 +81,9 @@ This instrumentation automatically captures:
 * Embedding calls
 * Retry mechanisms
 * Tool/function calls
+* Provider inference from known OpenAI-compatible base URLs, custom providers, and model names
+* Streaming time-to-first-token, including reasoning/thinking deltas
+* Multi-choice streaming outputs and tool-call delta accumulation
 * Request and response metadata
 * Token usage
 * Model information

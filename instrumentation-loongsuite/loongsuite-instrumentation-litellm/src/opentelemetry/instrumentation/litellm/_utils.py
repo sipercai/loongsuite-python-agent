@@ -20,7 +20,7 @@ import inspect
 import json
 import logging
 from collections.abc import Callable, Mapping
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 from urllib.parse import urlparse
 
 from opentelemetry.semconv._incubating.attributes.gen_ai_attributes import (
@@ -32,6 +32,7 @@ from opentelemetry.util.genai.types import (
     InputMessage,
     LLMInvocation,
     OutputMessage,
+    Reasoning,
     Text,
     ToolCall,
     ToolCallResponse,
@@ -54,6 +55,7 @@ _BASE_URL_KWARG_NAMES = (
     "api_endpoint",
     "endpoint",
 )
+_SYSTEM_INSTRUCTION_ROLES = frozenset(("system", "developer"))
 
 
 def get_litellm_value(obj: Any, key: str, default: Any = None) -> Any:
@@ -120,6 +122,31 @@ def parse_tool_call_arguments(arguments: Any) -> Any:
         except (TypeError, ValueError):
             return arguments
     return arguments
+
+
+def extract_litellm_text_parts(content: Any) -> list[str]:
+    """Extract text strings from LiteLLM text or multimodal content."""
+    if isinstance(content, str):
+        return [content] if content else []
+
+    if not isinstance(content, list):
+        return []
+
+    text_parts = []
+    for item in content:
+        if isinstance(item, str):
+            if item:
+                text_parts.append(item)
+            continue
+
+        if not isinstance(item, Mapping) or item.get("type") != "text":
+            continue
+
+        text = item.get("text", item.get("content", ""))
+        if isinstance(text, str) and text:
+            text_parts.append(text)
+
+    return text_parts
 
 
 def apply_litellm_llm_response_to_invocation(
@@ -228,95 +255,6 @@ def _apply_usage_to_invocation(
         invocation.usage_cache_creation_input_tokens = cache_creation_tokens
 
 
-def convert_messages_to_structured_format(
-    messages: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """
-    Convert LiteLLM message format to structured format required by semantic conventions.
-
-    Converts from:
-        {"role": "user", "content": "..."}
-    To:
-        {"role": "user", "parts": [{"type": "text", "content": "..."}]}
-    """
-    if not isinstance(messages, list):
-        return []
-
-    structured_messages = []
-    for msg in messages:
-        if not isinstance(msg, dict):
-            continue
-
-        role = msg.get("role", "")
-        structured_msg = {"role": role, "parts": []}
-
-        # Handle text content
-        if "content" in msg and msg["content"]:
-            content = msg["content"]
-            if isinstance(content, str):
-                structured_msg["parts"].append(
-                    {"type": "text", "content": content}
-                )
-            elif isinstance(content, list):
-                # Handle multi-modal content
-                for item in content:
-                    if isinstance(item, dict):
-                        if item.get("type") == "text":
-                            structured_msg["parts"].append(
-                                {
-                                    "type": "text",
-                                    "content": item.get("text", ""),
-                                }
-                            )
-                        else:
-                            structured_msg["parts"].append(item)
-
-        # Handle tool calls
-        if "tool_calls" in msg and msg["tool_calls"]:
-            for tool_call in msg["tool_calls"]:
-                if not isinstance(tool_call, dict):
-                    continue
-
-                tool_part = {"type": "tool_call"}
-                if "id" in tool_call:
-                    tool_part["id"] = tool_call["id"]
-                if "function" in tool_call:
-                    func = tool_call["function"]
-                    if isinstance(func, dict):
-                        if "name" in func:
-                            tool_part["name"] = func["name"]
-                        if "arguments" in func:
-                            try:
-                                # Try to parse arguments if it's a JSON string
-                                args_str = func["arguments"]
-                                if isinstance(args_str, str):
-                                    tool_part["arguments"] = json.loads(
-                                        args_str
-                                    )
-                                else:
-                                    tool_part["arguments"] = args_str
-                            except Exception:
-                                tool_part["arguments"] = func.get(
-                                    "arguments", ""
-                                )
-
-                structured_msg["parts"].append(tool_part)
-
-        # Handle tool call responses
-        if role == "tool" and "content" in msg:
-            tool_response_part = {
-                "type": "tool_call_response",
-                "response": msg["content"],
-            }
-            if "tool_call_id" in msg:
-                tool_response_part["id"] = msg["tool_call_id"]
-            structured_msg["parts"].append(tool_response_part)
-
-        structured_messages.append(structured_msg)
-
-    return structured_messages
-
-
 def parse_provider_from_model(model: str) -> Optional[str]:
     """
     Parse provider name from model string.
@@ -366,13 +304,13 @@ def resolve_litellm_provider(model: Any, kwargs: Mapping[str, Any]) -> str:
         if provider:
             return provider
 
-    provider = parse_provider_from_model(model)
-    if provider not in (None, "unknown"):
-        return provider
-
     custom_provider = kwargs.get("custom_llm_provider")
     if custom_provider:
         return custom_provider
+
+    provider = parse_provider_from_model(model)
+    if provider not in (None, "unknown"):
+        return provider
 
     return provider or "unknown"
 
@@ -395,34 +333,8 @@ def parse_model_name(model: str) -> str:
     return model
 
 
-def safe_json_dumps(obj: Any, default: str = "{}") -> str:
-    """
-    Safely serialize object to JSON string.
-    """
-    try:
-        return json.dumps(obj, ensure_ascii=False)
-    except Exception as e:
-        logger.debug(f"Failed to serialize object to JSON: {e}")
-        return default
-
-
-def convert_tool_definitions(tools: List[Dict[str, Any]]) -> str:
-    """
-    Convert tool definitions to JSON string format.
-    """
-    if not tools:
-        return "[]"
-
-    try:
-        # Tools are typically in format: [{"type": "function", "function": {...}}]
-        return json.dumps(tools, ensure_ascii=False)
-    except Exception as e:
-        logger.debug(f"Failed to convert tool definitions: {e}")
-        return "[]"
-
-
 def convert_litellm_messages_to_genai_format(
-    messages: List[Dict[str, Any]],
+    messages: list[dict[str, Any]],
 ) -> List:
     """
     Convert LiteLLM message format to OpenTelemetry GenAI InputMessage format.
@@ -440,47 +352,10 @@ def convert_litellm_messages_to_genai_format(
             continue
 
         role = msg.get("role", "user")
-        parts = []
+        if role in _SYSTEM_INSTRUCTION_ROLES:
+            continue
 
-        # Handle text content
-        if "content" in msg and msg["content"]:
-            content = msg["content"]
-            if isinstance(content, str):
-                parts.append(Text(content=content))
-            elif isinstance(content, list):
-                # Handle multi-modal content
-                for item in content:
-                    if isinstance(item, dict) and item.get("type") == "text":
-                        parts.append(Text(content=item.get("text", "")))
-                    # Other content types (image, etc.) can be added here
-
-        # Handle tool calls
-        if "tool_calls" in msg and msg["tool_calls"]:
-            for tool_call in msg["tool_calls"]:
-                if not isinstance(tool_call, dict):
-                    continue
-
-                func = tool_call.get("function", {})
-                if isinstance(func, dict):
-                    arguments = parse_tool_call_arguments(
-                        func.get("arguments", "")
-                    )
-
-                    parts.append(
-                        ToolCall(
-                            id=tool_call.get("id"),
-                            name=func.get("name", ""),
-                            arguments=arguments,
-                        )
-                    )
-
-        # Handle tool call responses
-        if role == "tool" and "content" in msg:
-            parts.append(
-                ToolCallResponse(
-                    id=msg.get("tool_call_id"), response=msg["content"]
-                )
-            )
+        parts = _extract_message_parts(msg, role)
 
         # If no parts added, add empty text
         if not parts:
@@ -489,6 +364,64 @@ def convert_litellm_messages_to_genai_format(
         input_messages.append(InputMessage(role=role, parts=parts))
 
     return input_messages
+
+
+def extract_system_instruction_from_litellm_messages(
+    messages: list[dict[str, Any]],
+) -> list:
+    """Extract system/developer instructions from LiteLLM messages."""
+    if not isinstance(messages, list):
+        return []
+
+    system_instruction = []
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+
+        if msg.get("role") not in _SYSTEM_INSTRUCTION_ROLES:
+            continue
+
+        for text in extract_litellm_text_parts(msg.get("content")):
+            system_instruction.append(Text(content=text))
+
+    return system_instruction
+
+
+def _extract_message_parts(msg: Mapping[str, Any], role: str) -> list:
+    parts = []
+
+    for text in extract_litellm_text_parts(msg.get("content")):
+        parts.append(Text(content=text))
+
+    # Handle tool calls
+    if "tool_calls" in msg and msg["tool_calls"]:
+        for tool_call in msg["tool_calls"]:
+            if not isinstance(tool_call, Mapping):
+                continue
+
+            func = tool_call.get("function", {})
+            if isinstance(func, Mapping):
+                arguments = parse_tool_call_arguments(
+                    func.get("arguments", "")
+                )
+
+                parts.append(
+                    ToolCall(
+                        id=tool_call.get("id"),
+                        name=func.get("name", ""),
+                        arguments=arguments,
+                    )
+                )
+
+    # Handle tool call responses
+    if role == "tool" and "content" in msg:
+        parts.append(
+            ToolCallResponse(
+                id=msg.get("tool_call_id"), response=msg["content"]
+            )
+        )
+
+    return parts
 
 
 def extract_output_from_litellm_response(response: Any) -> List:
@@ -505,32 +438,37 @@ def extract_output_from_litellm_response(response: Any) -> List:
     output_messages = []
     for choice in choices:
         msg = get_litellm_value(choice, "message")
-        if msg is None:
-            continue
-
         parts = []
+        role = "assistant"
 
-        # Extract text content
-        content = get_litellm_value(msg, "content")
-        if content:
-            parts.append(Text(content=content))
+        if msg is not None:
+            role = get_litellm_value(msg, "role", "assistant")
 
-        # Extract tool calls
-        tool_calls = get_litellm_value(msg, "tool_calls")
-        if tool_calls:
-            for tc in tool_calls:
-                function = get_litellm_value(tc, "function")
-                arguments = parse_tool_call_arguments(
-                    get_litellm_value(function, "arguments", "")
-                )
+            reasoning_content = get_litellm_value(msg, "reasoning_content")
+            for text in extract_litellm_text_parts(reasoning_content):
+                parts.append(Reasoning(content=text))
 
-                parts.append(
-                    ToolCall(
-                        id=get_litellm_value(tc, "id"),
-                        name=get_litellm_value(function, "name", ""),
-                        arguments=arguments,
+            # Extract text content
+            content = get_litellm_value(msg, "content")
+            for text in extract_litellm_text_parts(content):
+                parts.append(Text(content=text))
+
+            # Extract tool calls
+            tool_calls = get_litellm_value(msg, "tool_calls")
+            if tool_calls:
+                for tc in tool_calls:
+                    function = get_litellm_value(tc, "function")
+                    arguments = parse_tool_call_arguments(
+                        get_litellm_value(function, "arguments", "")
                     )
-                )
+
+                    parts.append(
+                        ToolCall(
+                            id=get_litellm_value(tc, "id"),
+                            name=get_litellm_value(function, "name", ""),
+                            arguments=arguments,
+                        )
+                    )
 
         # If no parts, add empty text
         if not parts:
@@ -540,7 +478,7 @@ def extract_output_from_litellm_response(response: Any) -> List:
 
         output_messages.append(
             OutputMessage(
-                role=get_litellm_value(msg, "role", "assistant"),
+                role=role,
                 parts=parts,
                 finish_reason=finish_reason,
             )
@@ -553,9 +491,11 @@ def create_llm_invocation_from_litellm(**kwargs):
     """
     Create LLMInvocation from LiteLLM request parameters.
 
+    The provider is resolved from known base URLs, custom_llm_provider, or the
+    model name.
+
     Args:
         model: The model name (e.g., "gpt-4", "openai/gpt-4")
-        provider: The provider name (e.g., "openai", "dashscope")
         messages: List of message dictionaries
         **kwargs: Additional request parameters (temperature, max_tokens, etc.)
 
@@ -570,6 +510,9 @@ def create_llm_invocation_from_litellm(**kwargs):
 
     # Convert messages to GenAI format
     input_messages = convert_litellm_messages_to_genai_format(messages)
+    system_instruction = extract_system_instruction_from_litellm_messages(
+        messages
+    )
 
     request_model = parse_model_name(model)
 
@@ -579,6 +522,8 @@ def create_llm_invocation_from_litellm(**kwargs):
         operation_name=GenAiOperationNameValues.CHAT.value,
         input_messages=input_messages,
     )
+    if system_instruction:
+        invocation.system_instruction = system_instruction
 
     # Set optional request parameters
     if "temperature" in kwargs and kwargs["temperature"] is not None:
@@ -635,9 +580,11 @@ def create_embedding_invocation_from_litellm(**kwargs):
     """
     Create EmbeddingInvocation from LiteLLM embedding request parameters.
 
+    The provider is resolved from known base URLs, custom_llm_provider, or the
+    model name.
+
     Args:
         model: The embedding model name
-        provider: The provider name
         **kwargs: Additional request parameters
 
     Returns:

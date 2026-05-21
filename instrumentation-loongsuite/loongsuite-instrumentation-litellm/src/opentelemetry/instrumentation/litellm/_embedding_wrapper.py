@@ -16,7 +16,6 @@
 Embedding wrapper for LiteLLM instrumentation.
 """
 
-import logging
 import os
 from typing import Callable
 
@@ -28,8 +27,6 @@ from opentelemetry.instrumentation.litellm._utils import (
     normalize_litellm_embedding_kwargs,
 )
 from opentelemetry.util.genai.types import Error
-
-logger = logging.getLogger(__name__)
 
 
 def _is_instrumentation_enabled() -> bool:

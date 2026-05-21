@@ -21,10 +21,16 @@ import timeit
 from typing import Any, Iterator, Optional
 
 from opentelemetry.instrumentation.litellm._utils import (
+    extract_litellm_text_parts,
     get_litellm_value,
     parse_tool_call_arguments,
 )
-from opentelemetry.util.genai.types import OutputMessage, Text, ToolCall
+from opentelemetry.util.genai.types import (
+    OutputMessage,
+    Reasoning,
+    Text,
+    ToolCall,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +57,7 @@ class _StreamAccumulator:
                 index,
                 {
                     "role": "assistant",
+                    "reasoning": [],
                     "content": [],
                     "finish_reason": None,
                     "tool_calls": {},
@@ -70,8 +77,17 @@ class _StreamAccumulator:
                 state["role"] = role
 
             content = get_litellm_value(delta, "content")
-            if content:
-                state["content"].append(content)
+            content_parts = extract_litellm_text_parts(content)
+            if content_parts:
+                state["content"].extend(content_parts)
+                saw_token = True
+
+            reasoning_content = get_litellm_value(delta, "reasoning_content")
+            if reasoning_content is None:
+                reasoning_content = get_litellm_value(delta, "reasoning")
+            reasoning_parts = extract_litellm_text_parts(reasoning_content)
+            if reasoning_parts:
+                state["reasoning"].extend(reasoning_parts)
                 saw_token = True
 
             tool_calls = get_litellm_value(delta, "tool_calls")
@@ -93,6 +109,10 @@ class _StreamAccumulator:
         for index in sorted(self._choice_states):
             state = self._choice_states[index]
             parts = []
+            reasoning = "".join(state["reasoning"])
+            if reasoning:
+                parts.append(Reasoning(content=reasoning))
+
             content = "".join(state["content"])
             if content:
                 parts.append(Text(content=content))
@@ -116,7 +136,7 @@ class _StreamAccumulator:
                     )
 
             if not parts:
-                continue
+                parts.append(Text(content=""))
 
             output_messages.append(
                 OutputMessage(
@@ -176,6 +196,8 @@ class StreamWrapper:
     Supports context manager protocol for reliable cleanup.
     """
 
+    _warned_unclosed_stream = False
+
     def __init__(
         self,
         stream: Iterator,
@@ -233,12 +255,40 @@ class StreamWrapper:
         """Explicitly close and finalize the stream."""
         self._finalize()
 
+    def __del__(self):
+        if getattr(self, "_finalized", True):
+            return
+
+        if not StreamWrapper._warned_unclosed_stream:
+            StreamWrapper._warned_unclosed_stream = True
+            logger.warning(
+                "LiteLLM stream wrapper was garbage-collected before close; "
+                "finalizing the span. Use a context manager or call close() "
+                "when terminating streams early."
+            )
+
+        try:
+            self._finalize()
+        except Exception as exc:
+            logger.debug("Error finalizing unclosed LiteLLM stream: %s", exc)
+
+    def _close_stream(self) -> None:
+        close = getattr(self.stream, "close", None)
+        if not callable(close):
+            return
+
+        try:
+            close()
+        except Exception as exc:
+            logger.debug("Error closing LiteLLM stream: %s", exc)
+
     def _finalize(self, error: Optional[Exception] = None):
         """Finalize the span with data from last chunk."""
         if self._finalized:
             return
 
         self._finalized = True
+        self._close_stream()
         try:
             # Call the callback with only the last chunk
             # Note: The callback is responsible for calling handler.stop_llm()
@@ -300,6 +350,7 @@ class AsyncStreamWrapper:
         2. An exception occurs
         3. The generator is closed early (via aclose())
         """
+        error = None
         try:
             async for chunk in self.stream:
                 self._accumulator.record_chunk(chunk)
@@ -317,11 +368,12 @@ class AsyncStreamWrapper:
         except Exception as e:
             # Error during streaming
             logger.debug(f"AsyncStreamWrapper: Error during streaming: {e}")
-            self._finalize(error=e)
+            error = e
             raise
         finally:
             # Always finalize, whether completed normally, with error, or closed early
-            self._finalize()
+            await self._aclose_stream()
+            self._finalize(error=error)
 
     async def __aenter__(self):
         """Support async context manager protocol."""
@@ -329,6 +381,7 @@ class AsyncStreamWrapper:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Ensure finalization on async context exit."""
+        await self._aclose_stream()
         if exc_type is not None:
             # Exception occurred during iteration
             self._finalize(error=exc_val)
@@ -339,11 +392,34 @@ class AsyncStreamWrapper:
 
     async def aclose(self):
         """Explicitly close and finalize the async stream."""
+        await self._aclose_stream()
         self._finalize()
 
     def close(self):
         """Synchronous close method for compatibility."""
+        self._close_stream()
         self._finalize()
+
+    def _close_stream(self) -> None:
+        close = getattr(self.stream, "close", None)
+        if not callable(close):
+            return
+
+        try:
+            close()
+        except Exception as exc:
+            logger.debug("Error closing LiteLLM async stream: %s", exc)
+
+    async def _aclose_stream(self) -> None:
+        aclose = getattr(self.stream, "aclose", None)
+        if callable(aclose):
+            try:
+                await aclose()
+                return
+            except Exception as exc:
+                logger.debug("Error closing LiteLLM async stream: %s", exc)
+
+        self._close_stream()
 
     def _finalize(self, error: Optional[Exception] = None):
         """Finalize the span with data from last chunk."""
