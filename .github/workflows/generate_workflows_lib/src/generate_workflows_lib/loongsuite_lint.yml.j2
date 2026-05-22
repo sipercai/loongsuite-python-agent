@@ -9,6 +9,7 @@ on:
     - 'release/*'
     - 'otelbot/*'
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -37,6 +38,7 @@ jobs:
     outputs:
       full: ${% raw %}{{ steps.detect.outputs.full }}{% endraw %}
       packages: ${% raw %}{{ steps.detect.outputs.packages }}{% endraw %}
+      degraded: ${% raw %}{{ steps.detect.outputs.degraded }}{% endraw %}
       reason: ${% raw %}{{ steps.detect.outputs.reason }}{% endraw %}
     steps:
       - name: Checkout repo @ SHA - ${% raw %}{{ github.sha }}{% endraw %}
@@ -44,9 +46,33 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Detect LoongSuite changes
         id: detect
-        run: python .github/scripts/detect_loongsuite_changes.py
+        shell: bash
+        run: |
+          detector=.github/scripts/detect_loongsuite_changes.py
+          run_detector() {
+            if ! python "$1"; then
+              echo "::warning::LoongSuite change detector failed; falling back to full CI"
+              {
+                echo "full=true"
+                echo "packages=||"
+                echo "degraded=true"
+                echo "reason=detector command failed"
+              } >> "$GITHUB_OUTPUT"
+            fi
+          }
+          if [[ "${% raw %}{{ github.event_name }}{% endraw %}" == "pull_request" ]] && git cat-file -e "${% raw %}{{ github.event.pull_request.base.sha }}{% endraw %}:$detector" 2>/dev/null; then
+            git show "${% raw %}{{ github.event.pull_request.base.sha }}{% endraw %}:$detector" > /tmp/detect_loongsuite_changes.py
+            run_detector /tmp/detect_loongsuite_changes.py
+          else
+            run_detector "$detector"
+          fi
 
   {%- for job_data in job_datas %}
 

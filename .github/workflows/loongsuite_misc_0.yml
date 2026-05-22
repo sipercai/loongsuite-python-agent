@@ -9,6 +9,7 @@ on:
     - 'release/*'
     - 'otelbot/*'
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -69,3 +70,6 @@ jobs:
 
       - name: Run tests
         run: tox -c tox-loongsuite.ini -e generate-loongsuite
+
+      - name: Check LoongSuite workflows are up to date
+        run: tox -e generate-workflows && git diff --exit-code -- .github/workflows/loongsuite_*.yml || (echo 'Generated LoongSuite workflows are out of date, run "tox -e generate-workflows" and commit the changes in this PR.' && exit 1)

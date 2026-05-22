@@ -9,6 +9,7 @@ on:
     - 'release/*'
     - 'otelbot/*'
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -37,6 +38,7 @@ jobs:
     outputs:
       full: ${{ steps.detect.outputs.full }}
       packages: ${{ steps.detect.outputs.packages }}
+      degraded: ${{ steps.detect.outputs.degraded }}
       reason: ${{ steps.detect.outputs.reason }}
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -44,9 +46,33 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Detect LoongSuite changes
         id: detect
-        run: python .github/scripts/detect_loongsuite_changes.py
+        shell: bash
+        run: |
+          detector=.github/scripts/detect_loongsuite_changes.py
+          run_detector() {
+            if ! python "$1"; then
+              echo "::warning::LoongSuite change detector failed; falling back to full CI"
+              {
+                echo "full=true"
+                echo "packages=||"
+                echo "degraded=true"
+                echo "reason=detector command failed"
+              } >> "$GITHUB_OUTPUT"
+            fi
+          }
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && git cat-file -e "${{ github.event.pull_request.base.sha }}:$detector" 2>/dev/null; then
+            git show "${{ github.event.pull_request.base.sha }}:$detector" > /tmp/detect_loongsuite_changes.py
+            run_detector /tmp/detect_loongsuite_changes.py
+          else
+            run_detector "$detector"
+          fi
 
   lint-loongsuite-instrumentation-agentscope:
     name: LoongSuite loongsuite-instrumentation-agentscope

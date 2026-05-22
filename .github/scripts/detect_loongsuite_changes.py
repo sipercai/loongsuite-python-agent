@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
+"""Detect changed LoongSuite packages for generated GitHub Actions jobs.
+
+Inputs come from the GitHub Actions environment:
+- GITHUB_EVENT_NAME and GITHUB_EVENT_PATH describe the current event.
+- LOONGSUITE_CHANGED_FILES can inject a newline-separated file list in tests.
+- GITHUB_OUTPUT receives full/packages/degraded/reason outputs.
+"""
+
 from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 FULL_RUN_LABELS = {"prepare-release", "backport"}
-FULL_RUN_PREFIXES = (
+FULL_RUN_FILES = {
     ".github/scripts/detect_loongsuite_changes.py",
     ".github/workflows/generate_workflows_loongsuite.py",
-    ".github/workflows/generate_workflows_lib/src/generate_workflows_lib/",
-    ".github/workflows/loongsuite_",
-    "loongsuite-distro/",
-    "loongsuite-site-bootstrap/",
-    "scripts/loongsuite/",
-)
-FULL_RUN_FILES = {
     ".pre-commit-config.yaml",
     ".pylintrc",
     "dev-requirements.txt",
@@ -31,8 +33,20 @@ FULL_RUN_FILES = {
     "tox-uv.toml",
     "uv.lock",
 }
+FULL_RUN_PREFIXES = (
+    ".github/scripts/tests/",
+    ".github/workflows/generate_workflows_lib/src/generate_workflows_lib/",
+    ".github/workflows/loongsuite_",
+    ".github/workflows/loongsuite-",
+    "loongsuite-distro/",
+    "loongsuite-site-bootstrap/",
+    "scripts/loongsuite/",
+)
 UTIL_GENAI_PREFIX = "util/opentelemetry-util-genai/"
 LOONGSUITE_INSTRUMENTATION_PREFIX = "instrumentation-loongsuite/"
+DOC_ONLY_SUFFIXES = (".md", ".rst")
+REPO_ROOT = Path.cwd()
+TOX_LOONGSUITE_INI = REPO_ROOT / "tox-loongsuite.ini"
 
 
 def _load_event() -> dict:
@@ -49,6 +63,12 @@ def _load_event() -> dict:
 
 
 def _run_git_diff(base_ref: str) -> list[str]:
+    if not _git_ref_exists(base_ref):
+        subprocess.run(
+            ["git", "fetch", "--no-tags", "--depth=1", "origin", base_ref],
+            check=True,
+        )
+
     completed = subprocess.run(
         ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
         check=True,
@@ -56,19 +76,27 @@ def _run_git_diff(base_ref: str) -> list[str]:
         stdout=subprocess.PIPE,
     )
     return [
-        line.strip()
-        for line in completed.stdout.splitlines()
-        if line.strip()
+        line.strip() for line in completed.stdout.splitlines() if line.strip()
     ]
 
 
+def _git_ref_exists(ref: str) -> bool:
+    return (
+        subprocess.run(
+            ["git", "cat-file", "-e", ref],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
 def _changed_files(event: dict) -> list[str]:
-    changed_files = os.environ.get("LOONGSUITE_CHANGED_FILES")
-    if changed_files:
+    if "LOONGSUITE_CHANGED_FILES" in os.environ:
+        changed_files = os.environ["LOONGSUITE_CHANGED_FILES"]
         return [
-            line.strip()
-            for line in changed_files.splitlines()
-            if line.strip()
+            line.strip() for line in changed_files.splitlines() if line.strip()
         ]
 
     pull_request = event.get("pull_request", {})
@@ -96,7 +124,7 @@ def _is_release_pull_request(event: dict) -> bool:
     return base_ref.startswith("release/") or head_ref.startswith("release/")
 
 
-def _package_for_path(path: str) -> str | None:
+def _loongsuite_package_from_path(path: str) -> str | None:
     normalized = path.strip("/")
     if not normalized.startswith(LOONGSUITE_INSTRUMENTATION_PREFIX):
         return None
@@ -110,6 +138,33 @@ def _package_for_path(path: str) -> str | None:
         return package
 
     return None
+
+
+def _known_loongsuite_packages() -> set[str]:
+    text = TOX_LOONGSUITE_INI.read_text(encoding="utf-8")
+    packages = set()
+    for match in re.finditer(
+        r"(?:test|lint)-(?P<package>"
+        r"(?:loongsuite-instrumentation-[A-Za-z0-9-]+|util-genai))",
+        text,
+    ):
+        packages.add(match.group("package").rstrip("-"))
+
+    return packages
+
+
+def _is_doc_only_package_path(path: str) -> bool:
+    package_path = PurePosixPath(path.strip("/"))
+    if len(package_path.parts) <= 2:
+        return False
+
+    relative_parts = package_path.parts[2:]
+    filename = relative_parts[-1]
+    if filename.startswith("CHANGELOG"):
+        return True
+    if filename.endswith(DOC_ONLY_SUFFIXES):
+        return True
+    return "docs" in relative_parts
 
 
 def _requires_full_run(path: str) -> bool:
@@ -131,54 +186,98 @@ def _write_outputs(outputs: dict[str, str]) -> None:
             output_file.write(f"{name}={value}\n")
 
 
-def main() -> int:
+def _full_outputs(reason: str, *, degraded: bool = False) -> dict[str, str]:
+    return {
+        "full": "true",
+        "packages": "||",
+        "degraded": str(degraded).lower(),
+        "reason": reason.replace("\n", " "),
+    }
+
+
+def _package_outputs(packages: set[str], reason: str) -> dict[str, str]:
+    package_output = "|" + "|".join(sorted(packages)) + "|"
+    return {
+        "full": "false",
+        "packages": package_output,
+        "degraded": "false",
+        "reason": reason.replace("\n", " "),
+    }
+
+
+def _detect_outputs() -> dict[str, str]:
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     event = _load_event()
 
-    full = event_name != "pull_request"
+    if event_name != "pull_request":
+        return _full_outputs("non-pull-request event")
+
+    if _has_full_run_label(event) or _is_release_pull_request(event):
+        return _full_outputs("release or backport pull request")
+
     packages: set[str] = set()
-    reason = "non-pull-request event"
+    unknown_packages: set[str] = set()
+    changed_files = _changed_files(event)
+    if not changed_files:
+        return _full_outputs("unable to compute changed files", degraded=True)
 
-    if not full and (
-        _has_full_run_label(event) or _is_release_pull_request(event)
-    ):
-        full = True
-        reason = "release or backport pull request"
+    known_packages = _known_loongsuite_packages()
+    if not known_packages:
+        return _full_outputs(
+            "unable to determine registered LoongSuite packages",
+            degraded=True,
+        )
 
-    if not full:
-        try:
-            changed_files = _changed_files(event)
-        except (RuntimeError, subprocess.CalledProcessError) as exc:
-            full = True
-            reason = f"could not determine changed files: {exc}"
+    for changed_file in changed_files:
+        if _requires_full_run(changed_file):
+            return _full_outputs(
+                f"shared LoongSuite file changed: {changed_file}"
+            )
+
+        package = _loongsuite_package_from_path(changed_file)
+        if not package or _is_doc_only_package_path(changed_file):
+            continue
+
+        if package not in known_packages:
+            unknown_packages.add(package)
         else:
-            for changed_file in changed_files:
-                if _requires_full_run(changed_file):
-                    full = True
-                    reason = f"shared LoongSuite file changed: {changed_file}"
-                    break
+            packages.add(package)
 
-                package = _package_for_path(changed_file)
-                if package:
-                    packages.add(package)
+    if unknown_packages:
+        package_list = ", ".join(sorted(unknown_packages))
+        print(
+            "::error::Changed LoongSuite package is not registered in "
+            f"tox-loongsuite.ini: {package_list}",
+            file=sys.stderr,
+        )
+        return _full_outputs(
+            f"unknown LoongSuite package changed: {package_list}"
+        )
 
-            if not full:
-                if packages:
-                    reason = "package-scoped LoongSuite change"
-                else:
-                    reason = "no LoongSuite package changes"
+    if packages:
+        return _package_outputs(packages, "package-scoped LoongSuite change")
 
-    package_output = "|" + "|".join(sorted(packages)) + "|"
-    outputs = {
-        "full": str(full).lower(),
-        "packages": package_output,
-        "reason": reason.replace("\n", " "),
-    }
-    _write_outputs(outputs)
+    return _package_outputs(set(), "no LoongSuite package changes")
 
+
+def _print_outputs(outputs: dict[str, str]) -> None:
     print(f"full={outputs['full']}")
     print(f"packages={outputs['packages']}")
+    print(f"degraded={outputs['degraded']}")
     print(f"reason={outputs['reason']}")
+
+
+def main() -> int:
+    try:
+        outputs = _detect_outputs()
+    except Exception as exc:  # noqa: BLE001 - CI must fall back to full run.
+        outputs = _full_outputs(
+            f"unexpected detector failure: {type(exc).__name__}: {exc}",
+            degraded=True,
+        )
+
+    _write_outputs(outputs)
+    _print_outputs(outputs)
 
     return 0
 
