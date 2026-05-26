@@ -5,9 +5,9 @@ name: LoongSuite Lint 0
 
 on:
   push:
-    branches-ignore:
-    - 'release/*'
-    - 'otelbot/*'
+    # LoongSuite feature-branch pushes are covered by pull_request.
+    branches:
+    - main
   pull_request:
   merge_group:
 

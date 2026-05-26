@@ -20,9 +20,10 @@ def _run_detector(
     event=None,
     known_packages=None,
     tox_diff=None,
+    event_name="pull_request",
 ):
     output_path = tmp_path / "github-output"
-    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event_name)
     monkeypatch.setenv("GITHUB_OUTPUT", str(output_path))
 
     if changed_files is None:
@@ -86,6 +87,40 @@ def test_util_genai_change_runs_full_suite(monkeypatch, tmp_path):
 
     assert outputs["full"] == "true"
     assert outputs["degraded"] == "false"
+
+
+def test_push_event_runs_full_suite(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        detect,
+        "_run_git_diff",
+        lambda base_ref: (_ for _ in ()).throw(
+            AssertionError("push events should not diff against a PR base")
+        ),
+    )
+
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        event_name="push",
+    )
+
+    assert outputs["full"] == "true"
+    assert outputs["packages"] == "||"
+    assert outputs["degraded"] == "false"
+    assert outputs["reason"] == "non-pull-request event"
+
+
+def test_merge_group_event_runs_full_suite(monkeypatch, tmp_path):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        event_name="merge_group",
+    )
+
+    assert outputs["full"] == "true"
+    assert outputs["packages"] == "||"
+    assert outputs["degraded"] == "false"
+    assert outputs["reason"] == "non-pull-request event"
 
 
 def test_release_label_runs_full_suite(monkeypatch, tmp_path):

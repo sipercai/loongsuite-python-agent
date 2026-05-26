@@ -299,6 +299,7 @@ def _detect_outputs() -> dict[str, str]:
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     event = _load_event()
 
+    # Push and merge_group events intentionally run the full suite.
     if event_name != "pull_request":
         return _full_outputs("non-pull-request event")
 
