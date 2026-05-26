@@ -211,7 +211,10 @@ def test_provider_prefers_known_base_url_over_custom_adapter(
     def fake_completion(model, messages, **kwargs):
         assert model == "custom-compatible-model"
         assert kwargs["custom_llm_provider"] == "openai"
-        assert "dashscope.aliyuncs.com" in kwargs["api_base"]
+        assert (
+            kwargs["api_base"]
+            == "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
         return _chat_response(model, "compatible response")
 
     monkeypatch.setattr(litellm, "completion", fake_completion)
@@ -370,7 +373,8 @@ def test_streaming_completion_records_ttft_choices_and_tool_calls(
     chunks = [
         _chunk(
             [
-                _choice(0, content="hel"),
+                # Keep this split to avoid a codespell false positive.
+                _choice(0, content="he"),
                 _choice(1, content="bon"),
             ]
         ),
@@ -378,7 +382,7 @@ def test_streaming_completion_records_ttft_choices_and_tool_calls(
             [
                 _choice(
                     0,
-                    content="lo",
+                    content="llo",
                     tool_calls=[
                         _tool_delta(
                             0,
