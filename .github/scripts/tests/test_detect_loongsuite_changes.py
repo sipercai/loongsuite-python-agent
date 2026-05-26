@@ -224,6 +224,66 @@ def test_release_workflow_change_runs_full_suite(monkeypatch, tmp_path):
     )
 
 
+def test_matrix_selector_change_runs_full_suite(monkeypatch, tmp_path):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [".github/scripts/select_loongsuite_matrix.py"],
+    )
+
+    assert outputs["full"] == "true"
+    assert (
+        outputs["reason"] == "shared LoongSuite file changed: "
+        ".github/scripts/select_loongsuite_matrix.py"
+    )
+
+
+def test_generate_workflows_lib_metadata_change_runs_full_suite(
+    monkeypatch,
+    tmp_path,
+):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [".github/workflows/generate_workflows_lib/pyproject.toml"],
+    )
+
+    assert outputs["full"] == "true"
+    assert outputs["reason"] == (
+        "shared LoongSuite file changed: "
+        ".github/workflows/generate_workflows_lib/pyproject.toml"
+    )
+
+
+def test_generate_workflows_lib_template_change_runs_full_suite(
+    monkeypatch,
+    tmp_path,
+):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [
+            ".github/workflows/generate_workflows_lib/src/"
+            "generate_workflows_lib/loongsuite_lint.yml.j2"
+        ],
+    )
+
+    assert outputs["full"] == "true"
+
+
+def test_generate_workflows_lib_test_change_runs_full_suite(
+    monkeypatch,
+    tmp_path,
+):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [".github/workflows/generate_workflows_lib/tests/test_rendering.py"],
+    )
+
+    assert outputs["full"] == "true"
+
+
 def test_unknown_loongsuite_workflow_change_runs_full_suite(
     monkeypatch,
     tmp_path,
