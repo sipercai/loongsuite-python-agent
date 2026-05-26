@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from importlib import import_module
 from typing import Any
 
 import crewai
@@ -26,9 +27,6 @@ from crewai import Agent, Crew, Task
 from crewai.tools.base_tool import BaseTool
 
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-    OTLPSpanExporter,
-)
 from opentelemetry.instrumentation.crewai import CrewAIInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -163,11 +161,24 @@ def _maybe_configure_otlp() -> Any:
     if _TRACER_PROVIDER is not None:
         return _TRACER_PROVIDER
 
+    try:
+        exporter_module = import_module(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+        )
+    except ImportError as exc:
+        raise RuntimeError(
+            "Install opentelemetry-exporter-otlp-proto-http to use "
+            "CREWAI_SMOKE_CONFIGURE_OTLP=true, or unset "
+            "CREWAI_SMOKE_CONFIGURE_OTLP for the default smoke run."
+        ) from exc
+
     resource = Resource.create(
         {"service.name": os.getenv("OTEL_SERVICE_NAME", "crewai-smoke")}
     )
     provider = TracerProvider(resource=resource)
-    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    provider.add_span_processor(
+        BatchSpanProcessor(exporter_module.OTLPSpanExporter())
+    )
     trace.set_tracer_provider(provider)
     _TRACER_PROVIDER = provider
     return provider

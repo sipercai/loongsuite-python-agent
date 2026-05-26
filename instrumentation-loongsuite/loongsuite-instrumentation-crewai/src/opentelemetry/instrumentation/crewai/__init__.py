@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 from contextvars import ContextVar, Token
+from importlib import import_module
 from typing import Any, Collection
 
 from wrapt import wrap_function_wrapper
@@ -42,20 +43,18 @@ from opentelemetry.trace import Status, StatusCode
 from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 from opentelemetry.util.genai.types import Error
 
-try:
-    import crewai.agent
-    import crewai.crew
-    import crewai.flow.flow
-    import crewai.task
-    import crewai.tools.tool_usage
-
-    _CREWAI_LOADED = True
-except ImportError:
-    _CREWAI_LOADED = False
-
 logger = logging.getLogger(__name__)
 _ENTRY_DEPTH: ContextVar[int] = ContextVar("crewai_entry_depth", default=0)
 _TASK_DEPTH: ContextVar[int] = ContextVar("crewai_task_depth", default=0)
+_CREWAI_UNINSTRUMENT_TARGETS = (
+    ("crewai.crew", "Crew", "kickoff"),
+    ("crewai.crew", "Crew", "kickoff_async"),
+    ("crewai.flow.flow", "Flow", "kickoff"),
+    ("crewai.flow.flow", "Flow", "kickoff_async"),
+    ("crewai.agent", "Agent", "execute_task"),
+    ("crewai.task", "Task", "execute_sync"),
+    ("crewai.tools.tool_usage", "ToolUsage", "_use"),
+)
 
 
 def _set_ok(invocation: Any) -> None:
@@ -113,6 +112,33 @@ def _safe_post_process(action: str, callback: Any) -> None:
             exc,
             exc_info=True,
         )
+
+
+def _uninstrument_targets() -> list[tuple[Any, str]]:
+    targets = []
+    for module_name, class_name, method_name in _CREWAI_UNINSTRUMENT_TARGETS:
+        try:
+            module = import_module(module_name)
+            target = getattr(module, class_name)
+        except ImportError:
+            logger.debug(
+                "CrewAI module %s was not available for uninstrumentation.",
+                module_name,
+                exc_info=True,
+            )
+            continue
+        except Exception as exc:
+            logger.warning(
+                "Could not resolve CrewAI target %s.%s for "
+                "uninstrumentation: %s",
+                module_name,
+                class_name,
+                exc,
+                exc_info=True,
+            )
+            continue
+        targets.append((target, method_name))
+    return targets
 
 
 def _input_from_call(args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
@@ -615,22 +641,7 @@ class CrewAIInstrumentor(BaseInstrumentor):
 
     def _uninstrument(self, **kwargs: Any) -> None:
         del kwargs
-        if not _CREWAI_LOADED:
-            logger.debug(
-                "CrewAI modules were not available for uninstrumentation."
-            )
-            self._handler = None
-            return
-
-        for target, method_name in (
-            (crewai.crew.Crew, "kickoff"),
-            (crewai.crew.Crew, "kickoff_async"),
-            (crewai.flow.flow.Flow, "kickoff"),
-            (crewai.flow.flow.Flow, "kickoff_async"),
-            (crewai.agent.Agent, "execute_task"),
-            (crewai.task.Task, "execute_sync"),
-            (crewai.tools.tool_usage.ToolUsage, "_use"),
-        ):
+        for target, method_name in _uninstrument_targets():
             try:
                 unwrap(target, method_name)
             except Exception as exc:
