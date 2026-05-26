@@ -13,7 +13,14 @@ detect = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(detect)
 
 
-def _run_detector(monkeypatch, tmp_path, changed_files=None, event=None):
+def _run_detector(
+    monkeypatch,
+    tmp_path,
+    changed_files=None,
+    event=None,
+    known_packages=None,
+    tox_diff=None,
+):
     output_path = tmp_path / "github-output"
     monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
     monkeypatch.setenv("GITHUB_OUTPUT", str(output_path))
@@ -32,6 +39,18 @@ def _run_detector(monkeypatch, tmp_path, changed_files=None, event=None):
         monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
     else:
         monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
+
+    if known_packages is not None:
+        monkeypatch.setattr(
+            detect,
+            "_known_loongsuite_packages",
+            lambda: set(known_packages),
+        )
+
+    if tox_diff is None:
+        monkeypatch.delenv("LOONGSUITE_TOX_DIFF", raising=False)
+    else:
+        monkeypatch.setenv("LOONGSUITE_TOX_DIFF", tox_diff)
 
     assert detect.main() == 0
 
@@ -97,6 +116,183 @@ def test_unknown_package_falls_back_to_full(monkeypatch, tmp_path, capsys):
     assert outputs["full"] == "true"
     assert "loongsuite-instrumentation-newpkg" in outputs["reason"]
     assert "::error::" in captured.err
+
+
+def test_new_plugin_with_generated_workflows_is_package_scoped(
+    monkeypatch,
+    tmp_path,
+):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [
+            "instrumentation-loongsuite/"
+            "loongsuite-instrumentation-deepagents/src/package.py",
+            "instrumentation-loongsuite/"
+            "loongsuite-instrumentation-deepagents/tests/test_package.py",
+            "instrumentation-loongsuite/"
+            "loongsuite-instrumentation-langchain/src/package.py",
+            "tox-loongsuite.ini",
+            ".github/workflows/loongsuite_test_0.yml",
+            ".github/workflows/loongsuite_lint_0.yml",
+        ],
+        {"pull_request": {"base": {"sha": "base-sha"}}},
+        {
+            "loongsuite-instrumentation-deepagents",
+            "loongsuite-instrumentation-langchain",
+        },
+        "\n".join(
+            [
+                "+    ; loongsuite-instrumentation-deepagents",
+                "+    py3{10,11,12,13}-test-"
+                "loongsuite-instrumentation-deepagents",
+                "+    lint-loongsuite-instrumentation-deepagents",
+                "+  deepagents: -r {toxinidir}/instrumentation-loongsuite/"
+                "loongsuite-instrumentation-deepagents/tests/"
+                "test-requirements.txt",
+                "+  test-loongsuite-instrumentation-deepagents: pytest "
+                "{toxinidir}/instrumentation-loongsuite/"
+                "loongsuite-instrumentation-deepagents/tests {posargs}",
+            ]
+        ),
+    )
+
+    assert outputs["full"] == "false"
+    assert outputs["packages"] == (
+        "|loongsuite-instrumentation-deepagents|"
+        "loongsuite-instrumentation-langchain|"
+    )
+
+
+def test_generated_workflow_only_change_skips_jobs(monkeypatch, tmp_path):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [".github/workflows/loongsuite_test_0.yml"],
+    )
+
+    assert outputs["full"] == "false"
+    assert outputs["packages"] == "||"
+
+
+def test_release_workflow_change_runs_full_suite(monkeypatch, tmp_path):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [".github/workflows/loongsuite-release.yml"],
+    )
+
+    assert outputs["full"] == "true"
+    assert (
+        outputs["reason"] == "shared LoongSuite file changed: "
+        ".github/workflows/loongsuite-release.yml"
+    )
+
+
+def test_unknown_loongsuite_workflow_change_runs_full_suite(
+    monkeypatch,
+    tmp_path,
+):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        [".github/workflows/loongsuite_other_0.yml"],
+    )
+
+    assert outputs["full"] == "true"
+
+
+def test_generated_workflow_name_matching():
+    assert detect._is_generated_loongsuite_workflow(
+        ".github/workflows/loongsuite_test_10.yml"
+    )
+    assert not detect._is_generated_loongsuite_workflow(
+        ".github/workflows/loongsuite_other_0.yml"
+    )
+    assert not detect._is_generated_loongsuite_workflow(
+        ".github/workflows/loongsuite_test_0.yaml"
+    )
+    assert not detect._is_generated_loongsuite_workflow(
+        ".github/workflows/loongsuite-test_0.yml"
+    )
+
+
+def test_tox_only_scoped_change_runs_package_jobs(monkeypatch, tmp_path):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        ["tox-loongsuite.ini"],
+        {"pull_request": {"base": {"sha": "base-sha"}}},
+        {"loongsuite-instrumentation-deepagents"},
+        "\n".join(
+            [
+                "+    py3{10,11,12,13}-test-"
+                "loongsuite-instrumentation-deepagents",
+                "+    lint-loongsuite-instrumentation-deepagents",
+            ]
+        ),
+    )
+
+    assert outputs["full"] == "false"
+    assert outputs["packages"] == "|loongsuite-instrumentation-deepagents|"
+
+
+def test_shared_tox_change_runs_full_suite(monkeypatch, tmp_path):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        ["tox-loongsuite.ini"],
+        {"pull_request": {"base": {"sha": "base-sha"}}},
+        {"loongsuite-instrumentation-crewai"},
+        "+  CORE_REPO_SHA={env:CORE_REPO_SHA:main}",
+    )
+
+    assert outputs["full"] == "true"
+    assert outputs["reason"].startswith("shared tox-loongsuite.ini change:")
+
+
+def test_util_genai_tox_change_runs_full_suite(monkeypatch, tmp_path):
+    outputs = _run_detector(
+        monkeypatch,
+        tmp_path,
+        ["tox-loongsuite.ini"],
+        {"pull_request": {"base": {"sha": "base-sha"}}},
+        {"util-genai"},
+        "+    py3{10,11,12,13}-test-util-genai",
+    )
+
+    assert outputs["full"] == "true"
+    assert outputs["reason"].startswith("shared tox-loongsuite.ini change:")
+
+
+def test_package_mentions_do_not_match_package_prefixes():
+    assert detect._packages_from_text(
+        "lint-loongsuite-instrumentation-langchain-core",
+        {
+            "loongsuite-instrumentation-langchain",
+            "loongsuite-instrumentation-langchain-core",
+        },
+    ) == {"loongsuite-instrumentation-langchain-core"}
+
+
+def test_changed_tox_lines_ignores_headers_comments_and_blanks():
+    diff_text = "\n".join(
+        [
+            "diff --git a/tox-loongsuite.ini b/tox-loongsuite.ini",
+            "--- a/tox-loongsuite.ini",
+            "+++ b/tox-loongsuite.ini",
+            "@@ -1,0 +1,2 @@",
+            "+",
+            "+    ; loongsuite-instrumentation-deepagents",
+            "+    lint-loongsuite-instrumentation-deepagents",
+            "-    lint-loongsuite-instrumentation-langchain",
+        ]
+    )
+
+    assert detect._changed_tox_lines(diff_text) == [
+        "lint-loongsuite-instrumentation-deepagents",
+        "lint-loongsuite-instrumentation-langchain",
+    ]
 
 
 def test_empty_changed_files_is_degraded_full_run(monkeypatch, tmp_path):

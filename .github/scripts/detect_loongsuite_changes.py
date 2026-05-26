@@ -29,7 +29,6 @@ FULL_RUN_FILES = {
     "pyproject.toml",
     "pytest.ini",
     "test-constraints.txt",
-    "tox-loongsuite.ini",
     "tox-uv.toml",
     "uv.lock",
 }
@@ -42,11 +41,17 @@ FULL_RUN_PREFIXES = (
     "loongsuite-site-bootstrap/",
     "scripts/loongsuite/",
 )
+TOX_LOONGSUITE_INI_PATH = "tox-loongsuite.ini"
 UTIL_GENAI_PREFIX = "util/opentelemetry-util-genai/"
 LOONGSUITE_INSTRUMENTATION_PREFIX = "instrumentation-loongsuite/"
 DOC_ONLY_SUFFIXES = (".md", ".rst")
 REPO_ROOT = Path.cwd()
-TOX_LOONGSUITE_INI = REPO_ROOT / "tox-loongsuite.ini"
+TOX_LOONGSUITE_INI = REPO_ROOT / TOX_LOONGSUITE_INI_PATH
+PACKAGE_MENTION_RE = re.compile(
+    r"(?<![A-Za-z0-9])"
+    r"(?P<package>loongsuite-instrumentation-[A-Za-z0-9-]+|util-genai)"
+    r"(?![A-Za-z0-9-])"
+)
 
 
 def _load_event() -> dict:
@@ -92,6 +97,15 @@ def _git_ref_exists(ref: str) -> bool:
     )
 
 
+def _pull_request_base_sha(event: dict) -> str:
+    pull_request = event.get("pull_request", {})
+    base_sha = pull_request.get("base", {}).get("sha")
+    if not base_sha:
+        raise RuntimeError("pull request base SHA is unavailable")
+
+    return base_sha
+
+
 def _changed_files(event: dict) -> list[str]:
     if "LOONGSUITE_CHANGED_FILES" in os.environ:
         changed_files = os.environ["LOONGSUITE_CHANGED_FILES"]
@@ -99,12 +113,7 @@ def _changed_files(event: dict) -> list[str]:
             line.strip() for line in changed_files.splitlines() if line.strip()
         ]
 
-    pull_request = event.get("pull_request", {})
-    base_sha = pull_request.get("base", {}).get("sha")
-    if not base_sha:
-        raise RuntimeError("pull request base SHA is unavailable")
-
-    return _run_git_diff(base_sha)
+    return _run_git_diff(_pull_request_base_sha(event))
 
 
 def _has_full_run_label(event: dict) -> bool:
@@ -143,12 +152,10 @@ def _loongsuite_package_from_path(path: str) -> str | None:
 def _known_loongsuite_packages() -> set[str]:
     text = TOX_LOONGSUITE_INI.read_text(encoding="utf-8")
     packages = set()
-    for match in re.finditer(
-        r"(?:test|lint)-(?P<package>"
-        r"(?:loongsuite-instrumentation-[A-Za-z0-9-]+|util-genai))",
-        text,
-    ):
-        packages.add(match.group("package").rstrip("-"))
+    for line in text.splitlines():
+        if line.lstrip().startswith(";"):
+            continue
+        packages.update(_package_mentions(line))
 
     return packages
 
@@ -174,6 +181,89 @@ def _requires_full_run(path: str) -> bool:
         or normalized.startswith(FULL_RUN_PREFIXES)
         or normalized.startswith(UTIL_GENAI_PREFIX)
     )
+
+
+def _is_generated_loongsuite_workflow(path: str) -> bool:
+    normalized = path.strip("/")
+    return (
+        re.fullmatch(
+            r"\.github/workflows/loongsuite_(?:lint|misc|test)_\d+\.yml",
+            normalized,
+        )
+        is not None
+    )
+
+
+def _tox_diff(base_ref: str) -> str:
+    if "LOONGSUITE_TOX_DIFF" in os.environ:
+        return os.environ["LOONGSUITE_TOX_DIFF"]
+
+    if not _git_ref_exists(base_ref):
+        subprocess.run(
+            ["git", "fetch", "--no-tags", "--depth=1", "origin", base_ref],
+            check=True,
+        )
+
+    completed = subprocess.run(
+        [
+            "git",
+            "diff",
+            "--unified=0",
+            f"{base_ref}...HEAD",
+            "--",
+            TOX_LOONGSUITE_INI_PATH,
+        ],
+        check=True,
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+    )
+    return completed.stdout
+
+
+def _changed_tox_lines(diff_text: str) -> list[str]:
+    lines = []
+    for line in diff_text.splitlines():
+        if not line.startswith(("+", "-")) or line.startswith(("+++", "---")):
+            continue
+
+        content = line[1:].strip()
+        if not content or content.startswith(";"):
+            continue
+
+        lines.append(content)
+
+    return lines
+
+
+def _package_mentions(text: str) -> set[str]:
+    return {
+        match.group("package") for match in PACKAGE_MENTION_RE.finditer(text)
+    }
+
+
+def _packages_from_text(text: str, known_packages: set[str]) -> set[str]:
+    return _package_mentions(text) & known_packages
+
+
+def _packages_from_tox_changes(
+    base_ref: str,
+    known_packages: set[str],
+) -> tuple[set[str], list[str]]:
+    packages = set()
+    unscoped_lines = []
+
+    for line in _changed_tox_lines(_tox_diff(base_ref)):
+        if "util-genai" in _package_mentions(line):
+            unscoped_lines.append(line)
+            continue
+
+        line_packages = _packages_from_text(line, known_packages)
+        if line_packages:
+            packages.update(line_packages)
+        else:
+            unscoped_lines.append(line)
+
+    return packages, unscoped_lines
 
 
 def _write_outputs(outputs: dict[str, str]) -> None:
@@ -217,9 +307,19 @@ def _detect_outputs() -> dict[str, str]:
 
     packages: set[str] = set()
     unknown_packages: set[str] = set()
+    tox_changed = False
     changed_files = _changed_files(event)
     if not changed_files:
         return _full_outputs("unable to compute changed files", degraded=True)
+    tox_base_sha = None
+    if any(
+        changed_file.strip("/") == TOX_LOONGSUITE_INI_PATH
+        for changed_file in changed_files
+    ):
+        try:
+            tox_base_sha = _pull_request_base_sha(event)
+        except RuntimeError as exc:
+            return _full_outputs(str(exc), degraded=True)
 
     known_packages = _known_loongsuite_packages()
     if not known_packages:
@@ -229,6 +329,14 @@ def _detect_outputs() -> dict[str, str]:
         )
 
     for changed_file in changed_files:
+        normalized = changed_file.strip("/")
+        if _is_generated_loongsuite_workflow(normalized):
+            continue
+
+        if normalized == TOX_LOONGSUITE_INI_PATH:
+            tox_changed = True
+            continue
+
         if _requires_full_run(changed_file):
             return _full_outputs(
                 f"shared LoongSuite file changed: {changed_file}"
@@ -242,6 +350,17 @@ def _detect_outputs() -> dict[str, str]:
             unknown_packages.add(package)
         else:
             packages.add(package)
+
+    if tox_changed:
+        tox_packages, unscoped_lines = _packages_from_tox_changes(
+            tox_base_sha,
+            known_packages,
+        )
+        if unscoped_lines:
+            return _full_outputs(
+                "shared tox-loongsuite.ini change: " + unscoped_lines[0]
+            )
+        packages.update(tox_packages)
 
     if unknown_packages:
         package_list = ", ".join(sorted(unknown_packages))
