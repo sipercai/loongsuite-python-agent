@@ -74,9 +74,11 @@ class TestErrorScenarios(TestBase):
         os.environ["CREWAI_TRACING_ENABLED"] = "false"
 
         # Enable experimental mode and content capture for testing
-        os.environ["OTEL_SEMCONV_STABILITY_OPT_IN"] = "gen_ai"
+        os.environ["OTEL_SEMCONV_STABILITY_OPT_IN"] = (
+            "gen_ai_latest_experimental"
+        )
         os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = (
-            "span_only"
+            "SPAN_ONLY"
         )
 
         if _OpenTelemetrySemanticConventionStability:
@@ -173,7 +175,7 @@ class TestErrorScenarios(TestBase):
                     break
 
             # Verify inputs are still there
-            if span.attributes.get("gen_ai.operation.name") in [
+            if span.attributes.get("gen_ai.crewai.operation") in [
                 "task.execute",
                 "agent.execute",
             ]:
@@ -306,7 +308,7 @@ class TestErrorScenarios(TestBase):
         agent_error_spans = [
             s
             for s in error_spans
-            if s.attributes.get("gen_ai.operation.name") == "agent.execute"
+            if s.attributes.get("gen_ai.crewai.operation") == "agent.execute"
         ]
         if agent_error_spans:
             span = agent_error_spans[0]
