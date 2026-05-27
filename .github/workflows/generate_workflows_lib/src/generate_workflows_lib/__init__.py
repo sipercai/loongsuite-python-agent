@@ -354,6 +354,16 @@ def _generate_workflow_with_template(
     workflow_directory_path: Path,
     max_jobs=250,
 ):
+    if (
+        name in {"loongsuite_lint", "loongsuite_test"}
+        and len(job_datas) > max_jobs
+    ):
+        raise RuntimeError(
+            f"{name} dynamic matrix has {len(job_datas)} jobs, which exceeds "
+            f"the {max_jobs}-job single-workflow limit. Add an explicit "
+            "cross-workflow aggregate before allowing generated chunks."
+        )
+
     # Github seems to limit the amount of jobs in a workflow file, that is why
     # they are split in groups of 250 per workflow file.
     for file_number, job_datas in enumerate(

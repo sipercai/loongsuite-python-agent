@@ -19,6 +19,7 @@ from pathlib import Path, PurePosixPath
 FULL_RUN_LABELS = {"prepare-release", "backport"}
 FULL_RUN_FILES = {
     ".github/scripts/detect_loongsuite_changes.py",
+    ".github/scripts/select_loongsuite_matrix.py",
     ".github/workflows/generate_workflows_loongsuite.py",
     ".pre-commit-config.yaml",
     ".pylintrc",
@@ -34,7 +35,7 @@ FULL_RUN_FILES = {
 }
 FULL_RUN_PREFIXES = (
     ".github/scripts/tests/",
-    ".github/workflows/generate_workflows_lib/src/generate_workflows_lib/",
+    ".github/workflows/generate_workflows_lib/",
     ".github/workflows/loongsuite_",
     ".github/workflows/loongsuite-",
     "loongsuite-distro/",
@@ -299,6 +300,7 @@ def _detect_outputs() -> dict[str, str]:
     event_name = os.environ.get("GITHUB_EVENT_NAME", "")
     event = _load_event()
 
+    # Push and merge_group events intentionally run the full suite.
     if event_name != "pull_request":
         return _full_outputs("non-pull-request event")
 

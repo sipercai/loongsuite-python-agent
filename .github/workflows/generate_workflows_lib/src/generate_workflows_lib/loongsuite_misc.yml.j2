@@ -5,9 +5,9 @@ name: LoongSuite Misc {{ file_number }}
 
 on:
   push:
-    branches-ignore:
-    - 'release/*'
-    - 'otelbot/*'
+    # LoongSuite feature-branch pushes are covered by pull_request.
+    branches:
+    - main
   pull_request:
   merge_group:
 
