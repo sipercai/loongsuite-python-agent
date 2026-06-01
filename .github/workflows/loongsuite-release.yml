@@ -22,7 +22,7 @@
 # - Test PyPI: Set TEST_PYPI_TOKEN secret (pypi-xxx from https://test.pypi.org/manage/account/token/)
 # - Use publish_target: testpypi to publish to Test PyPI instead of production
 #
-# PyPI wheels: loongsuite_util_genai-*, loongsuite_distro-*, loongsuite_site_bootstrap-*, loongsuite_instrumentation_* (from instrumentation-loongsuite).
+# PyPI wheels: loongsuite_otel_util_genai-*, loongsuite_distro-*, loongsuite_site_bootstrap-*, loongsuite_instrumentation_* (from instrumentation-loongsuite).
 # loongsuite-python-agent-*.tar.gz is for GitHub Release only and must NOT be uploaded to PyPI.
 #
 name: LoongSuite Release
@@ -120,7 +120,7 @@ jobs:
         with:
           name: pypi-packages
           path: |
-            dist-pypi/loongsuite_util_genai-*.whl
+            dist-pypi/loongsuite_otel_util_genai-*.whl
             dist-pypi/loongsuite_distro-*.whl
             dist-pypi/loongsuite_site_bootstrap-*.whl
             dist-pypi/loongsuite_instrumentation_*.whl

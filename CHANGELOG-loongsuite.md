@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Publish LoongSuite GenAI utilities as `loongsuite-otel-util-genai` for new
+  releases. New LoongSuite distro and instrumentation packages depend on
+  `loongsuite-otel-util-genai`; the previous `loongsuite-util-genai`
+  distribution remains available for existing installations but is no longer
+  the package receiving new LoongSuite GenAI utility updates. The Python import
+  namespace remains `opentelemetry.util.genai`.
+
 ## Version 0.5.0 (2026-05-11)
 
 ### Fixed
