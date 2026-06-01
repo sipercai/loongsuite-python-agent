@@ -47,8 +47,15 @@ Source tree: [`instrumentation-loongsuite/`](instrumentation-loongsuite).
 **Distro and helpers:**
 
 - **loongsuite-distro** — [https://pypi.org/project/loongsuite-distro/](https://pypi.org/project/loongsuite-distro/) (`loongsuite-instrument`, `loongsuite-bootstrap`)
-- **loongsuite-util-genai** — [https://pypi.org/project/loongsuite-util-genai/](https://pypi.org/project/loongsuite-util-genai/)
+- **loongsuite-otel-util-genai** — [https://pypi.org/project/loongsuite-otel-util-genai/](https://pypi.org/project/loongsuite-otel-util-genai/)
 - **loongsuite-site-bootstrap** — [https://pypi.org/project/loongsuite-site-bootstrap/](https://pypi.org/project/loongsuite-site-bootstrap/).
+
+> **Package rename:** LoongSuite GenAI utilities are published as
+> **`loongsuite-otel-util-genai`** in new releases. The previous
+> **`loongsuite-util-genai`** distribution remains available for existing
+> installations, but new LoongSuite GenAI utility updates are published under
+> the new package name. The Python import namespace remains
+> `opentelemetry.util.genai`.
 
 ### OpenTelemetry instrumentation — generative workloads
 
@@ -65,7 +72,7 @@ Source tree: [`instrumentation-genai/`](instrumentation-genai). These distributi
 | [Vertex AI](https://github.com/googleapis/python-aiplatform) | [GUIDE](instrumentation-genai/opentelemetry-instrumentation-vertexai/README.rst) | [PyPI](https://pypi.org/project/opentelemetry-instrumentation-vertexai/) |
 | [Weaviate](https://github.com/weaviate/weaviate) | [GUIDE](instrumentation-genai/opentelemetry-instrumentation-weaviate/README.rst) | [PyPI](https://pypi.org/project/opentelemetry-instrumentation-weaviate/) |
 
-> **Note:** With LoongSuite’s distro, install these together with [**loongsuite-distro**](https://pypi.org/project/loongsuite-distro/) and **`loongsuite-bootstrap`** / [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/). Avoid mixing [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/) with the community **opentelemetry-util-genai** (see [manual `pip` installs](#install-step-2-options)).
+> **Note:** With LoongSuite’s distro, install these together with [**loongsuite-distro**](https://pypi.org/project/loongsuite-distro/) and **`loongsuite-bootstrap`** / [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/). Avoid mixing [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/) with the community **opentelemetry-util-genai** (see [manual `pip` installs](#install-step-2-options)).
 
 ### OpenTelemetry instrumentation
 
@@ -248,7 +255,7 @@ Recommended integration approach: **automatic instrumentation** with **`loongsui
   pip install loongsuite-instrumentation-agentscope
   ```
 
-  > **Note:** If you need packages under [`instrumentation-genai/`](instrumentation-genai), use **Option A or B** together with **`loongsuite-distro`** / **`loongsuite-bootstrap`**. Relying only on manual `pip` can cause **dependency resolution conflicts** when [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/) and the community **opentelemetry-util-genai** are both pulled in or pinned differently.
+  > **Note:** If you need packages under [`instrumentation-genai/`](instrumentation-genai), use **Option A or B** together with **`loongsuite-distro`** / **`loongsuite-bootstrap`**. Relying only on manual `pip` can cause **dependency resolution conflicts** when [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/) and the community **opentelemetry-util-genai** are both pulled in or pinned differently.
 
 **Step 3 — Run under `loongsuite-instrument`**
 
@@ -319,7 +326,7 @@ For applications where you can edit code and want explicit control over OpenTele
   pip install loongsuite-instrumentation-agentscope
   ```
   
-  > **Note:** If you need packages under [`instrumentation-genai/`](instrumentation-genai), use **Option A or B** together with **`loongsuite-distro`** / **`loongsuite-bootstrap`**. Relying only on manual `pip` can cause **dependency resolution conflicts** when [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/) and the community **opentelemetry-util-genai** are both pulled in or pinned differently.
+  > **Note:** If you need packages under [`instrumentation-genai/`](instrumentation-genai), use **Option A or B** together with **`loongsuite-distro`** / **`loongsuite-bootstrap`**. Relying only on manual `pip` can cause **dependency resolution conflicts** when [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/) and the community **opentelemetry-util-genai** are both pulled in or pinned differently.
 
 **Step 2 — Initialize the OpenTelemetry SDK** before anything emits telemetry. You are wiring the same exporters as in [Configure telemetry export](#configure-telemetry-export).
 

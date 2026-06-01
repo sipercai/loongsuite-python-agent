@@ -47,8 +47,13 @@ LoongSuite Python Agent 同时也是上游 [OTel Python Agent](https://github.co
 **发行版与辅助组件：**
 
 - **loongsuite-distro** — [https://pypi.org/project/loongsuite-distro/](https://pypi.org/project/loongsuite-distro/)（包含 `loongsuite-instrument`、`loongsuite-bootstrap`）
-- **loongsuite-util-genai** — [https://pypi.org/project/loongsuite-util-genai/](https://pypi.org/project/loongsuite-util-genai/)
+- **loongsuite-otel-util-genai** — [https://pypi.org/project/loongsuite-otel-util-genai/](https://pypi.org/project/loongsuite-otel-util-genai/)
 - **loongsuite-site-bootstrap**— [https://pypi.org/project/loongsuite-site-bootstrap/](https://pypi.org/project/loongsuite-site-bootstrap/)。
+
+> **包名迁移：**新的 LoongSuite GenAI 工具库发行包名为
+> **`loongsuite-otel-util-genai`**。旧的 **`loongsuite-util-genai`**
+> 仍可供历史安装使用，但新的 LoongSuite GenAI 工具库更新会发布到新包名下。
+> Python 导入命名空间仍保持 `opentelemetry.util.genai`。
 
 ### OpenTelemetry instrumentation — 生成式工作负载
 
@@ -65,7 +70,7 @@ LoongSuite Python Agent 同时也是上游 [OTel Python Agent](https://github.co
 | [Vertex AI](https://github.com/googleapis/python-aiplatform) | [GUIDE](instrumentation-genai/opentelemetry-instrumentation-vertexai/README.rst) | [PyPI](https://pypi.org/project/opentelemetry-instrumentation-vertexai/) |
 | [Weaviate](https://github.com/weaviate/weaviate) | [GUIDE](instrumentation-genai/opentelemetry-instrumentation-weaviate/README.rst) | [PyPI](https://pypi.org/project/opentelemetry-instrumentation-weaviate/) |
 
-> **说明：**在 LoongSuite 的发行方式下，请将这些包与 [**loongsuite-distro**](https://pypi.org/project/loongsuite-distro/) 以及 **`loongsuite-bootstrap`** / [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/) 一起使用。避免将 [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/) 与社区版 **opentelemetry-util-genai** 混装（见[手动 `pip` 安装](#install-step-2-options)）。
+> **说明：**在 LoongSuite 的发行方式下，请将这些包与 [**loongsuite-distro**](https://pypi.org/project/loongsuite-distro/) 以及 **`loongsuite-bootstrap`** / [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/) 一起使用。避免将 [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/) 与社区版 **opentelemetry-util-genai** 混装（见[手动 `pip` 安装](#install-step-2-options)）。
 
 ### OpenTelemetry instrumentation
 
@@ -248,7 +253,7 @@ LoongSuite Python Agent 同时也是上游 [OTel Python Agent](https://github.co
   pip install loongsuite-instrumentation-agentscope
   ```
 
-  > **说明：**若你需要 [`instrumentation-genai/`](instrumentation-genai) 下的包，请优先采用 **选项 A 或 B**，并搭配 **`loongsuite-distro`** / **`loongsuite-bootstrap`**。仅手动 `pip` 安装时，若同时引入或以不同版本固定 [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/) 与社区版 **opentelemetry-util-genai**，可能触发**依赖解析冲突**。
+  > **说明：**若你需要 [`instrumentation-genai/`](instrumentation-genai) 下的包，请优先采用 **选项 A 或 B**，并搭配 **`loongsuite-distro`** / **`loongsuite-bootstrap`**。仅手动 `pip` 安装时，若同时引入或以不同版本固定 [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/) 与社区版 **opentelemetry-util-genai**，可能触发**依赖解析冲突**。
 
 **步骤 3 — 在 `loongsuite-instrument` 下运行**
 
@@ -321,7 +326,7 @@ loongsuite-instrument \
   pip install loongsuite-instrumentation-agentscope
   ```
 
-  > **说明：**若你需要 [`instrumentation-genai/`](instrumentation-genai) 下的包，请优先采用 **选项 A 或 B**，并搭配 **`loongsuite-distro`** / **`loongsuite-bootstrap`**。仅手动 `pip` 安装时，若同时引入或以不同版本固定 [**loongsuite-util-genai**](https://pypi.org/project/loongsuite-util-genai/) 与社区版 **opentelemetry-util-genai**，可能触发**依赖解析冲突**。
+  > **说明：**若你需要 [`instrumentation-genai/`](instrumentation-genai) 下的包，请优先采用 **选项 A 或 B**，并搭配 **`loongsuite-distro`** / **`loongsuite-bootstrap`**。仅手动 `pip` 安装时，若同时引入或以不同版本固定 [**loongsuite-otel-util-genai**](https://pypi.org/project/loongsuite-otel-util-genai/) 与社区版 **opentelemetry-util-genai**，可能触发**依赖解析冲突**。
 
 **步骤 2 — 在任何遥测产生前初始化 OpenTelemetry SDK**
 
