@@ -66,6 +66,7 @@ import timeit
 from contextlib import contextmanager
 from typing import Iterator
 
+from opentelemetry import baggage
 from opentelemetry import context as otel_context
 from opentelemetry._logs import (
     LoggerProvider,
@@ -76,6 +77,9 @@ from opentelemetry.context import (  # LoongSuite Extension
     Context,
 )
 from opentelemetry.metrics import MeterProvider, get_meter
+from opentelemetry.semconv._incubating.attributes import (
+    gen_ai_attributes as GenAI,
+)
 from opentelemetry.semconv.schemas import Schemas
 from opentelemetry.trace import (
     Span,
@@ -90,11 +94,19 @@ from opentelemetry.util.genai.span_utils import (
     _apply_llm_finish_attributes,
     _maybe_emit_llm_event,
 )
-from opentelemetry.util.genai.types import Error, LLMInvocation
+from opentelemetry.util.genai.types import (
+    Error,
+    GenAIInvocation,
+    LLMInvocation,
+)
 from opentelemetry.util.genai.version import __version__
 
 # LoongSuite Extension
 logger = logging.getLogger(__name__)
+
+# Aliyun Python Agent Extension
+_AUTO_INJECT_BAGGAGE_PREFIX = "traffic.llm_sdk."
+_AGENT_NAME_BAGGAGE_KEY = f"{_AUTO_INJECT_BAGGAGE_PREFIX}{GenAI.GEN_AI_AGENT_NAME}"
 
 
 # LoongSuite Extension
@@ -114,6 +126,22 @@ def _safe_detach(token: object) -> None:
         logger.debug(
             "Context detach failed (cross-thread/async scenario): %s", exc
         )
+
+
+def _current_context(context: Context | None = None) -> Context:
+    if context is not None:
+        return context
+    return otel_context.get_current()
+
+
+def _inject_agent_name_from_baggage(
+    invocation: GenAIInvocation, context: Context
+) -> None:
+    if GenAI.GEN_AI_AGENT_NAME in invocation.attributes:
+        return
+    agent_name = baggage.get_baggage(_AGENT_NAME_BAGGAGE_KEY, context=context)
+    if agent_name:
+        invocation.attributes[GenAI.GEN_AI_AGENT_NAME] = agent_name
 
 
 class TelemetryHandler:
@@ -165,18 +193,21 @@ class TelemetryHandler:
         context: Context | None = None,  # LoongSuite Extension
     ) -> LLMInvocation:
         """Start an LLM invocation and create a pending span entry."""
+        current_context = _current_context(context)
+        _inject_agent_name_from_baggage(invocation, current_context)
+
         # Create a span and attach it as current; keep the token to detach later
         span = self._tracer.start_span(
             name=f"{invocation.operation_name} {invocation.request_model}",
             kind=SpanKind.CLIENT,
-            context=context,  # LoongSuite Extension
+            context=current_context,  # LoongSuite Extension
         )
         # Record a monotonic start timestamp (seconds) for duration
         # calculation using timeit.default_timer.
         invocation.monotonic_start_s = timeit.default_timer()
         invocation.span = span
         invocation.context_token = otel_context.attach(
-            set_span_in_context(span)
+            set_span_in_context(span, current_context)
         )
         return invocation
 
