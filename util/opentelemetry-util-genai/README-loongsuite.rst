@@ -22,7 +22,10 @@ OpenTelemetry Util for GenAI - LoongSuite 扩展
 本实现在上游 GenAI Util 能力之上提供扩展，主要包括：
 
 - **llm**：聊天/补全类调用；支持多模态消息的**外置存储与 URI 替换**（见第 4 节），减轻 Trace 体积。
-- **invoke_agent / create_agent**：Agent 调用与创建。
+- **invoke_agent / create_agent**：Agent 调用与创建；``invoke_agent`` 可将
+  Agent 名称写入内部 Baggage key ``traffic.llm_sdk.gen_ai.agent.name``，
+  使其下游 LLM、工具、检索、ReAct step 等 GenAI 子 Span 自动带上
+  ``gen_ai.agent.name`` 属性。
 - **embedding**：向量嵌入。
 - **execute_tool**：工具/函数执行。
   - 当工具执行对应某个 skill 的加载动作时，可额外写入 ``gen_ai.skill.*`` 语义属性。

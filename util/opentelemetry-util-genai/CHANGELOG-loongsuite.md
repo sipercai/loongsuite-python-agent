@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Propagate agent name through the internal `traffic.llm_sdk.gen_ai.agent.name`
+  Baggage key during `start_invoke_agent` and automatically apply it as
+  `gen_ai.agent.name` to nested GenAI child span attributes, including LLM,
+  embedding, tool, retrieval, rerank, memory, entry, and ReAct step invocations.
+
 ## Version 0.5.0 (2026-05-11)
 
 ### Added
