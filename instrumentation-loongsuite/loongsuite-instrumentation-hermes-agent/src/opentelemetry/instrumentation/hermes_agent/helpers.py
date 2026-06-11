@@ -19,6 +19,7 @@ from __future__ import annotations
 import contextvars
 import importlib
 import json
+import os
 from types import SimpleNamespace
 from typing import Any
 
@@ -59,6 +60,7 @@ _HERMES_STATE: contextvars.ContextVar["dict[str, Any] | None"] = (
 )
 
 _HERMES_AGENT_SYSTEM = "hermes"
+_DEFAULT_ENTRY_PLATFORM = "cli"
 
 
 def obj_get(value: Any, field: str, default: Any = None) -> Any:
@@ -72,9 +74,16 @@ def _normalize_platform(value: Any) -> str:
     return str(platform or "").strip().lower()
 
 
-def _entry_platform(instance: Any) -> str:
+def resolve_entry_platform(instance: Any) -> str:
+    """Resolve the Hermes entry source using AIAgent's session source order."""
+
     platform = _normalize_platform(getattr(instance, "platform", None))
-    return platform
+    if platform:
+        return platform
+    platform = _normalize_platform(os.environ.get("HERMES_SESSION_SOURCE"))
+    if platform:
+        return platform
+    return _DEFAULT_ENTRY_PLATFORM
 
 
 def to_int(value: Any) -> int:
@@ -603,10 +612,6 @@ def create_entry_invocation(
         ],
     )
     return invocation
-
-
-def should_create_entry_for_agent(instance: Any) -> bool:
-    return bool(_entry_platform(instance))
 
 
 def create_llm_invocation(instance: Any, api_kwargs: Any) -> LLMInvocation:
