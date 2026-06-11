@@ -103,11 +103,8 @@ from opentelemetry.util.genai.version import __version__
 # LoongSuite Extension
 logger = logging.getLogger(__name__)
 
-# Aliyun Python Agent Extension
-_AUTO_INJECT_BAGGAGE_PREFIX = "traffic.llm_sdk."
-_AGENT_NAME_BAGGAGE_KEY = (
-    f"{_AUTO_INJECT_BAGGAGE_PREFIX}{GenAI.GEN_AI_AGENT_NAME}"
-)
+# LoongSuite Extension
+_AGENT_NAME_BAGGAGE_KEY = GenAI.GEN_AI_AGENT_NAME
 
 
 class _InvocationWithAttributes(Protocol):

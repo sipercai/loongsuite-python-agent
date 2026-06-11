@@ -104,7 +104,7 @@ from opentelemetry.util.genai.types import (
     Uri,
 )
 
-_AGENT_NAME_BAGGAGE_KEY = "traffic.llm_sdk.gen_ai.agent.name"
+_AGENT_NAME_BAGGAGE_KEY = "gen_ai.agent.name"
 
 
 def patch_env_vars(

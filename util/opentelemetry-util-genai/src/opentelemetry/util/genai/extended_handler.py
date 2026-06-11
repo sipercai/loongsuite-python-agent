@@ -147,9 +147,6 @@ class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):  # 
     - Async multimodal processing (via MultimodalProcessingMixin)
     """
 
-    # Aliyun Python Agent Extension
-    _AUTO_INJECT_BAGGAGE_PREFIX = "traffic.llm_sdk."
-
     def __init__(
         self,
         tracer_provider: TracerProvider | None = None,
@@ -490,9 +487,8 @@ class ExtendedTelemetryHandler(MultimodalProcessingMixin, TelemetryHandler):  # 
         current_context = _current_context(context)
         ctx = set_span_in_context(span, current_context)
         if invocation.agent_name:
-            # Aliyun Python Agent Extension
             ctx = baggage.set_baggage(
-                f"{self._AUTO_INJECT_BAGGAGE_PREFIX}{GenAI.GEN_AI_AGENT_NAME}",
+                GenAI.GEN_AI_AGENT_NAME,
                 invocation.agent_name,
                 ctx,
             )
