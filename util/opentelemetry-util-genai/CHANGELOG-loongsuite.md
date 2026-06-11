@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Propagate agent name through the `gen_ai.agent.name` Baggage key during
+  `start_invoke_agent` and automatically apply it to nested GenAI child span
+  attributes, including LLM, embedding, tool, retrieval, rerank, memory, entry,
+  and ReAct step invocations.
+
 ## Version 0.6.0 (2026-06-03)
 
 There are no changelog entries for this release.

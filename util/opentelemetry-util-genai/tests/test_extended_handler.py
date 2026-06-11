@@ -104,6 +104,8 @@ from opentelemetry.util.genai.types import (
     Uri,
 )
 
+_AGENT_NAME_BAGGAGE_KEY = "gen_ai.agent.name"
+
 
 def patch_env_vars(
     stability_mode, content_capturing=None, emit_event=None, **extra_env_vars
@@ -631,6 +633,128 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
             },
         )
         # Note: total_tokens is not set when only input_tokens is available
+
+    def test_invoke_agent_propagates_agent_name_baggage(self):
+        invocation = InvokeAgentInvocation(
+            provider="test-provider",
+            agent_name="BaggageAgent",
+        )
+
+        self.telemetry_handler.start_invoke_agent(invocation)
+        try:
+            current_baggage = get_all_baggage()
+            self.assertEqual(
+                current_baggage.get(_AGENT_NAME_BAGGAGE_KEY),
+                "BaggageAgent",
+            )
+        finally:
+            self.telemetry_handler.stop_invoke_agent(invocation)
+
+        restored_baggage = get_all_baggage()
+        self.assertNotIn(_AGENT_NAME_BAGGAGE_KEY, restored_baggage)
+
+    def test_nested_invoke_agent_baggage_overrides_and_restores(self):
+        parent_invocation = InvokeAgentInvocation(
+            provider="test-provider",
+            agent_name="ParentAgent",
+        )
+        child_invocation = InvokeAgentInvocation(
+            provider="test-provider",
+            agent_name="ChildAgent",
+        )
+
+        self.telemetry_handler.start_invoke_agent(parent_invocation)
+        try:
+            self.assertEqual(
+                get_all_baggage().get(_AGENT_NAME_BAGGAGE_KEY),
+                "ParentAgent",
+            )
+
+            self.telemetry_handler.start_invoke_agent(child_invocation)
+            try:
+                self.assertEqual(
+                    get_all_baggage().get(_AGENT_NAME_BAGGAGE_KEY),
+                    "ChildAgent",
+                )
+            finally:
+                self.telemetry_handler.stop_invoke_agent(child_invocation)
+
+            self.assertEqual(
+                get_all_baggage().get(_AGENT_NAME_BAGGAGE_KEY),
+                "ParentAgent",
+            )
+        finally:
+            self.telemetry_handler.stop_invoke_agent(parent_invocation)
+
+        restored_baggage = get_all_baggage()
+        self.assertNotIn(_AGENT_NAME_BAGGAGE_KEY, restored_baggage)
+
+    def test_agent_context_colors_llm_and_tool_spans(self):
+        agent_invocation = InvokeAgentInvocation(
+            provider="test-provider",
+            agent_name="PlannerAgent",
+        )
+
+        self.telemetry_handler.start_invoke_agent(agent_invocation)
+        try:
+            llm_invocation = LLMInvocation(
+                provider="openai",
+                request_model="gpt-4o-mini",
+            )
+            self.telemetry_handler.start_llm(llm_invocation)
+            self.telemetry_handler.stop_llm(llm_invocation)
+
+            tool_invocation = ExecuteToolInvocation(tool_name="search")
+            self.telemetry_handler.start_execute_tool(tool_invocation)
+            self.telemetry_handler.stop_execute_tool(tool_invocation)
+        finally:
+            self.telemetry_handler.stop_invoke_agent(agent_invocation)
+
+        spans = self.span_exporter.get_finished_spans()
+        llm_span = next(
+            span for span in spans if span.name == "chat gpt-4o-mini"
+        )
+        tool_span = next(
+            span for span in spans if span.name == "execute_tool search"
+        )
+        self.assertEqual(
+            llm_span.attributes.get(GenAI.GEN_AI_AGENT_NAME),
+            "PlannerAgent",
+        )
+        self.assertEqual(
+            tool_span.attributes.get(GenAI.GEN_AI_AGENT_NAME),
+            "PlannerAgent",
+        )
+
+    def test_explicit_agent_parent_context_colors_llm_span(self):
+        agent_invocation = InvokeAgentInvocation(
+            provider="test-provider",
+            agent_name="ExplicitParentAgent",
+        )
+
+        self.telemetry_handler.start_invoke_agent(agent_invocation)
+        try:
+            parent_context = context_api.get_current()
+            llm_invocation = LLMInvocation(
+                provider="openai",
+                request_model="gpt-4o-mini",
+            )
+            self.telemetry_handler.start_llm(
+                llm_invocation,
+                context=parent_context,
+            )
+            self.telemetry_handler.stop_llm(llm_invocation)
+        finally:
+            self.telemetry_handler.stop_invoke_agent(agent_invocation)
+
+        spans = self.span_exporter.get_finished_spans()
+        llm_span = next(
+            span for span in spans if span.name == "chat gpt-4o-mini"
+        )
+        self.assertEqual(
+            llm_span.attributes.get(GenAI.GEN_AI_AGENT_NAME),
+            "ExplicitParentAgent",
+        )
 
     def test_invoke_agent_error_handling(self):
         class AgentInvocationError(RuntimeError):

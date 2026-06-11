@@ -270,7 +270,7 @@ class LoongsuiteTracer(BaseTracer):
             rd = _RunData(
                 run_kind="llm",
                 span=invocation.span,
-                context=set_span_in_context(invocation.span)
+                context=otel_context.get_current()
                 if invocation.span
                 else None,
                 invocation=invocation,
@@ -413,9 +413,7 @@ class LoongsuiteTracer(BaseTracer):
         rd = _RunData(
             run_kind="agent",
             span=invocation.span,
-            context=set_span_in_context(invocation.span)
-            if invocation.span
-            else None,
+            context=otel_context.get_current() if invocation.span else None,
             invocation=invocation,
             is_langgraph_react=_has_langgraph_react_metadata(run),
         )
@@ -437,7 +435,12 @@ class LoongsuiteTracer(BaseTracer):
             span.set_attribute(INPUT_VALUE, _safe_json(inputs))
 
         # Attach chain span context so non-LangChain children nest correctly.
-        ctx = set_span_in_context(span)
+        current_context = (
+            parent_ctx
+            if parent_ctx is not None
+            else otel_context.get_current()
+        )
+        ctx = set_span_in_context(span, current_context)
         token = otel_context.attach(ctx)
 
         # Propagate inside_langgraph_react from parent so that
@@ -576,7 +579,7 @@ class LoongsuiteTracer(BaseTracer):
             rd = _RunData(
                 run_kind="tool",
                 span=invocation.span,
-                context=set_span_in_context(invocation.span)
+                context=otel_context.get_current()
                 if invocation.span
                 else None,
                 invocation=invocation,
@@ -634,7 +637,7 @@ class LoongsuiteTracer(BaseTracer):
             rd = _RunData(
                 run_kind="retriever",
                 span=invocation.span,
-                context=set_span_in_context(invocation.span)
+                context=otel_context.get_current()
                 if invocation.span
                 else None,
                 invocation=invocation,
@@ -724,7 +727,7 @@ class LoongsuiteTracer(BaseTracer):
         self._handler.start_react_step(inv, context=agent_rd.original_context)
 
         step_ctx = (
-            set_span_in_context(inv.span)
+            otel_context.get_current()
             if inv.span
             else agent_rd.original_context
         )
