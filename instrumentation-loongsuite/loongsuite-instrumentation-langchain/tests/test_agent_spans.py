@@ -116,7 +116,9 @@ def test_agent_context_colors_child_llm_and_tool_spans(
 
     spans = span_exporter.get_finished_spans()
     llm_span = next(span for span in spans if span.name == "chat gpt-4o-mini")
-    tool_span = next(span for span in spans if span.name == "execute_tool search")
+    tool_span = next(
+        span for span in spans if span.name == "execute_tool search"
+    )
 
     assert llm_span.attributes[GenAI.GEN_AI_AGENT_NAME] == "AgentExecutor"
     assert tool_span.attributes[GenAI.GEN_AI_AGENT_NAME] == "AgentExecutor"

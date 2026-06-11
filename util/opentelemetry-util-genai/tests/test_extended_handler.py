@@ -711,8 +711,12 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
             self.telemetry_handler.stop_invoke_agent(agent_invocation)
 
         spans = self.span_exporter.get_finished_spans()
-        llm_span = next(span for span in spans if span.name == "chat gpt-4o-mini")
-        tool_span = next(span for span in spans if span.name == "execute_tool search")
+        llm_span = next(
+            span for span in spans if span.name == "chat gpt-4o-mini"
+        )
+        tool_span = next(
+            span for span in spans if span.name == "execute_tool search"
+        )
         self.assertEqual(
             llm_span.attributes.get(GenAI.GEN_AI_AGENT_NAME),
             "PlannerAgent",
@@ -744,7 +748,9 @@ class TestExtendedTelemetryHandler(unittest.TestCase):  # pylint: disable=too-ma
             self.telemetry_handler.stop_invoke_agent(agent_invocation)
 
         spans = self.span_exporter.get_finished_spans()
-        llm_span = next(span for span in spans if span.name == "chat gpt-4o-mini")
+        llm_span = next(
+            span for span in spans if span.name == "chat gpt-4o-mini"
+        )
         self.assertEqual(
             llm_span.attributes.get(GenAI.GEN_AI_AGENT_NAME),
             "ExplicitParentAgent",

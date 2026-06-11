@@ -64,7 +64,7 @@ from __future__ import annotations
 import logging
 import timeit
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Any, Iterator, Protocol
 
 from opentelemetry import baggage
 from opentelemetry import context as otel_context
@@ -96,7 +96,6 @@ from opentelemetry.util.genai.span_utils import (
 )
 from opentelemetry.util.genai.types import (
     Error,
-    GenAIInvocation,
     LLMInvocation,
 )
 from opentelemetry.util.genai.version import __version__
@@ -106,7 +105,13 @@ logger = logging.getLogger(__name__)
 
 # Aliyun Python Agent Extension
 _AUTO_INJECT_BAGGAGE_PREFIX = "traffic.llm_sdk."
-_AGENT_NAME_BAGGAGE_KEY = f"{_AUTO_INJECT_BAGGAGE_PREFIX}{GenAI.GEN_AI_AGENT_NAME}"
+_AGENT_NAME_BAGGAGE_KEY = (
+    f"{_AUTO_INJECT_BAGGAGE_PREFIX}{GenAI.GEN_AI_AGENT_NAME}"
+)
+
+
+class _InvocationWithAttributes(Protocol):
+    attributes: dict[str, Any]
 
 
 # LoongSuite Extension
@@ -135,7 +140,7 @@ def _current_context(context: Context | None = None) -> Context:
 
 
 def _inject_agent_name_from_baggage(
-    invocation: GenAIInvocation, context: Context
+    invocation: _InvocationWithAttributes, context: Context
 ) -> None:
     if GenAI.GEN_AI_AGENT_NAME in invocation.attributes:
         return

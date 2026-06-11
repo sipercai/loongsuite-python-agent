@@ -436,7 +436,9 @@ class LoongsuiteTracer(BaseTracer):
 
         # Attach chain span context so non-LangChain children nest correctly.
         current_context = (
-            parent_ctx if parent_ctx is not None else otel_context.get_current()
+            parent_ctx
+            if parent_ctx is not None
+            else otel_context.get_current()
         )
         ctx = set_span_in_context(span, current_context)
         token = otel_context.attach(ctx)
@@ -725,7 +727,9 @@ class LoongsuiteTracer(BaseTracer):
         self._handler.start_react_step(inv, context=agent_rd.original_context)
 
         step_ctx = (
-            otel_context.get_current() if inv.span else agent_rd.original_context
+            otel_context.get_current()
+            if inv.span
+            else agent_rd.original_context
         )
         agent_rd.active_step = _RunData(
             run_kind="react_step",
