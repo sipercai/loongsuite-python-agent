@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved LiteLLM GenAI util invocation mapping for positional arguments,
   streaming time-to-first-token, multi-choice outputs, tool-call deltas, and
   a real smoke example
-  ([#191](https://github.com/alibaba/loongsuite-python-agent/pull/191)).
+  ([#191](https://github.com/alibaba/loongsuite-python/pull/191)).
 
 ## Version 0.5.0 (2026-05-11)
 
@@ -33,4 +33,4 @@ There are no changelog entries for this release.
 ### Added
 
 - Initialize the instrumentation for Litellm
-  ([#88](https://github.com/alibaba/loongsuite-python-agent/pull/88))
+  ([#88](https://github.com/alibaba/loongsuite-python/pull/88))

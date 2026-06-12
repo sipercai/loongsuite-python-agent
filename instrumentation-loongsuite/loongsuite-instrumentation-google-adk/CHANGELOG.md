@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `gen_ai.input.messages`, `gen_ai.output.messages`,
   `gen_ai.tool.call.arguments`, `gen_ai.tool.call.result`,
   `gen_ai.span.kind`, and `gen_ai.provider.name=google_adk`.
-  ([#199](https://github.com/alibaba/loongsuite-python-agent/pull/199))
+  ([#199](https://github.com/alibaba/loongsuite-python/pull/199))
 
 ### Fixed
 
@@ -38,7 +38,7 @@ There are no changelog entries for this release.
 ### Changed
 
 - Update README integration flow to align with the root recommended LoongSuite pattern using Option C (`pip install loongsuite-instrumentation-google-adk`) and `loongsuite-instrument`.
-  ([#159](https://github.com/alibaba/loongsuite-python-agent/pull/159))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ## Version 0.2.0 (2026-03-12)
 
@@ -49,4 +49,4 @@ There are no changelog entries for this release.
 ### Added
 
 - Initialize the instrumentation for Google Agent Development Kit (ADK)
-  ([#71](https://github.com/alibaba/loongsuite-python-agent/pull/71))
+  ([#71](https://github.com/alibaba/loongsuite-python/pull/71))

@@ -177,7 +177,7 @@ python scripts/loongsuite/build_loongsuite_package.py --build-github-release \
   - **规则 2**：动态检测依赖，将 `opentelemetry-util-genai` 替换为 `loongsuite-otel-util-genai`
 - 遍历 `instrumentation-loongsuite/` 目录：
   - 仅应用依赖替换规则
-- 所有 `.whl` 打包为 `loongsuite-python-agent-{version}.tar.gz`
+- 所有 `.whl` 打包为 `loongsuite-python-{version}.tar.gz`
 
 **规则匹配（无需硬编码包名）：**
 
@@ -295,8 +295,8 @@ Phase 2: 从 PyPI 安装 opentelemetry-* 包
 
 ```bash
 # 克隆仓库
-git clone https://github.com/alibaba/loongsuite-python-agent.git
-cd loongsuite-python-agent
+git clone https://github.com/alibaba/loongsuite-python.git
+cd loongsuite-python
 
 # 创建虚拟环境
 python -m venv .venv
@@ -489,7 +489,7 @@ git push origin v0.1.0
 
 2. **OIDC Trusted Publishing**（推荐）：
    - PyPI 项目设置 → Publishing → Add a new pending publisher
-   - Owner: `alibaba`，Repository: `loongsuite-python-agent`
+   - Owner: `alibaba`，Repository: `loongsuite-python`
    - Workflow: `loongsuite-release.yml`，Environment: `pypi`
    - 在 GitHub 仓库中创建 Environment `pypi`（Settings → Environments）
 
@@ -502,7 +502,7 @@ git push origin v0.1.0
 **重要说明：**
 
 - `dist-pypi/` 中的 `loongsuite_otel_util_genai-*.whl`、`loongsuite_distro-*.whl` 以及 `loongsuite_instrumentation_*.whl`（`instrumentation-loongsuite` 中当前参与 PyPI 构建的插件；`agno` / `mcp` / `dify` 暂排除）会上传到 PyPI；每个新插件首次发布前需在 PyPI 上完成项目/Trusted Publisher 配置
-- `loongsuite-python-agent-*.tar.gz` 仅用于 GitHub Release，**禁止**上传到 PyPI
+- `loongsuite-python-*.tar.gz` 仅用于 GitHub Release，**禁止**上传到 PyPI
 
 ### 5.4 Post-Release PR
 

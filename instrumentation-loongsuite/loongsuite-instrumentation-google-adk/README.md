@@ -34,7 +34,7 @@ loongsuite-instrument \
   python your_app.py
 ```
 
-For details on LoongSuite and Jaeger setup, refer to [LoongSuite Documentation](https://github.com/alibaba/loongsuite-python-agent/blob/main/README.md).
+For details on LoongSuite and Jaeger setup, refer to [LoongSuite Documentation](https://github.com/alibaba/loongsuite-python/blob/main/README.md).
 
 ## Installing Google ADK Instrumentation
 
@@ -130,7 +130,7 @@ trace:
 
 ```bash
 python /path/to/run_loongsuite_plugin_smoke.py \
-  --repo-root /path/to/loongsuite-python-agent \
+  --repo-root /path/to/loongsuite-python \
   --base-url http://127.0.0.1:5173 \
   --service-name loongsuite-google-adk-non-stream \
   --root-span-contains invoke_agent \

@@ -48,11 +48,11 @@ There are no changelog entries for this release.
 ### Changed
 
 - Adapt imports to `opentelemetry-util-genai` module layout change
-  ([#158](https://github.com/alibaba/loongsuite-python-agent/pull/158))
+  ([#158](https://github.com/alibaba/loongsuite-python/pull/158))
 - Update README integration flow to align with the root recommended LoongSuite pattern using Option C (`pip install loongsuite-instrumentation-crewai`) and `loongsuite-instrument`.
-  ([#159](https://github.com/alibaba/loongsuite-python-agent/pull/159))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ### Added
 
 - Initialize the instrumentation for CrewAI
-  ([#87](https://github.com/alibaba/loongsuite-python-agent/pull/87))
+  ([#87](https://github.com/alibaba/loongsuite-python/pull/87))

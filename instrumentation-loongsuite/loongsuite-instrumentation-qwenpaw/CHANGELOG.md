@@ -31,11 +31,11 @@ There are no changelog entries for this release.
 - **CoPaw instrumentation initialization**: ``CoPawInstrumentor`` registers
   automatic instrumentation for CoPaw when ``instrument()`` is called (included
   in LoongSuite distro automatic injection).
-  ([#162](https://github.com/alibaba/loongsuite-python-agent/pull/162))
+  ([#162](https://github.com/alibaba/loongsuite-python/pull/162))
 
 ### Changed
 
 - Instrumentor depends on ``opentelemetry-util-genai`` and passes
   ``tracer_provider``, ``meter_provider``, and ``logger_provider`` from
   ``instrument()`` into the shared GenAI telemetry handler.
-  ([#162](https://github.com/alibaba/loongsuite-python-agent/pull/162))
+  ([#162](https://github.com/alibaba/loongsuite-python/pull/162))

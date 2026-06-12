@@ -43,7 +43,7 @@ There are no changelog entries for this release.
 ### Changed
 
 - Update README integration flow to align with the root recommended LoongSuite pattern using Option A (`loongsuite-bootstrap -a install --latest`) for this package not yet on PyPI.
-  ([#159](https://github.com/alibaba/loongsuite-python-agent/pull/159))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ## Version 0.2.0 (2026-03-12)
 
@@ -54,13 +54,13 @@ There are no changelog entries for this release.
 ### Fixed
 
 - Fix aresponse missing await and double wrapped() calls
-  ([#107](https://github.com/alibaba/loongsuite-python-agent/pull/107))
+  ([#107](https://github.com/alibaba/loongsuite-python/pull/107))
 - Fix broken trace caused by the improper setting of the parent context
-  ([#23](https://github.com/alibaba/loongsuite-python-agent/pull/23))
+  ([#23](https://github.com/alibaba/loongsuite-python/pull/23))
 - Correct span name of tool call
-  ([#21](https://github.com/alibaba/loongsuite-python-agent/pull/21))
+  ([#21](https://github.com/alibaba/loongsuite-python/pull/21))
 
 ### Added
 
 - Initial implementation of Agno instrumentation
-  ([#13](https://github.com/alibaba/loongsuite-python-agent/pull/13))
+  ([#13](https://github.com/alibaba/loongsuite-python/pull/13))
