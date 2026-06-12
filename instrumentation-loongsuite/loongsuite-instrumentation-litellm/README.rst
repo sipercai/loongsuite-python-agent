@@ -15,8 +15,8 @@ Installation
 
 ::
 
-     git clone https://github.com/alibaba/loongsuite-python-agent.git
-     cd loongsuite-python-agent
+     git clone https://github.com/alibaba/loongsuite-python.git
+     cd loongsuite-python
      pip install ./instrumentation-loongsuite/loongsuite-instrumentation-litellm
 
 Configuration
