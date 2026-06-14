@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 CREATE_DEEP_AGENT_MODULE = "deepagents.graph"
 CREATE_DEEP_AGENT_NAME = "create_deep_agent"
 REACT_AGENT_METADATA_KEY = "_loongsuite_react_agent"
+DEEPAGENTS_METADATA_KEY = "_loongsuite_deepagents_agent"
 GRAPH_METHODS_WRAPPED_ATTR = "_loongsuite_deepagents_methods_wrapped"
 GRAPH_ORIGINAL_METHODS_ATTR = "_loongsuite_deepagents_original_methods"
 
@@ -173,6 +174,7 @@ def _restore_top_level_create_deep_agent() -> None:
 def _mark_graph(graph: Any) -> None:
     with suppress(Exception):
         setattr(graph, REACT_AGENT_METADATA_KEY, True)
+        setattr(graph, DEEPAGENTS_METADATA_KEY, True)
 
 
 def _wrap_graph_methods(graph: Any) -> None:
@@ -257,5 +259,6 @@ def _inject_react_metadata(config: Any) -> Any:
     config = {**config}
     metadata = dict(config.get("metadata") or {})
     metadata.setdefault(REACT_AGENT_METADATA_KEY, True)
+    metadata.setdefault(DEEPAGENTS_METADATA_KEY, True)
     config["metadata"] = metadata
     return config

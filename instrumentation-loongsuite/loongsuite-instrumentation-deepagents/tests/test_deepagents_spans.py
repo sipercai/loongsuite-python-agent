@@ -12,19 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Integration tests for DeepAgents root-span classification."""
+"""Integration tests for DeepAgents AGENT and ReAct STEP spans."""
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
+import pytest
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.tools import tool
 
 
-class _FakeToolCallingModel(BaseChatModel):
+class _SequenceToolCallingModel(BaseChatModel):
+    def __init__(self, responses: list[AIMessage]):
+        super().__init__()
+        self._responses = list(responses)
+        self._index = 0
+
     @property
     def _llm_type(self) -> str:
         return "fake-tool-calling-deepagents"
@@ -36,6 +44,13 @@ class _FakeToolCallingModel(BaseChatModel):
     def bind_tools(self, tools, **kwargs):
         return self
 
+    def _next_message(self) -> AIMessage:
+        if self._index >= len(self._responses):
+            return AIMessage(content="Deep agent fallback answer.")
+        message = self._responses[self._index]
+        self._index += 1
+        return message
+
     def _generate(
         self,
         messages: list[BaseMessage],
@@ -44,7 +59,7 @@ class _FakeToolCallingModel(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         del messages, stop, run_manager, kwargs
-        message = AIMessage(content="Deep agent final answer.")
+        message = self._next_message()
         return ChatResult(
             generations=[
                 ChatGeneration(
@@ -56,17 +71,96 @@ class _FakeToolCallingModel(BaseChatModel):
         )
 
 
-def test_deepagents_root_span_is_agent(instrument, span_exporter):
+@tool
+def lookup_city(query: str) -> str:
+    """Look up a city name for tests."""
+    del query
+    return "Hangzhou"
+
+
+def _build_agent(responses: list[AIMessage], *, name: str):
     from deepagents import create_deep_agent  # noqa: PLC0415
 
-    agent = create_deep_agent(
-        model=_FakeToolCallingModel(),
-        tools=[],
+    return create_deep_agent(
+        model=_SequenceToolCallingModel(responses),
+        tools=[lookup_city],
         system_prompt="Answer briefly.",
+        name=name,
+    )
+
+
+def _root_spans(spans):
+    return [span for span in spans if span.parent is None]
+
+
+def _spans_by_kind(spans, kind: str):
+    return [
+        span
+        for span in spans
+        if span.attributes.get("gen_ai.span.kind") == kind
+    ]
+
+
+def _collect_descendants(spans, parent_span_id: int) -> set[int]:
+    children: dict[int, list[int]] = {}
+    for span in spans:
+        if span.parent is not None:
+            children.setdefault(span.parent.span_id, []).append(
+                span.context.span_id
+            )
+
+    result: set[int] = set()
+    queue = list(children.get(parent_span_id, []))
+    while queue:
+        span_id = queue.pop()
+        result.add(span_id)
+        queue.extend(children.get(span_id, []))
+    return result
+
+
+def _assert_single_agent(spans, name: str):
+    root_spans = _root_spans(spans)
+    root_kinds = {
+        span.name: span.attributes.get("gen_ai.span.kind")
+        for span in root_spans
+    }
+    assert root_kinds == {f"invoke_agent {name}": "AGENT"}
+    assert not any(
+        span.name == f"chain {name}"
+        and span.attributes.get("gen_ai.span.kind") == "CHAIN"
+        for span in root_spans
+    )
+    return root_spans[0]
+
+
+def _assert_step_is_under_agent(agent_span, step_span) -> None:
+    assert step_span.parent is not None
+    assert step_span.parent.span_id == agent_span.context.span_id
+
+
+def _assert_kind_under_step(spans, step_span, kind: str, name: str | None = None):
+    descendants = _collect_descendants(spans, step_span.context.span_id)
+    matches = [
+        span
+        for span in spans
+        if span.context.span_id in descendants
+        and span.attributes.get("gen_ai.span.kind") == kind
+        and (name is None or span.name == name)
+    ]
+    assert matches, f"Expected {kind} span under {step_span.name}"
+    return matches
+
+
+def test_deepagents_root_span_is_agent_and_single_step(
+    instrument, span_exporter
+):
+    agent = _build_agent(
+        [AIMessage(content="Deep agent final answer.")],
         name="deep_test_agent",
     )
 
     assert getattr(agent, "_loongsuite_react_agent") is True
+    assert getattr(agent, "_loongsuite_deepagents_agent") is True
 
     result = agent.invoke(
         {"messages": [{"role": "user", "content": "hello"}]}
@@ -75,18 +169,162 @@ def test_deepagents_root_span_is_agent(instrument, span_exporter):
     assert result["messages"][-1].content == "Deep agent final answer."
 
     spans = span_exporter.get_finished_spans()
-    root_spans = [span for span in spans if span.parent is None]
-    root_kinds = {
-        span.name: span.attributes.get("gen_ai.span.kind")
-        for span in root_spans
+    agent_span = _assert_single_agent(spans, "deep_test_agent")
+
+    step_spans = _spans_by_kind(spans, "STEP")
+    assert len(step_spans) == 1
+    step = step_spans[0]
+    _assert_step_is_under_agent(agent_span, step)
+    assert step.name == "react step"
+    assert step.attributes.get("gen_ai.operation.name") == "react"
+    assert step.attributes.get("gen_ai.react.round") == 1
+    assert step.attributes.get("gen_ai.react.finish_reason") == "stop"
+    _assert_kind_under_step(spans, step, "CHAIN", "chain model")
+    _assert_kind_under_step(spans, step, "LLM")
+
+
+def test_deepagents_tool_call_creates_two_react_steps(
+    instrument, span_exporter
+):
+    agent = _build_agent(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "lookup_city",
+                        "args": {"query": "city"},
+                        "id": "call_1",
+                    }
+                ],
+            ),
+            AIMessage(content="Final answer: Hangzhou."),
+        ],
+        name="deep_tool_agent",
+    )
+
+    result = agent.invoke(
+        {"messages": [{"role": "user", "content": "Where is it?"}]}
+    )
+
+    assert result["messages"][-1].content == "Final answer: Hangzhou."
+
+    spans = span_exporter.get_finished_spans()
+    agent_span = _assert_single_agent(spans, "deep_tool_agent")
+
+    step_spans = sorted(
+        _spans_by_kind(spans, "STEP"),
+        key=lambda span: span.attributes.get("gen_ai.react.round", 0),
+    )
+    assert len(step_spans) == 2
+
+    assert step_spans[0].attributes.get("gen_ai.react.round") == 1
+    assert (
+        step_spans[0].attributes.get("gen_ai.react.finish_reason")
+        == "tool_calls"
+    )
+    assert step_spans[1].attributes.get("gen_ai.react.round") == 2
+    assert step_spans[1].attributes.get("gen_ai.react.finish_reason") == "stop"
+
+    for step in step_spans:
+        _assert_step_is_under_agent(agent_span, step)
+        _assert_kind_under_step(spans, step, "CHAIN", "chain model")
+        _assert_kind_under_step(spans, step, "LLM")
+
+    _assert_kind_under_step(
+        spans, step_spans[0], "TOOL", "execute_tool lookup_city"
+    )
+
+
+def test_deepagents_stream_creates_react_step(instrument, span_exporter):
+    agent = _build_agent(
+        [AIMessage(content="Stream final answer.")],
+        name="deep_stream_agent",
+    )
+
+    chunks = list(
+        agent.stream({"messages": [{"role": "user", "content": "hello"}]})
+    )
+
+    assert chunks
+
+    spans = span_exporter.get_finished_spans()
+    agent_span = _assert_single_agent(spans, "deep_stream_agent")
+    step_spans = _spans_by_kind(spans, "STEP")
+    assert len(step_spans) == 1
+    _assert_step_is_under_agent(agent_span, step_spans[0])
+    assert step_spans[0].attributes.get("gen_ai.react.round") == 1
+    assert step_spans[0].attributes.get("gen_ai.react.finish_reason") == "stop"
+    _assert_kind_under_step(spans, step_spans[0], "LLM")
+
+
+@pytest.mark.asyncio
+async def test_deepagents_async_invoke_creates_react_step(
+    instrument, span_exporter
+):
+    agent = _build_agent(
+        [AIMessage(content="Async final answer.")],
+        name="deep_async_agent",
+    )
+
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": "hello"}]}
+    )
+
+    assert result["messages"][-1].content == "Async final answer."
+
+    spans = span_exporter.get_finished_spans()
+    agent_span = _assert_single_agent(spans, "deep_async_agent")
+    step_spans = _spans_by_kind(spans, "STEP")
+    assert len(step_spans) == 1
+    _assert_step_is_under_agent(agent_span, step_spans[0])
+    _assert_kind_under_step(spans, step_spans[0], "LLM")
+
+
+def test_deepagents_parallel_invocations_keep_step_parents(
+    instrument, span_exporter
+):
+    def run_agent(index: int) -> str:
+        agent = _build_agent(
+            [AIMessage(content=f"Parallel final {index}.")],
+            name=f"deep_parallel_agent_{index}",
+        )
+        result = agent.invoke(
+            {"messages": [{"role": "user", "content": f"hello {index}"}]}
+        )
+        return result["messages"][-1].content
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(run_agent, [1, 2]))
+
+    assert sorted(results) == ["Parallel final 1.", "Parallel final 2."]
+
+    spans = span_exporter.get_finished_spans()
+    agent_spans = {
+        span.name: span
+        for span in _spans_by_kind(spans, "AGENT")
+        if span.name.startswith("invoke_agent deep_parallel_agent_")
+    }
+    assert set(agent_spans) == {
+        "invoke_agent deep_parallel_agent_1",
+        "invoke_agent deep_parallel_agent_2",
     }
 
-    assert root_kinds == {"invoke_agent deep_test_agent": "AGENT"}
-    assert not any(
-        span.name == "chain deep_test_agent"
-        and span.attributes.get("gen_ai.span.kind") == "CHAIN"
-        for span in root_spans
-    )
+    step_spans = _spans_by_kind(spans, "STEP")
+    assert len(step_spans) == 2
+    parent_ids = {
+        step.parent.span_id for step in step_spans if step.parent is not None
+    }
+    assert parent_ids == {
+        span.context.span_id for span in agent_spans.values()
+    }
+    assert {
+        step.attributes.get("gen_ai.react.round") for step in step_spans
+    } == {1}
+    assert {
+        step.attributes.get("gen_ai.react.finish_reason")
+        for step in step_spans
+    } == {"stop"}
 
 
 def test_top_level_create_deep_agent_export_is_wrapped(instrument):

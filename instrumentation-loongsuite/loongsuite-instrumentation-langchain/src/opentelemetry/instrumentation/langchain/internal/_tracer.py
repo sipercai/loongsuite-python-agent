@@ -51,6 +51,7 @@ from langchain_core.tracers.schemas import Run
 from opentelemetry import context as otel_context
 from opentelemetry.context import Context
 from opentelemetry.instrumentation.langchain.internal._utils import (
+    DEEPAGENTS_REACT_STEP_NODE,
     LANGGRAPH_REACT_STEP_NODE,
     _documents_to_retrieval_documents,
     _extract_finish_reasons,
@@ -62,6 +63,7 @@ from opentelemetry.instrumentation.langchain.internal._utils import (
     _extract_response_model,
     _extract_token_usage,
     _extract_tool_definitions,
+    _has_deepagents_metadata,
     _has_langgraph_react_metadata,
     _is_agent_run,
     _safe_json,
@@ -122,6 +124,8 @@ class _RunData:
     original_context: Context | None = None
     is_langgraph_react: bool = False
     inside_langgraph_react: bool = False
+    is_deepagents_react: bool = False
+    inside_deepagents_react: bool = False
 
 
 def _should_capture_chain_content() -> bool:
@@ -317,24 +321,25 @@ class LoongsuiteTracer(BaseTracer):
         try:
             if _is_agent_run(run):
                 self._start_agent(run)
-            elif _has_langgraph_react_metadata(run):
-                self._handle_langgraph_chain_start(run)
+            elif _has_langgraph_react_metadata(
+                run
+            ) or _has_deepagents_metadata(run):
+                self._handle_react_chain_start(run)
             else:
                 self._start_chain(run)
         except Exception:
             logger.debug("Failed to start Chain/Agent span", exc_info=True)
 
-    def _handle_langgraph_chain_start(self, run: Run) -> None:
-        """Route a chain start that carries LangGraph ReAct metadata.
+    def _handle_react_chain_start(self, run: Run) -> None:
+        """Route a chain start that carries LoongSuite ReAct metadata.
 
         Because ``config["metadata"]`` propagates to child callbacks,
         both the graph-level run and its child nodes carry the flag.
-        We disambiguate by checking whether any ancestor is a LangGraph
-        ReAct agent (``is_langgraph_react``) or inside one
-        (``inside_langgraph_react``):
+        We disambiguate by checking whether any ancestor is a marked
+        ReAct-style agent or inside one:
 
-        * **Inside LangGraph agent** → child node (chain span, with
-          possible ReAct step transition).
+        * **Inside marked agent** → child node (chain span, with possible
+          ReAct step transition).
         * **Otherwise** → top-level graph → create Agent span.
         """
         parent_id = getattr(run, "parent_run_id", None)
@@ -342,11 +347,15 @@ class LoongsuiteTracer(BaseTracer):
             parent_rd = self._runs.get(parent_id) if parent_id else None
 
         inside = parent_rd is not None and (
-            parent_rd.is_langgraph_react or parent_rd.inside_langgraph_react
+            parent_rd.is_langgraph_react
+            or parent_rd.inside_langgraph_react
+            or parent_rd.is_deepagents_react
+            or parent_rd.inside_deepagents_react
         )
 
         if inside:
             self._maybe_enter_langgraph_react_step(run)
+            self._maybe_enter_deepagents_react_step(run)
             self._start_chain(run)
         else:
             self._start_agent(run)
@@ -416,6 +425,7 @@ class LoongsuiteTracer(BaseTracer):
             context=otel_context.get_current() if invocation.span else None,
             invocation=invocation,
             is_langgraph_react=_has_langgraph_react_metadata(run),
+            is_deepagents_react=_has_deepagents_metadata(run),
         )
         with self._lock:
             self._runs[run.id] = rd
@@ -443,15 +453,19 @@ class LoongsuiteTracer(BaseTracer):
         ctx = set_span_in_context(span, current_context)
         token = otel_context.attach(ctx)
 
-        # Propagate inside_langgraph_react from parent so that
+        # Propagate framework-specific ReAct context from parent so that
         # grandchildren of the graph are also recognised as internal.
         inside_lg = False
+        inside_deepagents = False
         parent_id = getattr(run, "parent_run_id", None)
         if parent_id:
             with self._lock:
                 p = self._runs.get(parent_id)
             if p is not None:
                 inside_lg = p.is_langgraph_react or p.inside_langgraph_react
+                inside_deepagents = (
+                    p.is_deepagents_react or p.inside_deepagents_react
+                )
 
         rd = _RunData(
             run_kind="chain",
@@ -459,6 +473,7 @@ class LoongsuiteTracer(BaseTracer):
             context=ctx,
             context_token=token,
             inside_langgraph_react=inside_lg,
+            inside_deepagents_react=inside_deepagents,
         )
         with self._lock:
             self._runs[run.id] = rd
@@ -703,6 +718,31 @@ class LoongsuiteTracer(BaseTracer):
             return
 
         # End previous step (it had tool_calls since another round started)
+        if parent_rd.active_step is not None:
+            self._exit_react_step(parent_id, "tool_calls")
+
+        self._enter_react_step(parent_id)
+
+    def _maybe_enter_deepagents_react_step(self, run: Run) -> None:
+        """Start a ReAct STEP for DeepAgents model decision nodes.
+
+        DeepAgents is built through ``langchain.agents.create_agent`` and its
+        model decision node is named ``"model"``. Treat each direct ``model``
+        child of the marked DeepAgents root graph as one ReAct round.
+        """
+        parent_id = getattr(run, "parent_run_id", None)
+        if not parent_id:
+            return
+
+        with self._lock:
+            parent_rd = self._runs.get(parent_id)
+        if parent_rd is None or not parent_rd.is_deepagents_react:
+            return
+
+        chain_name = getattr(run, "name", "") or ""
+        if chain_name != DEEPAGENTS_REACT_STEP_NODE:
+            return
+
         if parent_rd.active_step is not None:
             self._exit_react_step(parent_id, "tool_calls")
 
