@@ -45,7 +45,7 @@ test = [
 dify = "opentelemetry.instrumentation.dify:DifyInstrumentor"
 
 [project.urls]
-Homepage = "https://github.com/alibaba/loongsuite-python/tree/main/instrumentation-loongsuite/loongsuite-instrumentation-agentscope"
+Homepage = "https://github.com/alibaba/loongsuite-python/tree/main/instrumentation-loongsuite/loongsuite-instrumentation-dify"
 Repository = "https://github.com/alibaba/loongsuite-python"
 
 [tool.hatch.version]

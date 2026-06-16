@@ -731,7 +731,7 @@ Examples:
 
         if github_whl_files:
             output_path = args.output or (
-                dist_dir / f"loongsuite-python-agent-{args.version}.tar.gz"
+                dist_dir / f"loongsuite-python-{args.version}.tar.gz"
             )
             create_tar_archive(github_whl_files, output_path)
             logger.info(f"GitHub Release tar: {output_path}")
@@ -747,7 +747,7 @@ Examples:
 
     if github_whl_files:
         logger.info(
-            f"GitHub Release tar ready: {dist_dir}/loongsuite-python-agent-{args.version}.tar.gz"
+            f"GitHub Release tar ready: {dist_dir}/loongsuite-python-{args.version}.tar.gz"
         )
 
 

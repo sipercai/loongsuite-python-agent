@@ -129,7 +129,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 RELEASE_BRANCH="release/${LOONGSUITE_VERSION}"
-TAR_NAME="loongsuite-python-agent-${LOONGSUITE_VERSION}.tar.gz"
+TAR_NAME="loongsuite-python-${LOONGSUITE_VERSION}.tar.gz"
 TAR_PATH="${REPO_ROOT}/dist/${TAR_NAME}"
 PYPI_DIST_DIR="${REPO_ROOT}/dist-pypi"
 RELEASE_NOTES_FILE="${REPO_ROOT}/dist/release-notes.md"
@@ -398,12 +398,12 @@ else
     echo "    WARN: gh CLI not found, skipping GitHub Release creation."
     echo "    Run manually:"
     echo "      gh release create v$LOONGSUITE_VERSION \\"
-    echo "        --title \"loongsuite-python-agent $LOONGSUITE_VERSION\" \\"
+    echo "        --title \"loongsuite-python $LOONGSUITE_VERSION\" \\"
     echo "        --notes-file $RELEASE_NOTES_FILE \\"
     echo "        $TAR_PATH"
   else
     gh release create "v${LOONGSUITE_VERSION}" \
-      --title "loongsuite-python-agent ${LOONGSUITE_VERSION}" \
+      --title "loongsuite-python ${LOONGSUITE_VERSION}" \
       --notes-file "$RELEASE_NOTES_FILE" \
       "$TAR_PATH"
     echo "    OK: GitHub Release v${LOONGSUITE_VERSION} created"
@@ -450,7 +450,7 @@ else
       --base main \
       --head "$POST_RELEASE_BRANCH" \
       --title "chore: post-release ${LOONGSUITE_VERSION} — archive changelogs & bump dev versions" \
-      --body "## Post-release updates for loongsuite-python-agent ${LOONGSUITE_VERSION}
+      --body "## Post-release updates for loongsuite-python ${LOONGSUITE_VERSION}
 
 Automated housekeeping after the \`${LOONGSUITE_VERSION}\` release:
 
