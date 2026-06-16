@@ -45,14 +45,14 @@ There are no changelog entries for this release.
 - **`loongsuite-site-bootstrap`**: initialize .pth-based OTel auto-instrumentation package
   ([#156](https://github.com/alibaba/loongsuite-python/pull/156))
 - **Top-level docs**: add Chinese README (**`README-zh.md`**) translated from **`README.md`**.
-  ([#159](https://github.com/alibaba/loongsuite-python/pull/158))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ### Changed
 
 - **`instrumentation-loongsuite/*`**, **`loongsuite-distro`**, and **`util/opentelemetry-util-genai`**: `pyproject.toml` metadata and dependencies for standalone PyPI installs
   ([#155](https://github.com/alibaba/loongsuite-python/pull/155))
 - **`loongsuite-site-bootstrap`**, **`loongsuite-distro`** docs: update **`README.md`**.
-  ([#159](https://github.com/alibaba/loongsuite-python/pull/158))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ## Version 0.2.0 (2026-03-12)
 
