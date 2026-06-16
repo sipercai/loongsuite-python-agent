@@ -18,8 +18,6 @@ import json
 from dataclasses import asdict, is_dataclass
 from typing import Any, Mapping, Sequence
 
-from pydantic import BaseModel
-
 from opentelemetry.util.genai.extended_semconv.gen_ai_extended_attributes import (
     GEN_AI_SESSION_ID,
     GEN_AI_USER_ID,
@@ -62,8 +60,17 @@ def _to_dict(value: Any) -> dict[str, Any] | None:
         return None
     if isinstance(value, Mapping):
         return dict(value)
-    if isinstance(value, BaseModel):
-        return value.model_dump(mode="json")
+    model_dump = getattr(value, "model_dump", None)
+    if callable(model_dump):
+        try:
+            return model_dump(mode="json")
+        except TypeError:
+            try:
+                return model_dump()
+            except Exception:
+                return None
+        except Exception:
+            return None
     if is_dataclass(value):
         return asdict(value)
     to_dict = getattr(value, "to_dict", None)

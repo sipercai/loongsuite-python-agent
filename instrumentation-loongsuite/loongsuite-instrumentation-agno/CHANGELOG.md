@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Removed
+
+- Remove the direct `pydantic` runtime dependency from Agno instrumentation.
+
 ## Version 0.6.0 (2026-06-03)
 
 ### Removed

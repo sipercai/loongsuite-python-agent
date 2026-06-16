@@ -324,6 +324,43 @@ def test_concurrent_runs_do_not_drop_spans(
     assert len(model_spans) == 3
 
 
+@pytest.mark.parametrize("content_capture_mode", [None, "NO_CONTENT"])
+def test_content_capture_mode_does_not_gate_span_creation(
+    monkeypatch,
+    span_exporter: InMemorySpanExporter,
+    tracer_provider: trace_api.TracerProvider,
+    content_capture_mode: str | None,
+):
+    AgnoInstrumentor().uninstrument()
+    if hasattr(get_extended_telemetry_handler, "_default_handler"):
+        delattr(get_extended_telemetry_handler, "_default_handler")
+    span_exporter.clear()
+
+    env_var = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
+    if content_capture_mode is None:
+        monkeypatch.delenv(env_var, raising=False)
+    else:
+        monkeypatch.setenv(env_var, content_capture_mode)
+
+    AgnoInstrumentor().instrument(tracer_provider=tracer_provider)
+
+    agent = Agent(name="NoContentAgent", model=EchoModel(), tools=[])
+    response = agent.run("Say hello without content")
+
+    assert response.content == "hello"
+    spans = _spans_by_name(span_exporter)
+    assert "invoke_agent NoContentAgent" in spans
+    assert "chat echo-model" in spans
+
+    agent_attrs = spans["invoke_agent NoContentAgent"].attributes
+    model_attrs = spans["chat echo-model"].attributes
+    assert agent_attrs["gen_ai.span.kind"] == "AGENT"
+    assert model_attrs["gen_ai.span.kind"] == "LLM"
+    assert "gen_ai.input.messages" not in agent_attrs
+    assert "gen_ai.output.messages" not in agent_attrs
+    assert "gen_ai.output.messages" not in model_attrs
+
+
 def test_async_function_call_emits_tool_span(
     span_exporter: InMemorySpanExporter,
 ):
@@ -506,6 +543,39 @@ def test_tool_result_messages_do_not_duplicate_text_parts():
     assert parts[0].type == "tool_call_response"
     assert parts[0].id == "call_1"
     assert parts[0].response == {"temperature": 21}
+
+
+def test_model_dump_objects_are_serialized_without_pydantic_base_class():
+    class ModelDumpToolCall:
+        def model_dump(self, mode="json"):
+            assert mode == "json"
+            return {
+                "id": "call_1",
+                "function": {
+                    "name": "get_weather",
+                    "arguments": '{"city":"Hangzhou"}',
+                },
+            }
+
+    messages = convert_agent_input(
+        [
+            SimpleNamespace(
+                role="assistant",
+                content=None,
+                tool_calls=[ModelDumpToolCall()],
+            )
+        ]
+    )
+
+    parts = messages[0].parts
+    tool_calls = [
+        part for part in parts if getattr(part, "type", None) == "tool_call"
+    ]
+
+    assert len(tool_calls) == 1
+    assert tool_calls[0].id == "call_1"
+    assert tool_calls[0].name == "get_weather"
+    assert tool_calls[0].arguments == {"city": "Hangzhou"}
 
 
 def test_missing_finish_reason_is_not_reported():
