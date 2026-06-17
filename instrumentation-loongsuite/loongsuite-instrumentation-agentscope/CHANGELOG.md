@@ -38,7 +38,7 @@ There are no changelog entries for this release.
 ### Changed
 
 - Adapt imports to `opentelemetry-util-genai` module layout change
-  ([#158](https://github.com/alibaba/loongsuite-python-agent/pull/158))
+  ([#158](https://github.com/alibaba/loongsuite-python/pull/158))
 
 ### Fixed
 
@@ -46,22 +46,22 @@ There are no changelog entries for this release.
   `AgentBase` subclasses stack (e.g. proxy layers that each implement `__call__`
   and forward inward), by tracking per-task `__call__` depth with
   `contextvars` and only instrumenting the outermost frame
-  ([#153](https://github.com/alibaba/loongsuite-python-agent/pull/153))
+  ([#153](https://github.com/alibaba/loongsuite-python/pull/153))
 - Avoid duplicate `react step` spans when ReAct hook wrappers nest (e.g.
   subclasses or mixins that override `_reasoning` / `_acting` and call
   `super()`), by only opening steps and updating tool-act counts on the
   outermost wrapper
-  ([#153](https://github.com/alibaba/loongsuite-python-agent/pull/153))
+  ([#153](https://github.com/alibaba/loongsuite-python/pull/153))
 
 ### Changed
 
 - Update README integration flow to align with the root recommended LoongSuite pattern using Option C (`pip install loongsuite-instrumentation-agentscope`) and `loongsuite-instrument`.
-  ([#159](https://github.com/alibaba/loongsuite-python-agent/pull/159))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ### Added
 
 - Add ReAct step span instrumentation for ReAct agents
-  ([#140](https://github.com/alibaba/loongsuite-python-agent/pull/140))
+  ([#140](https://github.com/alibaba/loongsuite-python/pull/140))
   - Each ReAct iteration is wrapped in a `react step` span with `gen_ai.react.round` and `gen_ai.react.finish_reason` attributes
   - Uses AgentScope's instance-level hook system for robust, non-invasive instrumentation
 
@@ -74,21 +74,21 @@ There are no changelog entries for this release.
 ### Fixed
 
 - Fix tool call response parsing
-  ([#118](https://github.com/alibaba/loongsuite-python-agent/pull/118))
+  ([#118](https://github.com/alibaba/loongsuite-python/pull/118))
 - Fix LLM message content capture in spans
-  ([#91](https://github.com/alibaba/loongsuite-python-agent/pull/91))
+  ([#91](https://github.com/alibaba/loongsuite-python/pull/91))
 - Fix spell mistake in pyproject.toml
-  ([#8](https://github.com/alibaba/loongsuite-python-agent/pull/8))
+  ([#8](https://github.com/alibaba/loongsuite-python/pull/8))
 
 ### Breaking Changes
 
 - Deprecate the support for AgentScope v0
-  ([#82](https://github.com/alibaba/loongsuite-python-agent/pull/82))
+  ([#82](https://github.com/alibaba/loongsuite-python/pull/82))
 
 ### Changed
 
 - Refactor the instrumentation for AgentScope with `genai-util`
-  ([#82](https://github.com/alibaba/loongsuite-python-agent/pull/82))
+  ([#82](https://github.com/alibaba/loongsuite-python/pull/82))
   - **Refactored to use opentelemetry-util-genai**: Migrated to `ExtendedTelemetryHandler` and `ExtendedInvocationMetricsRecorder` from `opentelemetry-util-genai` for unified metrics and tracing management
   - **Architecture Simplification**: Removed redundant code and consolidated instrumentation logic
   - **Tool Tracing Enhancement**: Rewritten tool execution tracing to use `ExtendedTelemetryHandler` for full feature support (see HANDLER_INTEGRATION.md)
@@ -99,11 +99,11 @@ There are no changelog entries for this release.
   - Removed "V1" prefix from class names (AgentScopeV1ChatModelWrapper → AgentScopeChatModelWrapper, etc.)
   - Updated to use Apache License 2.0 headers across all source files
 - Refactor the instrumentation for AgentScope
-  ([#14](https://github.com/alibaba/loongsuite-python-agent/pull/14))
+  ([#14](https://github.com/alibaba/loongsuite-python/pull/14))
 
 ### Added
 
 - Add support for agentscope v1.0.0
-  ([#45](https://github.com/alibaba/loongsuite-python-agent/pull/45))
+  ([#45](https://github.com/alibaba/loongsuite-python/pull/45))
 - Initialize the instrumentation for AgentScope
-  ([#2](https://github.com/alibaba/loongsuite-python-agent/pull/2))
+  ([#2](https://github.com/alibaba/loongsuite-python/pull/2))

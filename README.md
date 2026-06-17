@@ -1,4 +1,4 @@
-# loongsuite-python-agent
+# loongsuite-python
 <img src="docs/_assets/img/loongsuite-logo.png" width="600" height="100">
 
 <div align="center">
@@ -12,8 +12,8 @@ Loongsuite Python Agent is a key component of LoongSuite, Alibaba's unified obse
 
 LoongSuite includes the following key components:
 * [LoongCollector](https://github.com/alibaba/loongcollector): universal node agent, which prodivdes log collection, prometheus metric collection, and network and security collection capabilities based on eBPF.
-* [LoongSuite Python Agent](https://github.com/alibaba/loongsuite-python-agent): a process agent providing instrumentation for python applications.
-* [LoongSuite Go Agent](https://github.com/alibaba/loongsuite-go-agent): a process agent for golang with compile time instrumentation.
+* [LoongSuite Python Agent](https://github.com/alibaba/loongsuite-python): a process agent providing instrumentation for python applications.
+* [LoongSuite Go Agent](https://github.com/alibaba/loongsuite-go): a process agent for golang with compile time instrumentation.
 * [LoongSuite Java Agent](https://github.com/alibaba/loongsuite-java-agent): a process agent for Java applications.
 * Other upcoming language agent.
 
@@ -230,7 +230,7 @@ Recommended integration approach: **automatic instrumentation** with **`loongsui
 
 **Step 2 — Install instrumentations**
 
-  Use **`loongsuite-bootstrap`** (shipped with `loongsuite-distro`) to install LoongSuite wheels from a [GitHub Release](https://github.com/alibaba/loongsuite-python-agent/releases) tarball and compatible `opentelemetry-instrumentation-*` versions from PyPI. Bootstrap performs a **two-phase** install: LoongSuite artifacts from the release, then pinned OpenTelemetry instrumentation packages (see [docs/loongsuite-release.md](docs/loongsuite-release.md)).
+  Use **`loongsuite-bootstrap`** (shipped with `loongsuite-distro`) to install LoongSuite wheels from a [GitHub Release](https://github.com/alibaba/loongsuite-python/releases) tarball and compatible `opentelemetry-instrumentation-*` versions from PyPI. Bootstrap performs a **two-phase** install: LoongSuite artifacts from the release, then pinned OpenTelemetry instrumentation packages (see [docs/loongsuite-release.md](docs/loongsuite-release.md)).
 
   Pick **one** of the following:
 
@@ -363,13 +363,13 @@ For applications where you can edit code and want explicit control over OpenTele
 **Step 1 — Clone this repository** and checkout your branch.
 
   ```bash
-  git clone https://github.com/alibaba/loongsuite-python-agent.git
+  git clone https://github.com/alibaba/loongsuite-python.git
   ```
 
 **Step 2 — Install upstream OpenTelemetry Python core and local LoongSuite components** from a Git checkout of [opentelemetry-python](https://github.com/open-telemetry/opentelemetry-python):
 
   ```bash
-  cd loongsuite-python-agent
+  cd loongsuite-python
   GIT_ROOT="git+https://github.com/open-telemetry/opentelemetry-python.git"
   # Use ONE pip install command so resolver sees all constraints together;
   # split installs can downgrade/replace api+semconv when local editable deps are installed later.

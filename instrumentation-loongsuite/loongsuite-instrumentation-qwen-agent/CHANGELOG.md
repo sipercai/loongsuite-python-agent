@@ -20,4 +20,4 @@ There are no changelog entries for this release.
 ### Added
 
 - Initial implementation of Qwen-Agent instrumentation
-  ([#154](https://github.com/alibaba/loongsuite-python-agent/pull/154))
+  ([#154](https://github.com/alibaba/loongsuite-python/pull/154))

@@ -1,4 +1,4 @@
-# loongsuite-python-agent
+# loongsuite-python
 <img src="docs/_assets/img/loongsuite-logo.png" width="600" height="100">
 
 <div align="center">
@@ -12,8 +12,8 @@ LoongSuite Python Agent 是 LoongSuite（阿里巴巴统一可观测数据采集
 
 LoongSuite 包含以下核心组件：
 * [LoongCollector](https://github.com/alibaba/loongcollector)：通用节点 Agent，基于 eBPF 提供日志采集、Prometheus 指标采集以及网络与安全采集能力。
-* [LoongSuite Python Agent](https://github.com/alibaba/loongsuite-python-agent)：为 Python 应用提供埋点能力的进程 Agent。
-* [LoongSuite Go Agent](https://github.com/alibaba/loongsuite-go-agent)：支持编译期埋点的 Golang 进程 Agent。
+* [LoongSuite Python Agent](https://github.com/alibaba/loongsuite-python)：为 Python 应用提供埋点能力的进程 Agent。
+* [LoongSuite Go Agent](https://github.com/alibaba/loongsuite-go)：支持编译期埋点的 Golang 进程 Agent。
 * [LoongSuite Java Agent](https://github.com/alibaba/loongsuite-java-agent)：面向 Java 应用的进程 Agent。
 * 其他语言 Agent 正在建设中。
 
@@ -228,7 +228,7 @@ LoongSuite Python Agent 同时也是上游 [OTel Python Agent](https://github.co
 
 **步骤 2 — 安装 instrumentations**
 
-  使用 **`loongsuite-bootstrap`**（随 `loongsuite-distro` 提供）可从 [GitHub Release](https://github.com/alibaba/loongsuite-python-agent/releases) tarball 安装 LoongSuite wheel，并从 PyPI 安装兼容版本的 `opentelemetry-instrumentation-*`。Bootstrap 采用**两阶段**安装：先安装 Release 中的 LoongSuite 制品，再安装固定版本 OpenTelemetry instrumentation（见 [docs/loongsuite-release.md](docs/loongsuite-release.md)）。
+  使用 **`loongsuite-bootstrap`**（随 `loongsuite-distro` 提供）可从 [GitHub Release](https://github.com/alibaba/loongsuite-python/releases) tarball 安装 LoongSuite wheel，并从 PyPI 安装兼容版本的 `opentelemetry-instrumentation-*`。Bootstrap 采用**两阶段**安装：先安装 Release 中的 LoongSuite 制品，再安装固定版本 OpenTelemetry instrumentation（见 [docs/loongsuite-release.md](docs/loongsuite-release.md)）。
 
   以下方式三选一：
 
@@ -365,7 +365,7 @@ loongsuite-instrument \
 **步骤 1 — 克隆仓库并切换分支**
 
   ```bash
-  git clone https://github.com/alibaba/loongsuite-python-agent.git
+  git clone https://github.com/alibaba/loongsuite-python.git
   ```
 
 **步骤 2 — 安装上游 OpenTelemetry Python core 与本地 LoongSuite 组件**
@@ -373,7 +373,7 @@ loongsuite-instrument \
 从 [opentelemetry-python](https://github.com/open-telemetry/opentelemetry-python) 的 Git checkout 安装 core，并与本地可编辑包一次性安装，例如：
 
   ```bash
-  cd loongsuite-python-agent
+  cd loongsuite-python
   GIT_ROOT="git+https://github.com/open-telemetry/opentelemetry-python.git"
   # 必须用一条 pip install：让 resolver 同时看到全部约束；
   # 分步安装时，后续安装本地 editable 包可能触发 api/semconv 被降级或替换。

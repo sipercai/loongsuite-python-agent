@@ -24,7 +24,7 @@ There are no changelog entries for this release.
 ### Changed
 
 - Adapt imports to `opentelemetry-util-genai` module layout change
-  ([#158](https://github.com/alibaba/loongsuite-python-agent/pull/158))
+  ([#158](https://github.com/alibaba/loongsuite-python/pull/158))
 
 ## Version 0.2.0 (2026-03-12)
 
@@ -35,7 +35,7 @@ There are no changelog entries for this release.
 ### Added
 
 - Initial implementation of Claude Agent SDK instrumentation
-  ([#104](https://github.com/alibaba/loongsuite-python-agent/pull/104))
+  ([#104](https://github.com/alibaba/loongsuite-python/pull/104))
   - Support for agent query sessions via Hooks mechanism
   - Support for tool execution tracing (PreToolUse/PostToolUse hooks)
   - Integration with `opentelemetry-util-genai` ExtendedTelemetryHandler

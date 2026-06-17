@@ -150,7 +150,7 @@ def collect(
 ) -> None:
     """Collect all Unreleased sections into a single release-notes file."""
     parts: List[str] = []
-    parts.append(f"# loongsuite-python-agent {version}\n")
+    parts.append(f"# loongsuite-python {version}\n")
     parts.append("## Installation\n")
     parts.append("```bash")
     parts.append(f"pip install loongsuite-distro=={version}")

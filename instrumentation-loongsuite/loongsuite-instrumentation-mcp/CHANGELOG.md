@@ -24,7 +24,7 @@ There are no changelog entries for this release.
 ### Changed
 
 - Update README integration flow to align with the root recommended LoongSuite pattern using Option A (`loongsuite-bootstrap -a install --latest`) for this package not yet on PyPI.
-  ([#159](https://github.com/alibaba/loongsuite-python-agent/pull/159))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ## Version 0.2.0 (2026-03-12)
 
@@ -35,18 +35,18 @@ There are no changelog entries for this release.
 ### Fixed
 
 - Add support for mcp 1.25.0
-  ([#126](https://github.com/alibaba/loongsuite-python-agent/pull/126))
+  ([#126](https://github.com/alibaba/loongsuite-python/pull/126))
 
 ### Added
 
 - Add quick start document for mcp
-  ([#43](https://github.com/alibaba/loongsuite-python-agent/pull/43))
+  ([#43](https://github.com/alibaba/loongsuite-python/pull/43))
 - Initialize the instrumentation for mcp
-  ([#12](https://github.com/alibaba/loongsuite-python-agent/pull/12))
+  ([#12](https://github.com/alibaba/loongsuite-python/pull/12))
 
 ### Changed
 
 - Relocate mcp instrumentation to loongsuite directory
-  ([#42](https://github.com/alibaba/loongsuite-python-agent/pull/42))
+  ([#42](https://github.com/alibaba/loongsuite-python/pull/42))
 - Refactor the instrumentation for mcp
-  ([#39](https://github.com/alibaba/loongsuite-python-agent/pull/39))
+  ([#39](https://github.com/alibaba/loongsuite-python/pull/39))

@@ -23,7 +23,7 @@
 # - Use publish_target: testpypi to publish to Test PyPI instead of production
 #
 # PyPI wheels: loongsuite_otel_util_genai-*, loongsuite_distro-*, loongsuite_site_bootstrap-*, loongsuite_instrumentation_* (from instrumentation-loongsuite).
-# loongsuite-python-agent-*.tar.gz is for GitHub Release only and must NOT be uploaded to PyPI.
+# loongsuite-python-*.tar.gz is for GitHub Release only and must NOT be uploaded to PyPI.
 #
 name: LoongSuite Release
 
@@ -130,7 +130,7 @@ jobs:
         with:
           name: github-release
           path: |
-            dist/loongsuite-python-agent-*.tar.gz
+            dist/loongsuite-python-*.tar.gz
             dist/release-notes.md
 
   # Publish to production PyPI
@@ -196,9 +196,9 @@ jobs:
         run: |
           VERSION="${{ needs.build.outputs.loongsuite_version }}"
           gh release create "v${VERSION}" \
-            --title "loongsuite-python-agent ${VERSION}" \
+            --title "loongsuite-python ${VERSION}" \
             --notes-file dist/release-notes.md \
-            dist/loongsuite-python-agent-${VERSION}.tar.gz
+            dist/loongsuite-python-${VERSION}.tar.gz
 
   # Create post-release PR to main (archive changelogs + bump dev versions)
   post-release-pr:
@@ -256,7 +256,7 @@ jobs:
             --base main \
             --head "$BRANCH" \
             --title "chore: post-release ${VERSION} — archive changelogs & bump dev versions" \
-            --body "## Post-release updates for loongsuite-python-agent ${VERSION}
+            --body "## Post-release updates for loongsuite-python ${VERSION}
 
           Automated housekeeping after the \`${VERSION}\` release:
 

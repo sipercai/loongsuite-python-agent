@@ -24,14 +24,14 @@ There are no changelog entries for this release.
 ### Changed
 
 - Update README integration flow to align with the root recommended LoongSuite pattern using Option C (`pip install loongsuite-instrumentation-langgraph`) and `loongsuite-instrument`.
-  ([#159](https://github.com/alibaba/loongsuite-python-agent/pull/159))
+  ([#159](https://github.com/alibaba/loongsuite-python/pull/159))
 
 ## Version 0.2.0 (2026-03-12)
 
 ### Added
 
 - Initial instrumentation framework for LangGraph
-  ([#143](https://github.com/alibaba/loongsuite-python-agent/pull/143))
+  ([#143](https://github.com/alibaba/loongsuite-python/pull/143))
   - Patch `create_react_agent` to set `_loongsuite_react_agent = True` flag
     on `CompiledStateGraph`
   - Patch `Pregel.stream` / `Pregel.astream` to inject
