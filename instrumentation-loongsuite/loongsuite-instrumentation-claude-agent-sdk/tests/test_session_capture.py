@@ -122,6 +122,11 @@ async def _stream(messages):
         yield message
 
 
+async def _cancelled_stream(session_id):
+    yield SystemMessage(session_id)
+    await asyncio.sleep(60)
+
+
 def _spans_by_operation(spans, operation):
     return [
         span
@@ -536,6 +541,52 @@ async def test_sequential_streams_create_independent_root_traces(
         span.attributes[GEN_AI_SESSION_ID] for span in root_agent_spans
     } == {"sess-first", "sess-second"}
     assert len({span.context.trace_id for span in root_agent_spans}) == 2
+
+
+@pytest.mark.asyncio
+async def test_cancelled_stream_detaches_agent_context(
+    tracer_provider, span_exporter
+):
+    handler = ExtendedTelemetryHandler(tracer_provider=tracer_provider)
+
+    async def _consume_cancelled_stream():
+        async for _ in _process_agent_invocation_stream(
+            wrapped_stream=_cancelled_stream("sess-cancelled"),
+            handler=handler,
+            model="claude-sonnet",
+            prompt="this stream will be cancelled",
+        ):
+            pass
+
+    with pytest.raises((TimeoutError, asyncio.TimeoutError)):
+        await asyncio.wait_for(_consume_cancelled_stream(), timeout=0.01)
+
+    await _run_stream(
+        tracer_provider,
+        [
+            SystemMessage("sess-after-cancel"),
+            AssistantMessage([TextBlock("answer after cancellation")]),
+            ResultMessage("sess-after-cancel"),
+        ],
+    )
+
+    agent_spans = _spans_by_operation(
+        span_exporter.get_finished_spans(), "invoke_agent"
+    )
+    cancelled_span = [
+        span
+        for span in agent_spans
+        if span.attributes.get(GEN_AI_SESSION_ID) == "sess-cancelled"
+    ][0]
+    after_span = [
+        span
+        for span in agent_spans
+        if span.attributes.get(GEN_AI_SESSION_ID) == "sess-after-cancel"
+    ][0]
+
+    assert cancelled_span.attributes["error.type"] == "CancelledError"
+    assert after_span.parent is None
+    assert after_span.context.trace_id != cancelled_span.context.trace_id
 
 
 @pytest.mark.asyncio

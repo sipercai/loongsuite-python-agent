@@ -15,6 +15,7 @@
 """Patch functions for Claude Agent SDK instrumentation."""
 
 import logging
+import os
 import time
 from typing import Any, Dict, List, Optional
 
@@ -133,6 +134,136 @@ def _clear_client_managed_runs(
     client_managed_runs.clear()
 
 
+# The name of the Claude Agent SDK built-in tool that loads a Skill.
+_SKILL_TOOL_NAME = "Skill"
+
+# skill id prefix for project-scoped Claude Agent SDK skills.
+_SKILL_ID_PREFIX = "claude:project:"
+
+
+def _read_skill_metadata(skill_md_path: str) -> Dict[str, str]:
+    """Best-effort read of a Skill's SKILL.md frontmatter.
+
+    Returns a dict with any of ``name``/``description``/``version`` keys that
+    were present in the YAML frontmatter. On any error (missing file, parse
+    failure, ...) returns an empty dict so telemetry never breaks the SDK call.
+    """
+    try:
+        with open(skill_md_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        # Missing or unreadable SKILL.md is expected for non-project skills.
+        return {}
+
+    return _parse_skill_frontmatter(content)
+
+
+def _parse_skill_frontmatter(content: str) -> Dict[str, str]:
+    """Parse selected scalar fields from SKILL.md frontmatter.
+
+    This intentionally avoids a runtime PyYAML dependency. Claude skill
+    frontmatter only needs simple top-level scalar fields for telemetry.
+    """
+    try:
+        stripped = content.lstrip()
+        if not stripped.startswith("---"):
+            return {}
+        # Split off the leading ``---``; the next ``---`` closes the block.
+        after_open = stripped[3:]
+        end_index = after_open.find("\n---")
+        if end_index == -1:
+            # Frontmatter never closed; treat the remainder as the block.
+            frontmatter_text = after_open
+        else:
+            frontmatter_text = after_open[:end_index]
+    except Exception:
+        return {}
+
+    metadata: Dict[str, str] = {}
+    wanted_keys = {"name", "description", "version"}
+    for raw_line in frontmatter_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or ":" not in line:
+            continue
+
+        key, value = line.split(":", 1)
+        key = key.strip()
+        if key not in wanted_keys:
+            continue
+
+        value = value.strip()
+        if (
+            len(value) >= 2
+            and value[0] == value[-1]
+            and value[0]
+            in {
+                '"',
+                "'",
+            }
+        ):
+            value = value[1:-1]
+        if value:
+            metadata[key] = value
+    return metadata
+
+
+def _apply_skill_metadata(
+    tool_invocation: ExecuteToolInvocation,
+    skill_name: str,
+    cwd: Optional[str],
+) -> None:
+    """Attach ``gen_ai.skill.*`` attributes to a Skill load tool span.
+
+    Reads the project-level ``SKILL.md`` frontmatter best-effort and fills in
+    ``skill_name``/``skill_id``/``skill_description``/``skill_version`` on the
+    invocation. Any failure is swallowed so the SDK call is never affected.
+    """
+    if not skill_name:
+        return
+
+    metadata: Dict[str, str] = {}
+    if cwd:
+        skill_md_path = os.path.join(
+            cwd, ".claude", "skills", skill_name, "SKILL.md"
+        )
+        metadata = _read_skill_metadata(skill_md_path)
+
+    # gen_ai.skill.name: prefer the requested tool input; frontmatter is
+    # supplemental metadata for description/version.
+    name = skill_name or metadata.get("name")
+    if not name:
+        return
+    tool_invocation.skill_name = name
+    tool_invocation.skill_id = f"{_SKILL_ID_PREFIX}{name}"
+
+    description = metadata.get("description")
+    if description:
+        tool_invocation.skill_description = description
+    version = metadata.get("version")
+    if version:
+        tool_invocation.skill_version = version
+
+
+def _apply_skill_fallback(
+    tool_invocation: ExecuteToolInvocation,
+    tool_use_result: Any,
+) -> None:
+    """Best-effort fallback to recover skill_name before closing a Skill span.
+
+    If ``skill_name`` was not captured at span start (e.g. cwd was unavailable
+    so SKILL.md could not be read), try ``UserMessage.tool_use_result.commandName``
+    per the SDK's Skill tool result format.
+    """
+    if tool_invocation.skill_name:
+        return
+    if not isinstance(tool_use_result, dict):
+        return
+    command_name = tool_use_result.get("commandName")
+    if command_name:
+        tool_invocation.skill_name = str(command_name)
+        tool_invocation.skill_id = f"{_SKILL_ID_PREFIX}{command_name}"
+
+
 def _extract_message_parts(msg: Any) -> List[Any]:
     """Extract parts (text + tool calls) from an AssistantMessage."""
     parts = []
@@ -161,11 +292,16 @@ def _create_tool_spans_from_message(
     active_task_stack: List[Any],
     client_managed_runs: Dict[str, ExecuteToolInvocation],
     exclude_tool_names: Optional[List[str]] = None,
+    cwd: Optional[str] = None,
 ) -> None:
     """Create tool execution spans from ToolUseBlocks in an AssistantMessage.
 
     Tool spans are children of the active SubAgent span (if any), otherwise agent span.
     When a Task tool is created, it's pushed onto active_task_stack along with a SubAgent span.
+
+    For the built-in ``Skill`` tool, ``gen_ai.skill.*`` attributes are read
+    best-effort from the project-level ``SKILL.md`` frontmatter (located via
+    ``cwd``) and attached to the tool span.
 
     The stack structure is: [{"task": ExecuteToolInvocation, "subagent": InvokeAgentInvocation}, ...]
     """
@@ -214,6 +350,22 @@ def _create_tool_spans_from_message(
                 _apply_session_identity(
                     tool_invocation, agent_invocation.conversation_id
                 )
+
+                # Skill load: attach gen_ai.skill.* attributes best-effort
+                # from the project SKILL.md frontmatter. Failures here must
+                # never propagate to break the SDK call.
+                if tool_name == _SKILL_TOOL_NAME:
+                    try:
+                        skill_name = ""
+                        if isinstance(tool_input, dict):
+                            skill_name = str(tool_input.get("skill") or "")
+                        _apply_skill_metadata(tool_invocation, skill_name, cwd)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to read Skill metadata for "
+                            f"'{tool_input}': {e}"
+                        )
+
                 handler.start_execute_tool(tool_invocation)
                 client_managed_runs[tool_use_id] = tool_invocation
 
@@ -327,6 +479,7 @@ def _process_assistant_message(
     collected_messages: List[Dict[str, Any]],
     active_task_stack: List[Any],
     client_managed_runs: Dict[str, ExecuteToolInvocation],
+    cwd: Optional[str] = None,
 ) -> None:
     """Process AssistantMessage: create LLM turn, extract parts, create tool spans."""
     parts = _extract_message_parts(msg)
@@ -414,6 +567,7 @@ def _process_assistant_message(
         agent_invocation,
         active_task_stack,
         client_managed_runs,
+        cwd=cwd,
     )
 
 
@@ -535,6 +689,18 @@ def _process_user_message(
                             Error(message=error_msg, type=RuntimeError),
                         )
                     else:
+                        # Skill load: best-effort fallback to fill skill_name
+                        # from the tool result if it wasn't captured at start.
+                        if tool_invocation.tool_name == _SKILL_TOOL_NAME:
+                            try:
+                                _apply_skill_fallback(
+                                    tool_invocation, tool_use_result
+                                )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to apply Skill metadata "
+                                    f"fallback: {e}"
+                                )
                         handler.stop_execute_tool(tool_invocation)
 
                 if tool_use_id:
@@ -583,18 +749,25 @@ def _process_user_message(
 def _process_system_message(
     msg: Any,
     agent_invocation: InvokeAgentInvocation,
-) -> None:
-    """Process SystemMessage: extract session_id early in the stream.
+) -> Optional[str]:
+    """Process SystemMessage: extract session_id and cwd early in the stream.
 
     SystemMessage appears at the beginning of the message stream and contains
-    the session_id in its data field. We extract it here so that it's available
-    for all subsequent LLM spans.
+    the session_id and cwd in its data field. We extract them here so they are
+    available for all subsequent spans (cwd is needed to locate project-level
+    SKILL.md files for Skill tool telemetry).
+
+    Returns the cwd if present, otherwise ``None``.
     """
     if hasattr(msg, "subtype") and msg.subtype == "init":
         if hasattr(msg, "data") and isinstance(msg.data, dict):
             session_id = msg.data.get("session_id")
             if session_id:
                 _set_session_id(agent_invocation, session_id)
+            cwd = msg.data.get("cwd")
+            if cwd:
+                return str(cwd)
+    return None
 
 
 def _process_stream_event_message(
@@ -670,12 +843,19 @@ async def _process_agent_invocation_stream(
     active_task_stack: List[Any] = []
     client_managed_runs: Dict[str, ExecuteToolInvocation] = {}
 
+    # cwd captured from SystemMessage.data.cwd, used to locate project-level
+    # SKILL.md files for Skill tool telemetry.
+    session_cwd: Optional[str] = None
+    agent_closed = False
+
     try:
         async for msg in wrapped_stream:
             msg_type = type(msg).__name__
 
             if msg_type == "SystemMessage":
-                _process_system_message(msg, agent_invocation)
+                cwd = _process_system_message(msg, agent_invocation)
+                if cwd:
+                    session_cwd = cwd
             elif msg_type == "StreamEvent":
                 _process_stream_event_message(msg, agent_invocation)
             elif msg_type == "AssistantMessage":
@@ -689,6 +869,7 @@ async def _process_agent_invocation_stream(
                     collected_messages,
                     active_task_stack,
                     client_managed_runs,
+                    cwd=session_cwd,
                 )
             elif msg_type == "UserMessage":
                 _process_user_message(
@@ -705,15 +886,21 @@ async def _process_agent_invocation_stream(
             yield msg
 
         handler.stop_invoke_agent(agent_invocation)
+        agent_closed = True
 
-    except Exception as e:
+    except BaseException as e:
         error_msg = str(e)
-        if agent_invocation.span:
-            agent_invocation.span.set_attribute("error.type", type(e).__name__)
-            agent_invocation.span.set_attribute("error.message", error_msg)
-        handler.fail_invoke_agent(
-            agent_invocation, error=Error(message=error_msg, type=type(e))
-        )
+        if not agent_closed:
+            if agent_invocation.span:
+                agent_invocation.span.set_attribute(
+                    "error.type", type(e).__name__
+                )
+                agent_invocation.span.set_attribute("error.message", error_msg)
+            handler.fail_invoke_agent(
+                agent_invocation,
+                error=Error(message=error_msg, type=type(e)),
+            )
+            agent_closed = True
 
         raise
     finally:
