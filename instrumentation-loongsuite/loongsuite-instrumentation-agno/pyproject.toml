@@ -30,7 +30,6 @@ dependencies = [
   "opentelemetry-instrumentation >= 0.58b0",
   "opentelemetry-semantic-conventions >= 0.58b0",
   "opentelemetry-util-genai",
-  "pydantic",
   "wrapt >= 1.17.3, < 2.0.0",
 ]
 
