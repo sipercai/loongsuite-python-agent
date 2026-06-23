@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Record token usage from Qwen-Agent DashScope response metadata on streaming
+  and non-streaming chat spans.
+- Roll up child LLM token usage to Qwen-Agent invoke-agent spans, preserve
+  nested agent spans, and record only the final agent answer as output.
+
 ## Version 0.6.0 (2026-06-03)
 
 There are no changelog entries for this release.
