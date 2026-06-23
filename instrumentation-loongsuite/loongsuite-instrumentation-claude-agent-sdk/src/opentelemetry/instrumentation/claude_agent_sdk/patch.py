@@ -608,6 +608,10 @@ def _process_stream_event_message(
         if isinstance(event, dict):
             session_id = event.get("session_id")
 
+    if not session_id:
+        # Entry baggage is already applied when the agent invocation starts.
+        return
+
     _set_session_id(agent_invocation, session_id)
 
 

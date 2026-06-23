@@ -22,6 +22,9 @@ import pytest
 
 from opentelemetry import baggage
 from opentelemetry import context as otel_context
+from opentelemetry.instrumentation.claude_agent_sdk import (
+    patch as claude_patch,
+)
 from opentelemetry.instrumentation.claude_agent_sdk.patch import (
     _process_agent_invocation_stream,
     wrap_claude_client_query,
@@ -255,6 +258,23 @@ async def test_stream_event_dict_session_fallback(
 
     assert agent_span.attributes[GEN_AI_SESSION_ID] == "sess-event-dict"
     assert llm_span.attributes[GEN_AI_SESSION_ID] == "sess-event-dict"
+
+
+def test_stream_event_without_session_skips_baggage_lookup(monkeypatch):
+    def fail_baggage_lookup():
+        raise AssertionError("unexpected per-event baggage lookup")
+
+    monkeypatch.setattr(
+        claude_patch,
+        "_entry_baggage_identity_attributes",
+        fail_baggage_lookup,
+    )
+    agent_invocation = SimpleNamespace(conversation_id=None, attributes={})
+
+    claude_patch._process_stream_event_message(StreamEvent(), agent_invocation)
+
+    assert agent_invocation.conversation_id is None
+    assert GEN_AI_SESSION_ID not in agent_invocation.attributes
 
 
 @pytest.mark.asyncio
