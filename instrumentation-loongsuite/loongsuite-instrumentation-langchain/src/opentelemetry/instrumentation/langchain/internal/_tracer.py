@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import logging
 import timeit
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import RLock
 from typing import Any, Literal, Optional
 from uuid import UUID
@@ -126,6 +126,9 @@ class _RunData:
     inside_langgraph_react: bool = False
     is_deepagents_react: bool = False
     inside_deepagents_react: bool = False
+    deepagents_skills_by_path: dict[str, dict[str, Any]] = field(
+        default_factory=dict
+    )
 
 
 def _should_capture_chain_content() -> bool:
@@ -143,6 +146,39 @@ def _should_capture_chain_content() -> bool:
             exc_info=True,
         )
         return False
+
+
+def _extract_tool_call_arguments(inputs: Any) -> Any:
+    """Extract tool call arguments without dropping structured tool inputs."""
+    if not isinstance(inputs, dict):
+        return inputs if inputs is not None else ""
+    if "input" in inputs:
+        return inputs.get("input")
+    if "query" in inputs:
+        return inputs.get("query")
+    return dict(inputs) if inputs else ""
+
+
+def _extract_deepagents_skills_metadata(
+    outputs: Any,
+) -> list[dict[str, Any]] | None:
+    """Extract SkillsMiddleware output across observed LangChain shapes."""
+    if not isinstance(outputs, dict):
+        return None
+
+    candidates = [outputs.get("skills_metadata")]
+    output = outputs.get("output")
+    if isinstance(output, dict):
+        candidates.append(output.get("skills_metadata"))
+
+    for candidate in candidates:
+        if isinstance(candidate, list):
+            return [
+                dict(item)
+                for item in candidate
+                if isinstance(item, dict)
+            ]
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -457,6 +493,7 @@ class LoongsuiteTracer(BaseTracer):
         # grandchildren of the graph are also recognised as internal.
         inside_lg = False
         inside_deepagents = False
+        deepagents_skills_by_path: dict[str, dict[str, Any]] = {}
         parent_id = getattr(run, "parent_run_id", None)
         if parent_id:
             with self._lock:
@@ -466,6 +503,9 @@ class LoongsuiteTracer(BaseTracer):
                 inside_deepagents = (
                     p.is_deepagents_react or p.inside_deepagents_react
                 )
+                deepagents_skills_by_path = dict(
+                    p.deepagents_skills_by_path
+                )
 
         rd = _RunData(
             run_kind="chain",
@@ -474,6 +514,7 @@ class LoongsuiteTracer(BaseTracer):
             context_token=token,
             inside_langgraph_react=inside_lg,
             inside_deepagents_react=inside_deepagents,
+            deepagents_skills_by_path=deepagents_skills_by_path,
         )
         with self._lock:
             self._runs[run.id] = rd
@@ -484,6 +525,7 @@ class LoongsuiteTracer(BaseTracer):
         if rd is None:
             return
         try:
+            self._record_deepagents_skill_metadata(run)
             if rd.run_kind == "agent":
                 self._stop_agent(run, rd)
             elif rd.run_kind == "chain":
@@ -580,16 +622,15 @@ class LoongsuiteTracer(BaseTracer):
         try:
             parent_ctx = self._get_parent_context(run)
             inputs = getattr(run, "inputs", None) or {}
-            input_str = inputs.get("input") or inputs.get("query") or ""
-            if not isinstance(input_str, str):
-                input_str = _safe_json(input_str)
+            tool_call_arguments = _extract_tool_call_arguments(inputs)
             extra = getattr(run, "extra", None) or {}
             tool_call_id = extra.get("tool_call_id")
             invocation = ExecuteToolInvocation(
                 tool_name=run.name or "unknown_tool",
-                tool_call_arguments=input_str,
+                tool_call_arguments=tool_call_arguments,
                 tool_call_id=tool_call_id,
             )
+            self._apply_deepagents_skill_attributes(run, invocation)
             self._handler.start_execute_tool(invocation, context=parent_ctx)
             rd = _RunData(
                 run_kind="tool",
@@ -807,6 +848,90 @@ class LoongsuiteTracer(BaseTracer):
         agent_rd.active_step = None
         if agent_rd.original_context is not None:
             agent_rd.context = agent_rd.original_context
+
+    # ------------------------------------------------------------------
+    # DeepAgents skills
+    # ------------------------------------------------------------------
+
+    def _record_deepagents_skill_metadata(self, run: Run) -> None:
+        """Cache SkillsMiddleware metadata on the parent DeepAgents run."""
+        if not _has_deepagents_metadata(run):
+            return
+        if getattr(run, "name", "") != "SkillsMiddleware.before_agent":
+            return
+
+        outputs = getattr(run, "outputs", None) or {}
+        skills = _extract_deepagents_skills_metadata(outputs)
+        if skills is None:
+            return
+
+        skills_by_path = {
+            str(skill["path"]): dict(skill)
+            for skill in skills
+            if isinstance(skill, dict) and skill.get("path")
+        }
+        parent_id = getattr(run, "parent_run_id", None)
+        if parent_id is None:
+            return
+
+        with self._lock:
+            parent_rd = self._runs.get(parent_id)
+            if parent_rd is not None:
+                parent_rd.deepagents_skills_by_path = skills_by_path
+
+    def _apply_deepagents_skill_attributes(
+        self,
+        run: Run,
+        invocation: ExecuteToolInvocation,
+    ) -> None:
+        skill = self._match_deepagents_loaded_skill(run)
+        if skill is None:
+            return
+
+        skill_name = skill.get("name")
+        if skill_name:
+            invocation.skill_name = str(skill_name)
+
+        metadata = skill.get("metadata") if isinstance(skill, dict) else None
+        metadata = metadata if isinstance(metadata, dict) else {}
+        skill_id = metadata.get("id") or skill.get("id") or skill_name
+        if skill_id:
+            invocation.skill_id = str(skill_id)
+
+        skill_description = skill.get("description")
+        if skill_description:
+            invocation.skill_description = str(skill_description)
+
+        skill_version = metadata.get("version") or skill.get("version")
+        if skill_version:
+            invocation.skill_version = str(skill_version)
+
+    def _match_deepagents_loaded_skill(
+        self,
+        run: Run,
+    ) -> dict[str, Any] | None:
+        """Return skill metadata when read_file loads a registered SKILL.md."""
+        if not _has_deepagents_metadata(run):
+            return None
+        if (getattr(run, "name", "") or "") != "read_file":
+            return None
+
+        inputs = getattr(run, "inputs", None) or {}
+        if not isinstance(inputs, dict):
+            return None
+        file_path = inputs.get("file_path") or inputs.get("path")
+        if not isinstance(file_path, str) or not file_path:
+            return None
+
+        parent_id = getattr(run, "parent_run_id", None)
+        if parent_id is None:
+            return None
+
+        with self._lock:
+            parent_rd = self._runs.get(parent_id)
+            if parent_rd is None:
+                return None
+            return parent_rd.deepagents_skills_by_path.get(file_path)
 
     # ------------------------------------------------------------------
     # Deep copy / copy — return self (shared singleton)

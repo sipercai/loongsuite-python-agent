@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Detect DeepAgents skill loads from `read_file` tool calls that read a
+  registered skill's top-level `SKILL.md`, and populate `gen_ai.skill.*`
+  attributes on the resulting `execute_tool` span.
+
 ## Version 0.6.0 (2026-06-03)
 
 There are no changelog entries for this release.

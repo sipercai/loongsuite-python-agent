@@ -11,3 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial DeepAgents instrumentation that marks `create_deep_agent` graphs so
   LangChain instrumentation emits an `AGENT` span for the DeepAgents root.
+- DeepAgents skill-load telemetry: when an agent reads a registered skill's
+  top-level `SKILL.md` through the built-in `read_file` tool, the tool span
+  carries `gen_ai.skill.name`, `gen_ai.skill.id`,
+  `gen_ai.skill.description`, and `gen_ai.skill.version`.

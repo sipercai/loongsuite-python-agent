@@ -40,6 +40,16 @@ The LangChain tracer also maps each DeepAgents `model` decision node to a
 This package intentionally does not create separate ENTRY spans or GenAI
 metrics.
 
+For DeepAgents skills, the framework first loads skill metadata through
+`SkillsMiddleware.before_agent` and exposes the available skills in the system
+prompt. Loading the full skill instructions happens when the agent calls the
+built-in filesystem tool to read the skill file, for example
+`read_file(file_path="/skills/foo/SKILL.md")`. That `execute_tool read_file`
+span is annotated with `gen_ai.skill.name`, `gen_ai.skill.id`,
+`gen_ai.skill.description`, and `gen_ai.skill.version` when the file path
+matches a registered top-level `SKILL.md`. Reading helper files under the same
+skill directory is recorded as a normal file read, not as a skill load.
+
 ## Compatibility
 
 - `deepagents >= 0.6.0, < 0.7.0`

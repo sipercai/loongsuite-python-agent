@@ -78,7 +78,7 @@ def lookup_city(query: str) -> str:
     return "Hangzhou"
 
 
-def _build_agent(responses: list[AIMessage], *, name: str):
+def _build_agent(responses: list[AIMessage], *, name: str, **kwargs: Any):
     from deepagents import create_deep_agent  # noqa: PLC0415
 
     return create_deep_agent(
@@ -86,6 +86,7 @@ def _build_agent(responses: list[AIMessage], *, name: str):
         tools=[lookup_city],
         system_prompt="Answer briefly.",
         name=name,
+        **kwargs,
     )
 
 
@@ -233,6 +234,144 @@ def test_deepagents_tool_call_creates_two_react_steps(
 
     _assert_kind_under_step(
         spans, step_spans[0], "TOOL", "execute_tool lookup_city"
+    )
+
+
+def test_deepagents_skill_load_tool_span_captures_skill_attributes(
+    instrument, span_exporter, tmp_path
+):
+    from deepagents.backends.filesystem import FilesystemBackend  # noqa: PLC0415
+
+    skill_dir = tmp_path / "skills" / "probe-skill"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "\n".join(
+            [
+                "---",
+                "name: probe-skill",
+                "description: Use this skill for telemetry validation.",
+                "metadata:",
+                "  version: 1.2.3",
+                "---",
+                "",
+                "# Probe Skill",
+                "Return PROBE_SKILL_LOADED when active.",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    agent = _build_agent(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "read_file",
+                        "args": {
+                            "file_path": "/skills/probe-skill/SKILL.md",
+                            "limit": 1000,
+                        },
+                        "id": "call_skill_1",
+                    }
+                ],
+            ),
+            AIMessage(content="Loaded probe skill."),
+        ],
+        name="deep_skill_agent",
+        skills=["/skills"],
+        backend=FilesystemBackend(root_dir=tmp_path, virtual_mode=True),
+    )
+
+    result = agent.invoke(
+        {"messages": [{"role": "user", "content": "load probe skill"}]}
+    )
+
+    assert result["messages"][-1].content == "Loaded probe skill."
+
+    spans = span_exporter.get_finished_spans()
+    read_file_spans = [
+        span
+        for span in spans
+        if span.name == "execute_tool read_file"
+        and span.attributes.get("gen_ai.tool.name") == "read_file"
+    ]
+    assert len(read_file_spans) == 1
+    attrs = dict(read_file_spans[0].attributes or {})
+    assert attrs["gen_ai.skill.name"] == "probe-skill"
+    assert attrs["gen_ai.skill.id"] == "probe-skill"
+    assert (
+        attrs["gen_ai.skill.description"]
+        == "Use this skill for telemetry validation."
+    )
+    assert attrs["gen_ai.skill.version"] == "1.2.3"
+    assert "/skills/probe-skill/SKILL.md" in str(
+        attrs["gen_ai.tool.call.arguments"]
+    )
+
+
+def test_deepagents_skill_helper_file_is_not_skill_load(
+    instrument, span_exporter, tmp_path
+):
+    from deepagents.backends.filesystem import FilesystemBackend  # noqa: PLC0415
+
+    skill_dir = tmp_path / "skills" / "probe-skill"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "\n".join(
+            [
+                "---",
+                "name: probe-skill",
+                "description: Use this skill for telemetry validation.",
+                "---",
+                "",
+                "# Probe Skill",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (skill_dir / "helper.py").write_text("print('helper')\n", encoding="utf-8")
+
+    agent = _build_agent(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "read_file",
+                        "args": {
+                            "file_path": "/skills/probe-skill/helper.py",
+                            "limit": 1000,
+                        },
+                        "id": "call_helper_1",
+                    }
+                ],
+            ),
+            AIMessage(content="Read helper."),
+        ],
+        name="deep_skill_helper_agent",
+        skills=["/skills"],
+        backend=FilesystemBackend(root_dir=tmp_path, virtual_mode=True),
+    )
+
+    result = agent.invoke(
+        {"messages": [{"role": "user", "content": "read helper"}]}
+    )
+
+    assert result["messages"][-1].content == "Read helper."
+
+    spans = span_exporter.get_finished_spans()
+    read_file_spans = [
+        span
+        for span in spans
+        if span.name == "execute_tool read_file"
+        and span.attributes.get("gen_ai.tool.name") == "read_file"
+    ]
+    assert len(read_file_spans) == 1
+    attrs = dict(read_file_spans[0].attributes or {})
+    assert "gen_ai.skill.name" not in attrs
+    assert "/skills/probe-skill/helper.py" in str(
+        attrs["gen_ai.tool.call.arguments"]
     )
 
 
