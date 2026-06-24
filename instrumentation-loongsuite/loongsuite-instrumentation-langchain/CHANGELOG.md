@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registered skill's top-level `SKILL.md`, and populate `gen_ai.skill.*`
   attributes on the resulting `execute_tool` span.
 
+### Changed
+
+- Preserve structured LangChain tool call arguments when tool inputs do not use
+  `input` or `query`, which keeps DeepAgents filesystem `read_file` arguments
+  such as `file_path` available for skill-load telemetry.
+- Depend on `loongsuite-otel-util-genai` for direct installs.
+
 ## Version 0.6.0 (2026-06-03)
 
 There are no changelog entries for this release.
