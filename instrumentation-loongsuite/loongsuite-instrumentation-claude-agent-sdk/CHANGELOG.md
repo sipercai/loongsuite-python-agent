@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Capture Claude Agent SDK session IDs on agent, LLM, and tool spans, and
+  preserve active caller context so SDK traces attach to existing caller spans
+  instead of being forced to independent roots.
+
 ## Version 0.6.0 (2026-06-03)
 
 There are no changelog entries for this release.
