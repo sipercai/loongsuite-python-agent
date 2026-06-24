@@ -20,8 +20,6 @@ import pytest
 
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.instrumentation.deepagents import DeepAgentsInstrumentor
-from opentelemetry.instrumentation.langchain import LangChainInstrumentor
-from opentelemetry.instrumentation.langgraph import LangGraphInstrumentor
 from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import (
     InMemoryLogExporter,
@@ -100,13 +98,5 @@ def instrument(
     yield instrumentor
 
     instrumentor.uninstrument()
-    try:
-        LangChainInstrumentor().uninstrument()
-    except Exception:
-        pass
-    try:
-        LangGraphInstrumentor().uninstrument()
-    except Exception:
-        pass
     span_exporter.clear()
     os.environ.pop(OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT, None)

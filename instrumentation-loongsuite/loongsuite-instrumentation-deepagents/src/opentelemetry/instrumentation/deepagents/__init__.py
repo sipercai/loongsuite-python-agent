@@ -36,7 +36,7 @@ def _instrument_dependency(
     module_name: str,
     class_name: str,
     **kwargs: Any,
-) -> None:
+) -> BaseInstrumentor | None:
     try:
         module = importlib.import_module(module_name)
     except ModuleNotFoundError as exc:
@@ -47,7 +47,7 @@ def _instrument_dependency(
                 "deepagents instrumentation requires %s; continuing without it.",
                 module_name,
             )
-            return
+            return None
         raise
 
     instrumentor_type = getattr(module, class_name, None)
@@ -57,12 +57,15 @@ def _instrument_dependency(
             module_name,
             class_name,
         )
-        return
+        return None
 
     instrumentor = instrumentor_type()
     if instrumentor.is_instrumented_by_opentelemetry:
-        return
+        return None
     instrumentor.instrument(**kwargs)
+    if instrumentor.is_instrumented_by_opentelemetry:
+        return instrumentor
+    return None
 
 
 class DeepAgentsInstrumentor(BaseInstrumentor):
@@ -72,17 +75,36 @@ class DeepAgentsInstrumentor(BaseInstrumentor):
         return _instruments
 
     def _instrument(self, **kwargs: Any) -> None:
-        _instrument_dependency(
+        self._dependency_instrumentors = []
+        langchain_instrumentor = _instrument_dependency(
             "opentelemetry.instrumentation.langchain",
             "LangChainInstrumentor",
             **kwargs,
         )
-        _instrument_dependency(
+        if langchain_instrumentor is not None:
+            self._dependency_instrumentors.append(langchain_instrumentor)
+
+        langgraph_instrumentor = _instrument_dependency(
             "opentelemetry.instrumentation.langgraph",
             "LangGraphInstrumentor",
             **kwargs,
         )
+        if langgraph_instrumentor is not None:
+            self._dependency_instrumentors.append(langgraph_instrumentor)
+
         instrument_create_deep_agent()
 
     def _uninstrument(self, **kwargs: Any) -> None:
         uninstrument_create_deep_agent()
+        for instrumentor in reversed(
+            getattr(self, "_dependency_instrumentors", [])
+        ):
+            try:
+                instrumentor.uninstrument()
+            except Exception as exc:  # noqa: BLE001
+                logger.debug(
+                    "Failed to uninstrument deepagents dependency %s: %s",
+                    instrumentor.__class__.__name__,
+                    exc,
+                )
+        self._dependency_instrumentors = []
