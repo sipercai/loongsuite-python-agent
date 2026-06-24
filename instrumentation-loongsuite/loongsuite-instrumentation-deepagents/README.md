@@ -53,4 +53,4 @@ skill directory is recorded as a normal file read, not as a skill load.
 ## Compatibility
 
 - `deepagents >= 0.6.0, < 0.7.0`
-- Python 3.10+
+- Python 3.11+
