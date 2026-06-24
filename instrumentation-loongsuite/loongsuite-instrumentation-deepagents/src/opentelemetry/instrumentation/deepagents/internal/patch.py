@@ -138,7 +138,9 @@ def _sync_top_level_create_deep_agent() -> None:
             wrapped_create_deep_agent,
         )
     except Exception:  # noqa: BLE001
-        logger.debug("Failed to sync deepagents top-level export", exc_info=True)
+        logger.debug(
+            "Failed to sync deepagents top-level export", exc_info=True
+        )
         return
     _top_level_patched = True
 
@@ -165,7 +167,9 @@ def _restore_top_level_create_deep_agent() -> None:
                 _top_level_original,
             )
     except Exception:  # noqa: BLE001
-        logger.debug("Failed to restore deepagents top-level export", exc_info=True)
+        logger.debug(
+            "Failed to restore deepagents top-level export", exc_info=True
+        )
     finally:
         _top_level_original = _MISSING
         _top_level_patched = False
@@ -224,7 +228,9 @@ def _make_method_wrapper(
 
     if method_name == "astream":
 
-        async def astream_wrapper(*args: Any, **kwargs: Any) -> AsyncIterator[Any]:
+        async def astream_wrapper(
+            *args: Any, **kwargs: Any
+        ) -> AsyncIterator[Any]:
             args, kwargs = _rewrite_config(args, kwargs)
             async for chunk in original(*args, **kwargs):
                 yield chunk

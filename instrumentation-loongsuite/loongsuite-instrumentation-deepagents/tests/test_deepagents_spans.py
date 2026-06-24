@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
 import pytest
+from deepagents.backends.filesystem import FilesystemBackend
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
@@ -139,7 +140,9 @@ def _assert_step_is_under_agent(agent_span, step_span) -> None:
     assert step_span.parent.span_id == agent_span.context.span_id
 
 
-def _assert_kind_under_step(spans, step_span, kind: str, name: str | None = None):
+def _assert_kind_under_step(
+    spans, step_span, kind: str, name: str | None = None
+):
     descendants = _collect_descendants(spans, step_span.context.span_id)
     matches = [
         span
@@ -163,9 +166,7 @@ def test_deepagents_root_span_is_agent_and_single_step(
     assert getattr(agent, "_loongsuite_react_agent") is True
     assert getattr(agent, "_loongsuite_deepagents_agent") is True
 
-    result = agent.invoke(
-        {"messages": [{"role": "user", "content": "hello"}]}
-    )
+    result = agent.invoke({"messages": [{"role": "user", "content": "hello"}]})
 
     assert result["messages"][-1].content == "Deep agent final answer."
 
@@ -240,8 +241,6 @@ def test_deepagents_tool_call_creates_two_react_steps(
 def test_deepagents_skill_load_tool_span_captures_skill_attributes(
     instrument, span_exporter, tmp_path
 ):
-    from deepagents.backends.filesystem import FilesystemBackend  # noqa: PLC0415
-
     skill_dir = tmp_path / "skills" / "probe-skill"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(
@@ -313,8 +312,6 @@ def test_deepagents_skill_load_tool_span_captures_skill_attributes(
 def test_deepagents_skill_helper_file_is_not_skill_load(
     instrument, span_exporter, tmp_path
 ):
-    from deepagents.backends.filesystem import FilesystemBackend  # noqa: PLC0415
-
     skill_dir = tmp_path / "skills" / "probe-skill"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(

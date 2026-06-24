@@ -83,7 +83,9 @@ def fixture_logger_provider(log_exporter):
 
 
 @pytest.fixture(scope="function")
-def instrument(tracer_provider, meter_provider, logger_provider, span_exporter):
+def instrument(
+    tracer_provider, meter_provider, logger_provider, span_exporter
+):
     os.environ[OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT] = (
         "SPAN_ONLY"
     )

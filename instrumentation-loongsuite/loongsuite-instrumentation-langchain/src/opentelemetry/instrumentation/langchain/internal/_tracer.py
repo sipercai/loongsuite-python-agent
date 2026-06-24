@@ -173,11 +173,7 @@ def _extract_deepagents_skills_metadata(
 
     for candidate in candidates:
         if isinstance(candidate, list):
-            return [
-                dict(item)
-                for item in candidate
-                if isinstance(item, dict)
-            ]
+            return [dict(item) for item in candidate if isinstance(item, dict)]
     return None
 
 
@@ -503,9 +499,7 @@ class LoongsuiteTracer(BaseTracer):
                 inside_deepagents = (
                     p.is_deepagents_react or p.inside_deepagents_react
                 )
-                deepagents_skills_by_path = dict(
-                    p.deepagents_skills_by_path
-                )
+                deepagents_skills_by_path = dict(p.deepagents_skills_by_path)
 
         rd = _RunData(
             run_kind="chain",
