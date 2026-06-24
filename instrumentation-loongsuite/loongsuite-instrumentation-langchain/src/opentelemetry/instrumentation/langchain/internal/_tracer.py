@@ -386,8 +386,10 @@ class LoongsuiteTracer(BaseTracer):
         )
 
         if inside:
-            self._maybe_enter_langgraph_react_step(run)
-            self._maybe_enter_deepagents_react_step(run)
+            if parent_rd is not None and parent_rd.is_deepagents_react:
+                self._maybe_enter_deepagents_react_step(run)
+            elif parent_rd is not None and parent_rd.is_langgraph_react:
+                self._maybe_enter_langgraph_react_step(run)
             self._start_chain(run)
         else:
             self._start_agent(run)
