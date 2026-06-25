@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Capture OpenAI-style LangGraph and DeepAgents message dictionaries as
+  `gen_ai.input.messages` on root `AGENT` spans.
 - Preserve structured LangChain tool call arguments when tool inputs do not use
   `input` or `query`, which keeps DeepAgents filesystem `read_file` arguments
   such as `file_path` available for skill-load telemetry.

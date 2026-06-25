@@ -18,6 +18,7 @@ from uuid import uuid4
 
 from opentelemetry.instrumentation.langchain.internal._tracer import (
     LoongsuiteTracer,
+    _extract_langgraph_input_message,
 )
 from opentelemetry.instrumentation.langchain.internal._utils import (
     AGENT_RUN_NAMES,
@@ -75,6 +76,45 @@ class TestAgentDetection:
 
     def test_agent_run_names_immutable(self):
         assert isinstance(AGENT_RUN_NAMES, frozenset)
+
+
+def test_extract_langgraph_input_message_from_openai_style_dict():
+    message = _extract_langgraph_input_message(
+        {"role": "user", "content": "hello"}
+    )
+
+    assert message is not None
+    assert message.role == "user"
+    assert len(message.parts) == 1
+    assert message.parts[0].type == "text"
+    assert message.parts[0].content == "hello"
+
+
+def test_extract_langgraph_input_message_keeps_empty_content_tool_call():
+    message = _extract_langgraph_input_message(
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                        "name": "search",
+                        "arguments": '{"query":"hello"}',
+                    },
+                }
+            ],
+        }
+    )
+
+    assert message is not None
+    assert message.role == "assistant"
+    assert len(message.parts) == 1
+    assert message.parts[0].type == "tool_call"
+    assert message.parts[0].name == "search"
+    assert message.parts[0].arguments == '{"query":"hello"}'
+    assert message.parts[0].id == "call_1"
 
 
 def test_agent_context_colors_child_llm_and_tool_spans(

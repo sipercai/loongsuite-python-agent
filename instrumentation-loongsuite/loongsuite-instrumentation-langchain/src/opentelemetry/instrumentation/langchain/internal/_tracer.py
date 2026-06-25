@@ -96,6 +96,7 @@ from opentelemetry.util.genai.types import (
     LLMInvocation,
     OutputMessage,
     Text,
+    ToolCall,
 )
 from opentelemetry.util.genai.utils import (
     ContentCapturingMode,
@@ -955,6 +956,67 @@ def _extract_langgraph_input_message(msg: Any) -> InputMessage | None:
         role, content = msg
         if isinstance(content, str) and content:
             return InputMessage(role=str(role), parts=[Text(content=content)])
+        return None
+
+    # OpenAI-style message dict: {"role": "user", "content": "hello"}.
+    if isinstance(msg, dict):
+        content = msg.get("content")
+        if content is None:
+            content = msg.get("text")
+
+        parts: list[Any] = []
+        if isinstance(content, str) and content:
+            parts.append(Text(content=content))
+        elif isinstance(content, list):
+            for part in content:
+                if isinstance(part, str) and part:
+                    parts.append(Text(content=part))
+                elif isinstance(part, dict):
+                    text = part.get("text")
+                    if text is None:
+                        text = part.get("content")
+                    if isinstance(text, str) and text:
+                        parts.append(Text(content=text))
+
+        for tool_call in msg.get("tool_calls") or []:
+            if isinstance(tool_call, dict):
+                function = tool_call.get("function") or {}
+                if not isinstance(function, dict):
+                    function = {}
+                arguments = tool_call.get("args")
+                if arguments is None:
+                    arguments = tool_call.get("arguments")
+                if arguments is None:
+                    arguments = function.get("arguments", {})
+                parts.append(
+                    ToolCall(
+                        name=tool_call.get("name")
+                        or function.get("name")
+                        or "",
+                        arguments=arguments,
+                        id=tool_call.get("id"),
+                    )
+                )
+
+        if parts:
+            role = msg.get("role") or msg.get("type") or "user"
+            role_name = str(role).lower()
+            if role_name.endswith("_message"):
+                role_name = role_name[: -len("_message")]
+            elif role_name.endswith("message"):
+                role_name = role_name[: -len("message")]
+            role_map = {
+                "human": "user",
+                "ai": "assistant",
+                "system": "system",
+                "function": "tool",
+                "tool": "tool",
+                "chat": "user",
+            }
+            return InputMessage(
+                role=role_map.get(role_name, role_name),
+                parts=parts,
+            )
         return None
 
     # LangChain message object (HumanMessage, AIMessage, etc.)

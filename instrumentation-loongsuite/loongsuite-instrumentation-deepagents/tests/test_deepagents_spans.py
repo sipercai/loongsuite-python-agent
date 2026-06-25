@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
@@ -172,6 +173,15 @@ def test_deepagents_root_span_is_agent_and_single_step(
 
     spans = span_exporter.get_finished_spans()
     agent_span = _assert_single_agent(spans, "deep_test_agent")
+    input_raw = agent_span.attributes.get("gen_ai.input.messages")
+    assert input_raw, "AGENT span missing gen_ai.input.messages"
+    input_messages = json.loads(input_raw)
+    assert input_messages == [
+        {
+            "role": "user",
+            "parts": [{"content": "hello", "type": "text"}],
+        }
+    ]
 
     step_spans = _spans_by_kind(spans, "STEP")
     assert len(step_spans) == 1

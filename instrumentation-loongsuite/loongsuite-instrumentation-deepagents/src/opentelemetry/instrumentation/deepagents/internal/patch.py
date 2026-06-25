@@ -30,6 +30,7 @@ import sys
 from collections.abc import AsyncIterator, Iterator
 from contextlib import suppress
 from typing import Any, Callable
+from weakref import WeakSet
 
 from wrapt import ObjectProxy, wrap_function_wrapper
 
@@ -48,6 +49,8 @@ _TOP_LEVEL_MODULE = "deepagents"
 _MISSING = object()
 _top_level_original: Any = _MISSING
 _top_level_patched = False
+_wrapped_graphs = WeakSet()
+_strong_wrapped_graphs: list[Any] = []
 
 
 def _create_deep_agent_wrapper(
@@ -109,6 +112,7 @@ def uninstrument_create_deep_agent() -> None:
     with suppress(Exception):
         module = importlib.import_module(CREATE_DEEP_AGENT_MODULE)
         unwrap(module, CREATE_DEEP_AGENT_NAME)
+    _restore_wrapped_graph_methods()
     _restore_top_level_create_deep_agent()
 
 
@@ -186,7 +190,7 @@ def _wrap_graph_methods(graph: Any) -> None:
         return
 
     originals: dict[str, Callable[..., Any]] = {}
-    for method_name in ("invoke", "ainvoke", "stream", "astream"):
+    for method_name in ("invoke", "ainvoke", "stream", "astream", "with_config"):
         original = getattr(graph, method_name, None)
         if original is None:
             continue
@@ -204,6 +208,38 @@ def _wrap_graph_methods(graph: Any) -> None:
     with suppress(Exception):
         setattr(graph, GRAPH_ORIGINAL_METHODS_ATTR, originals)
         setattr(graph, GRAPH_METHODS_WRAPPED_ATTR, True)
+    _track_wrapped_graph(graph)
+
+
+def _track_wrapped_graph(graph: Any) -> None:
+    try:
+        _wrapped_graphs.add(graph)
+    except TypeError:
+        _strong_wrapped_graphs.append(graph)
+
+
+def _restore_wrapped_graph_methods() -> None:
+    for graph in [*list(_wrapped_graphs), *_strong_wrapped_graphs]:
+        _restore_graph_methods(graph)
+    _wrapped_graphs.clear()
+    _strong_wrapped_graphs.clear()
+
+
+def _restore_graph_methods(graph: Any) -> None:
+    originals = getattr(graph, GRAPH_ORIGINAL_METHODS_ATTR, None)
+    if isinstance(originals, dict):
+        for method_name, original in originals.items():
+            with suppress(Exception):
+                setattr(graph, method_name, original)
+
+    for attr_name in (
+        GRAPH_ORIGINAL_METHODS_ATTR,
+        GRAPH_METHODS_WRAPPED_ATTR,
+        REACT_AGENT_METADATA_KEY,
+        DEEPAGENTS_METADATA_KEY,
+    ):
+        with suppress(Exception):
+            delattr(graph, attr_name)
 
 
 def _make_method_wrapper(
@@ -222,20 +258,27 @@ def _make_method_wrapper(
 
         def stream_wrapper(*args: Any, **kwargs: Any) -> Iterator[Any]:
             args, kwargs = _rewrite_config(args, kwargs)
-            yield from original(*args, **kwargs)
+            return original(*args, **kwargs)
 
         return stream_wrapper
 
     if method_name == "astream":
 
-        async def astream_wrapper(
-            *args: Any, **kwargs: Any
-        ) -> AsyncIterator[Any]:
+        def astream_wrapper(*args: Any, **kwargs: Any) -> AsyncIterator[Any]:
             args, kwargs = _rewrite_config(args, kwargs)
-            async for chunk in original(*args, **kwargs):
-                yield chunk
+            return original(*args, **kwargs)
 
         return astream_wrapper
+
+    if method_name == "with_config":
+
+        def with_config_wrapper(*args: Any, **kwargs: Any) -> Any:
+            graph = original(*args, **kwargs)
+            _mark_graph(graph)
+            _wrap_graph_methods(graph)
+            return graph
+
+        return with_config_wrapper
 
     def invoke_wrapper(*args: Any, **kwargs: Any) -> Any:
         args, kwargs = _rewrite_config(args, kwargs)
