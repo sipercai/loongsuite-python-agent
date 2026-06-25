@@ -130,7 +130,9 @@ def test_uninstrument_restores_wrapped_graph_methods():
         assert not hasattr(child_graph, REACT_AGENT_METADATA_KEY)
         assert not hasattr(child_graph, DEEPAGENTS_METADATA_KEY)
         assert graph.invoke("hello") is None
-        assert child_graph.invoke("hello") == {"metadata": {"customer": "kept"}}
+        assert child_graph.invoke("hello") == {
+            "metadata": {"customer": "kept"}
+        }
 
         graph.seen_stream_config = "not-called"
         stream_iter = graph.stream("hello")

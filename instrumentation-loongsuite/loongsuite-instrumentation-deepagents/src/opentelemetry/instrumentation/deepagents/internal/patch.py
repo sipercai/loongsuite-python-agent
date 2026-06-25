@@ -190,7 +190,13 @@ def _wrap_graph_methods(graph: Any) -> None:
         return
 
     originals: dict[str, Callable[..., Any]] = {}
-    for method_name in ("invoke", "ainvoke", "stream", "astream", "with_config"):
+    for method_name in (
+        "invoke",
+        "ainvoke",
+        "stream",
+        "astream",
+        "with_config",
+    ):
         original = getattr(graph, method_name, None)
         if original is None:
             continue
