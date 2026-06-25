@@ -246,7 +246,7 @@ libraries = [
     },
     {
         "library": "deepagents >= 0.6.0, < 0.7.0",
-        "instrumentation": "loongsuite-instrumentation-deepagents==0.7.0.dev",
+        "instrumentation": "loongsuite-instrumentation-deepagents==0.6.0.dev",
     },
     {
         "library": "google-adk >= 0.1.0",
