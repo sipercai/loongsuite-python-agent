@@ -16,7 +16,10 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Mapping, Sequence
 
-from opentelemetry.util.genai.extended_types import InvokeAgentInvocation
+from opentelemetry.util.genai.extended_types import (
+    ExecuteToolInvocation,
+    InvokeAgentInvocation,
+)
 from opentelemetry.util.genai.types import (
     FunctionToolDefinition,
     GenericToolDefinition,
@@ -67,6 +70,16 @@ def _text(value: Any) -> str:
     return str(value)
 
 
+def _to_jsonable(value: Any) -> Any:
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, Mapping):
+        return {str(key): _to_jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_jsonable(item) for item in value]
+    return _text(value)
+
+
 def _content_parts(content: Any) -> list[Any]:
     if content is None:
         return []
@@ -98,7 +111,16 @@ def to_input_messages(messages: Sequence[Any] | None) -> list[InputMessage]:
     result: list[InputMessage] = []
     for message in messages or []:
         type_name = _type_name(message)
-        if type_name == "SystemMessage":
+        if type_name == "TextMessage":
+            source = _text(field_value(message, "source"))
+            role = "user" if source == "user" else "assistant"
+            result.append(
+                InputMessage(
+                    role=role,
+                    parts=_content_parts(field_value(message, "content")),
+                )
+            )
+        elif type_name == "SystemMessage":
             result.append(
                 InputMessage(
                     role="system",
@@ -169,6 +191,16 @@ def model_name(model_client: Any) -> str:
     for name in ("model", "_model", "model_name", "_model_name"):
         value = field_value(model_client, name)
         if value:
+            return _text(value)
+    raw_config = field_value(model_client, "_raw_config", "raw_config")
+    if isinstance(raw_config, Mapping):
+        value = raw_config.get("model")
+        if value:
+            return _text(value)
+    model_info = field_value(model_client, "model_info", "_model_info")
+    if isinstance(model_info, Mapping):
+        value = model_info.get("model") or model_info.get("family")
+        if value and _text(value).lower() != "unknown":
             return _text(value)
     return "unknown"
 
@@ -266,8 +298,10 @@ def make_llm_invocation(
 
 
 def make_agent_invocation(instance: Any) -> InvokeAgentInvocation:
-    name = _text(field_value(instance, "name") or type(instance).__name__)
-    description = field_value(instance, "description")
+    name = _text(
+        field_value(instance, "name", "_name") or type(instance).__name__
+    )
+    description = field_value(instance, "description", "_description")
     model_client = field_value(instance, "_model_client")
     return InvokeAgentInvocation(
         provider=AUTOGEN_PROVIDER_NAME,
@@ -278,4 +312,85 @@ def make_agent_invocation(instance: Any) -> InvokeAgentInvocation:
         request_model=model_name(model_client)
         if model_client is not None
         else None,
+        response_model_name=response_model_name(
+            model_client, model_name(model_client)
+        )
+        if model_client is not None
+        else None,
+        input_messages=to_input_messages(
+            field_value(instance, "_system_messages") or []
+        ),
+        tool_definitions=tool_definitions(field_value(instance, "_tools")),
     )
+
+
+def apply_agent_input(
+    invocation: InvokeAgentInvocation, messages: Sequence[Any] | None
+) -> None:
+    invocation.input_messages = [
+        *invocation.input_messages,
+        *to_input_messages(messages),
+    ]
+
+
+def apply_agent_stream_item(
+    invocation: InvokeAgentInvocation, item: Any, first_token_s: float | None
+) -> float | None:
+    if (
+        type(item).__name__ == "ModelClientStreamingChunkEvent"
+        and first_token_s is not None
+        and invocation.monotonic_first_token_s is None
+    ):
+        invocation.monotonic_first_token_s = first_token_s
+
+    message = field_value(item, "chat_message")
+    if message is None:
+        message = item
+
+    usage = field_value(message, "models_usage")
+    prompt_tokens = field_value(usage, "prompt_tokens")
+    completion_tokens = field_value(usage, "completion_tokens")
+    try:
+        if prompt_tokens is not None:
+            invocation.input_tokens = int(prompt_tokens)
+    except (TypeError, ValueError):
+        pass
+    try:
+        if completion_tokens is not None:
+            invocation.output_tokens = int(completion_tokens)
+    except (TypeError, ValueError):
+        pass
+
+    content = field_value(message, "content")
+    parts = _content_parts(content)
+    if parts and type(message).__name__ != "ToolCallRequestEvent":
+        invocation.output_messages = [
+            OutputMessage(
+                role="assistant",
+                parts=parts,
+                finish_reason="stop",
+            )
+        ]
+        invocation.finish_reasons = ["stop"]
+    return first_token_s
+
+
+def make_tool_invocation(tool_call: Any) -> ExecuteToolInvocation:
+    name = _text(field_value(tool_call, "name"))
+    return ExecuteToolInvocation(
+        tool_name=name,
+        provider=AUTOGEN_PROVIDER_NAME,
+        tool_call_id=field_value(tool_call, "id"),
+        tool_type="function",
+        tool_call_arguments=_to_jsonable(field_value(tool_call, "arguments")),
+    )
+
+
+def apply_tool_result(
+    invocation: ExecuteToolInvocation, result: Any | None
+) -> None:
+    if result is None:
+        return
+    invocation.tool_call_result = field_value(result, "content")
+    if invocation.tool_call_result is None:
+        invocation.tool_call_result = _to_jsonable(result)

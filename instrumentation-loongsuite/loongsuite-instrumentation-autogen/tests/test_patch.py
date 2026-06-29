@@ -26,14 +26,20 @@ from opentelemetry.instrumentation.autogen.semantic_conventions import (
     GenAISpanKind,
 )
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
+)
 
 
 class Handler:
     def __init__(self):
         self.calls = []
+        self.invocations = []
 
     def start_invoke_agent(self, invocation):
         self.calls.append(("start_agent", invocation.agent_name))
+        self.invocations.append(invocation)
 
     def stop_invoke_agent(self, invocation):
         self.calls.append(("stop_agent", invocation.agent_name))
@@ -45,6 +51,7 @@ class Handler:
 
     def start_llm(self, invocation):
         self.calls.append(("start_llm", invocation.request_model))
+        self.invocations.append(invocation)
 
     def stop_llm(self, invocation):
         self.calls.append(("stop_llm", invocation.request_model))
@@ -54,14 +61,37 @@ class Handler:
             ("fail_llm", invocation.request_model, error.type.__name__)
         )
 
+    def start_execute_tool(self, invocation):
+        self.calls.append(("start_tool", invocation.tool_name))
+        self.invocations.append(invocation)
+
+    def stop_execute_tool(self, invocation):
+        self.calls.append(("stop_tool", invocation.tool_name))
+
+    def fail_execute_tool(self, invocation, error):
+        self.calls.append(
+            ("fail_tool", invocation.tool_name, error.type.__name__)
+        )
+
 
 class Agent:
-    name = "assistant"
-    description = "answers"
+    _name = "assistant"
+    _description = "answers"
+    _model_client = None
+    _system_messages = []
+    _tools = []
 
 
 class ModelClient:
     _create_args = {"model": "qwen-plus"}
+
+
+class SystemMessage:
+    content = "system"
+
+
+class UserMessage:
+    content = "hello"
 
 
 class Usage:
@@ -73,6 +103,27 @@ class CreateResult:
     content = "done"
     finish_reason = "stop"
     usage = Usage()
+
+
+class ChatMessage:
+    content = "agent done"
+    models_usage = Usage()
+
+
+class Response:
+    chat_message = ChatMessage()
+
+
+class ToolCall:
+    id = "call-1"
+    name = "add_numbers"
+    arguments = {"a": 2, "b": 3}
+
+
+class FunctionExecutionResult:
+    content = "5"
+    call_id = "call-1"
+    name = "add_numbers"
 
 
 class ModelContext:
@@ -104,6 +155,53 @@ async def test_agent_wrapper_starts_and_stops_invocation():
         ("start_agent", "assistant"),
         ("stop_agent", "assistant"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_agent_wrapper_enriches_native_autogen_agent_span(monkeypatch):
+    monkeypatch.setenv(
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "SPAN_ONLY"
+    )
+    handler = Handler()
+    _set_handler(handler)
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    tracer = provider.get_tracer(__name__)
+
+    class NativeAgent(Agent):
+        _model_client = ModelClient()
+        _system_messages = [SystemMessage()]
+
+    async def wrapped(*args, **kwargs):
+        yield Response()
+
+    with tracer.start_as_current_span(
+        "invoke_agent assistant",
+        attributes={
+            GEN_AI_OPERATION_NAME: GenAIOperation.INVOKE_AGENT,
+            GEN_AI_PROVIDER_NAME: AUTOGEN_PROVIDER_NAME,
+            GEN_AI_SPAN_KIND: GenAISpanKind.AGENT,
+        },
+    ):
+        items = [
+            item
+            async for item in patch._on_messages_stream_wrapper(
+                wrapped, NativeAgent(), ([UserMessage()], None), {}
+            )
+        ]
+
+    [span] = exporter.get_finished_spans()
+    attributes = dict(span.attributes or {})
+
+    assert len(items) == 1
+    assert handler.calls == []
+    assert attributes["gen_ai.request.model"] == "qwen-plus"
+    assert "gen_ai.input.messages" in attributes
+    assert "system" in attributes["gen_ai.input.messages"]
+    assert "hello" in attributes["gen_ai.input.messages"]
+    assert "gen_ai.output.messages" in attributes
+    assert "agent done" in attributes["gen_ai.output.messages"]
 
 
 @pytest.mark.asyncio
@@ -218,3 +316,27 @@ async def test_llm_wrapper_fails_invocation_when_closed_early():
         ("start_llm", "qwen-plus"),
         ("fail_llm", "qwen-plus", "GeneratorExit"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_execute_tool_wrapper_records_arguments_and_result():
+    handler = Handler()
+    _set_handler(handler)
+
+    async def wrapped(*args, **kwargs):
+        assert patch._suppress_native_tool_span.get()
+        return ToolCall(), FunctionExecutionResult()
+
+    result = await patch._execute_tool_call_wrapper(
+        wrapped, None, (ToolCall(), [], [], "assistant", None, None), {}
+    )
+
+    assert isinstance(result, tuple)
+    assert handler.calls == [
+        ("start_tool", "add_numbers"),
+        ("stop_tool", "add_numbers"),
+    ]
+    invocation = handler.invocations[0]
+    assert invocation.tool_call_id == "call-1"
+    assert invocation.tool_call_arguments == {"a": 2, "b": 3}
+    assert invocation.tool_call_result == "5"

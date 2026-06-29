@@ -46,6 +46,12 @@ class UserMessage:
 
 
 @dataclass
+class TextMessage:
+    content: str
+    source: str
+
+
+@dataclass
 class AssistantMessage:
     content: list
     thought: str | None = None
@@ -85,6 +91,10 @@ class CreateResult:
 class ModelClient:
     _create_args = {"model": "qwen-plus"}
     _resolved_model = "qwen-plus-2025-04-28"
+
+
+class RawConfigModelClient:
+    _raw_config = {"model": "qwen-fake"}
 
 
 class DashScopeOpenAIClient(ModelClient):
@@ -127,6 +137,20 @@ def test_to_input_messages_converts_autogen_agentchat_messages():
     assert messages[3].parts == [ToolCallResponse(response="ok", id="call-1")]
 
 
+def test_to_input_messages_converts_agentchat_text_messages():
+    messages = to_input_messages(
+        [
+            TextMessage("task", "user"),
+            TextMessage("answer", "assistant"),
+        ]
+    )
+
+    assert messages[0].role == "user"
+    assert messages[0].parts == [Text(content="task")]
+    assert messages[1].role == "assistant"
+    assert messages[1].parts == [Text(content="answer")]
+
+
 def test_make_llm_invocation_uses_model_client_metadata_and_tools():
     invocation = make_llm_invocation(
         ModelClient(),
@@ -143,6 +167,13 @@ def test_make_llm_invocation_uses_model_client_metadata_and_tools():
     assert invocation.input_messages[0].parts == [Text(content="hello")]
     assert invocation.tool_definitions == tool_definitions([Tool()])
     assert invocation.output_type == "json"
+
+
+def test_make_llm_invocation_uses_raw_config_model_fallback():
+    invocation = make_llm_invocation(RawConfigModelClient(), [], [])
+
+    assert invocation.request_model == "qwen-fake"
+    assert invocation.response_model_name == "qwen-fake"
 
 
 def test_make_llm_invocation_detects_dashscope_openai_compatible_endpoint():
@@ -174,9 +205,11 @@ def test_apply_create_result_populates_output_and_usage():
 
 def test_make_agent_invocation_uses_assistant_metadata():
     class AssistantAgent:
-        name = "assistant"
-        description = "answers"
+        _name = "assistant"
+        _description = "answers"
         _model_client = ModelClient()
+        _system_messages = [SystemMessage("system")]
+        _tools = [Tool()]
 
     invocation = make_agent_invocation(AssistantAgent())
 
@@ -184,3 +217,6 @@ def test_make_agent_invocation_uses_assistant_metadata():
     assert invocation.agent_name == "assistant"
     assert invocation.agent_description == "answers"
     assert invocation.request_model == "qwen-plus"
+    assert invocation.response_model_name == "qwen-plus-2025-04-28"
+    assert invocation.input_messages[0].parts == [Text(content="system")]
+    assert invocation.tool_definitions == tool_definitions([Tool()])
