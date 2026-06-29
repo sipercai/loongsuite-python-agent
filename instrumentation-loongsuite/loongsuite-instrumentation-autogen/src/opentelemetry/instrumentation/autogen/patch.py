@@ -87,12 +87,17 @@ def _current_autogen_agent_span_active() -> bool:
     span_kind = _span_attr(span, GEN_AI_SPAN_KIND)
     return (
         operation == GenAIOperation.INVOKE_AGENT
-        and (provider == AUTOGEN_PROVIDER_NAME or system == AUTOGEN_PROVIDER_NAME)
+        and (
+            provider == AUTOGEN_PROVIDER_NAME
+            or system == AUTOGEN_PROVIDER_NAME
+        )
         and (span_kind in (None, GenAISpanKind.AGENT))
     )
 
 
-def _arg_value(args: tuple[Any, ...], kwargs: dict[str, Any], name: str) -> Any:
+def _arg_value(
+    args: tuple[Any, ...], kwargs: dict[str, Any], name: str
+) -> Any:
     if name in kwargs:
         return kwargs[name]
     idx = _CALL_LLM_PARAM_NAMES.index(name)
@@ -110,7 +115,9 @@ def _error_from_exception(exc: BaseException) -> Error:
     return Error(message=message, type=type(exc))
 
 
-async def _collect_llm_messages(args: tuple[Any, ...], kwargs: dict[str, Any]) -> list[Any]:
+async def _collect_llm_messages(
+    args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> list[Any]:
     system_messages = _arg_value(args, kwargs, "system_messages") or []
     model_context = _arg_value(args, kwargs, "model_context")
     context_messages: list[Any] = []
@@ -123,7 +130,9 @@ async def _collect_llm_messages(args: tuple[Any, ...], kwargs: dict[str, Any]) -
     return list(system_messages) + context_messages
 
 
-async def _collect_tools(args: tuple[Any, ...], kwargs: dict[str, Any]) -> list[Any]:
+async def _collect_tools(
+    args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> list[Any]:
     tools: list[Any] = []
     workbench = _arg_value(args, kwargs, "workbench") or []
     for wb in workbench:
@@ -155,9 +164,7 @@ def _on_messages_stream_wrapper(wrapped, instance, args, kwargs):  # type: ignor
             handler.fail_invoke_agent(invocation, _error_from_exception(exc))
             raise
         except Exception as exc:
-            handler.fail_invoke_agent(
-                invocation, _error_from_exception(exc)
-            )
+            handler.fail_invoke_agent(invocation, _error_from_exception(exc))
             raise
         handler.stop_invoke_agent(invocation)
 

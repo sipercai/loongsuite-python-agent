@@ -22,8 +22,9 @@ _UTIL_GENAI_SRC = _REPO_ROOT / "util" / "opentelemetry-util-genai" / "src"
 if _UTIL_GENAI_SRC.is_dir() and str(_UTIL_GENAI_SRC) not in sys.path:
     sys.path.insert(0, str(_UTIL_GENAI_SRC))
     for _module_name in list(sys.modules):
-        if _module_name == "opentelemetry.util.genai" or _module_name.startswith(
-            "opentelemetry.util.genai."
+        if (
+            _module_name == "opentelemetry.util.genai"
+            or _module_name.startswith("opentelemetry.util.genai.")
         ):
             del sys.modules[_module_name]
 

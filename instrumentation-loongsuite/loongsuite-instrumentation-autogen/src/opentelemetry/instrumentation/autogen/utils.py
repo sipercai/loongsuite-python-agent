@@ -78,7 +78,9 @@ def _content_parts(content: Any) -> list[Any]:
             if isinstance(item, str):
                 parts.append(Text(content=item))
                 continue
-            if all(hasattr(item, name) for name in ("id", "arguments", "name")):
+            if all(
+                hasattr(item, name) for name in ("id", "arguments", "name")
+            ):
                 parts.append(
                     ToolCall(
                         arguments=field_value(item, "arguments"),
@@ -100,7 +102,9 @@ def to_input_messages(messages: Sequence[Any] | None) -> list[InputMessage]:
             result.append(
                 InputMessage(
                     role="system",
-                    parts=[Text(content=_text(field_value(message, "content")))],
+                    parts=[
+                        Text(content=_text(field_value(message, "content")))
+                    ],
                 )
             )
         elif type_name == "UserMessage":
@@ -127,7 +131,9 @@ def to_input_messages(messages: Sequence[Any] | None) -> list[InputMessage]:
                 )
             result.append(InputMessage(role="tool", parts=parts))
         else:
-            result.append(InputMessage(role="user", parts=[Text(content=_text(message))]))
+            result.append(
+                InputMessage(role="user", parts=[Text(content=_text(message))])
+            )
     return result
 
 
@@ -148,7 +154,9 @@ def tool_definitions(tools: Iterable[Any] | None) -> list[Any]:
             continue
         name = field_value(tool, "name")
         if name is not None:
-            definitions.append(GenericToolDefinition(name=_text(name), type="function"))
+            definitions.append(
+                GenericToolDefinition(name=_text(name), type="function")
+            )
     return definitions
 
 
@@ -165,7 +173,9 @@ def model_name(model_client: Any) -> str:
     return "unknown"
 
 
-def response_model_name(model_client: Any, fallback: str | None = None) -> str | None:
+def response_model_name(
+    model_client: Any, fallback: str | None = None
+) -> str | None:
     resolved = field_value(model_client, "_resolved_model", "resolved_model")
     if resolved:
         return _text(resolved)
@@ -178,7 +188,9 @@ def provider_name(model_client: Any) -> str:
     raw = f"{module}.{cls_name}"
     base_url = _text(
         field_value(model_client, "base_url", "_base_url")
-        or field_value(field_value(model_client, "_client"), "base_url", "_base_url")
+        or field_value(
+            field_value(model_client, "_client"), "base_url", "_base_url"
+        )
     ).lower()
     if "dashscope" in base_url:
         return "dashscope"
@@ -195,7 +207,9 @@ def provider_name(model_client: Any) -> str:
     return AUTOGEN_PROVIDER_NAME
 
 
-def apply_create_result(invocation: LLMInvocation | InvokeAgentInvocation, result: Any) -> None:
+def apply_create_result(
+    invocation: LLMInvocation | InvokeAgentInvocation, result: Any
+) -> None:
     finish_reason = field_value(result, "finish_reason")
     if finish_reason is not None:
         invocation.finish_reasons = [_text(finish_reason)]
@@ -258,6 +272,10 @@ def make_agent_invocation(instance: Any) -> InvokeAgentInvocation:
     return InvokeAgentInvocation(
         provider=AUTOGEN_PROVIDER_NAME,
         agent_name=name,
-        agent_description=_text(description) if description is not None else None,
-        request_model=model_name(model_client) if model_client is not None else None,
+        agent_description=_text(description)
+        if description is not None
+        else None,
+        request_model=model_name(model_client)
+        if model_client is not None
+        else None,
     )

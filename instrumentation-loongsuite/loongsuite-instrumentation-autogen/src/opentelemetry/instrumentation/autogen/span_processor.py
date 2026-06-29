@@ -115,7 +115,9 @@ def _pop_attr_value(attrs: Any, key: str) -> None:
         backing_dict.pop(key, None)
 
 
-def _set_attr_on_both(live_span: OtelSpan, readable: Any, key: str, value: Any) -> None:
+def _set_attr_on_both(
+    live_span: OtelSpan, readable: Any, key: str, value: Any
+) -> None:
     _set_attr(live_span, key, value)
     _set_attr(readable, key, value)
 
@@ -125,7 +127,9 @@ def _delete_attr_on_both(live_span: OtelSpan, readable: Any, key: str) -> None:
     _delete_attr(readable, key)
 
 
-def _set_otel_span_kind(live_span: OtelSpan, readable: Any, kind: SpanKind) -> None:
+def _set_otel_span_kind(
+    live_span: OtelSpan, readable: Any, kind: SpanKind
+) -> None:
     for target in (live_span, readable):
         try:
             target._kind = kind  # type: ignore[attr-defined]
@@ -133,7 +137,9 @@ def _set_otel_span_kind(live_span: OtelSpan, readable: Any, kind: SpanKind) -> N
             pass
 
 
-def _is_autogen_span(name: str, operation: Optional[str], readable: Any) -> bool:
+def _is_autogen_span(
+    name: str, operation: Optional[str], readable: Any
+) -> bool:
     if _attr_value(readable, GEN_AI_SYSTEM) == AUTOGEN_PROVIDER_NAME:
         return True
     if _attr_value(readable, GEN_AI_PROVIDER_NAME) == AUTOGEN_PROVIDER_NAME:

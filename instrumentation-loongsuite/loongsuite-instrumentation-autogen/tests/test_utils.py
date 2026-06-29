@@ -160,7 +160,9 @@ def test_apply_create_result_populates_output_and_usage():
 
     apply_create_result(
         invocation,
-        CreateResult("done", "stop", Usage(prompt_tokens=3, completion_tokens=5)),
+        CreateResult(
+            "done", "stop", Usage(prompt_tokens=3, completion_tokens=5)
+        ),
     )
 
     assert invocation.finish_reasons == ["stop"]

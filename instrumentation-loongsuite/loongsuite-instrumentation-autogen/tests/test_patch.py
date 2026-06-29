@@ -39,7 +39,9 @@ class Handler:
         self.calls.append(("stop_agent", invocation.agent_name))
 
     def fail_invoke_agent(self, invocation, error):
-        self.calls.append(("fail_agent", invocation.agent_name, error.type.__name__))
+        self.calls.append(
+            ("fail_agent", invocation.agent_name, error.type.__name__)
+        )
 
     def start_llm(self, invocation):
         self.calls.append(("start_llm", invocation.request_model))
@@ -48,7 +50,9 @@ class Handler:
         self.calls.append(("stop_llm", invocation.request_model))
 
     def fail_llm(self, invocation, error):
-        self.calls.append(("fail_llm", invocation.request_model, error.type.__name__))
+        self.calls.append(
+            ("fail_llm", invocation.request_model, error.type.__name__)
+        )
 
 
 class Agent:
@@ -90,11 +94,16 @@ async def test_agent_wrapper_starts_and_stops_invocation():
 
     items = [
         item
-        async for item in patch._on_messages_stream_wrapper(wrapped, Agent(), (), {})
+        async for item in patch._on_messages_stream_wrapper(
+            wrapped, Agent(), (), {}
+        )
     ]
 
     assert items == ["item"]
-    assert handler.calls == [("start_agent", "assistant"), ("stop_agent", "assistant")]
+    assert handler.calls == [
+        ("start_agent", "assistant"),
+        ("stop_agent", "assistant"),
+    ]
 
 
 @pytest.mark.asyncio
@@ -107,7 +116,9 @@ async def test_agent_wrapper_fails_invocation_on_exception():
         raise ValueError("boom")
 
     with pytest.raises(ValueError):
-        async for _ in patch._on_messages_stream_wrapper(wrapped, Agent(), (), {}):
+        async for _ in patch._on_messages_stream_wrapper(
+            wrapped, Agent(), (), {}
+        ):
             pass
 
     assert handler.calls == [
@@ -171,7 +182,10 @@ async def test_llm_wrapper_starts_and_stops_invocation():
     ]
 
     assert len(items) == 1
-    assert handler.calls == [("start_llm", "qwen-plus"), ("stop_llm", "qwen-plus")]
+    assert handler.calls == [
+        ("start_llm", "qwen-plus"),
+        ("stop_llm", "qwen-plus"),
+    ]
 
 
 @pytest.mark.asyncio

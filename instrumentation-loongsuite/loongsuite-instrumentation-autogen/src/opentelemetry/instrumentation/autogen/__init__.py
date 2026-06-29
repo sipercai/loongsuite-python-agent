@@ -56,7 +56,9 @@ class AutoGenInstrumentor(BaseInstrumentor):
         if self._handler is not None:
             return
 
-        tracer_provider = kwargs.get("tracer_provider") or get_tracer_provider()
+        tracer_provider = (
+            kwargs.get("tracer_provider") or get_tracer_provider()
+        )
         meter_provider = kwargs.get("meter_provider")
         logger_provider = kwargs.get("logger_provider")
 
@@ -81,7 +83,9 @@ class AutoGenInstrumentor(BaseInstrumentor):
         if self._processor is not None:
             try:
                 if self._tracer_provider is not None:
-                    _remove_span_processor(self._tracer_provider, self._processor)
+                    _remove_span_processor(
+                        self._tracer_provider, self._processor
+                    )
                 self._processor.shutdown()
             except Exception as exc:  # pragma: no cover - defensive
                 logger.debug("AutoGen processor shutdown failed: %s", exc)
