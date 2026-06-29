@@ -239,12 +239,20 @@ def provider_name(model_client: Any) -> str:
     return AUTOGEN_PROVIDER_NAME
 
 
+def _finish_reason(value: Any) -> str:
+    reason = _text(value or "unknown")
+    if reason == "function_calls":
+        return "tool_calls"
+    return reason
+
+
 def apply_create_result(
     invocation: LLMInvocation | InvokeAgentInvocation, result: Any
 ) -> None:
-    finish_reason = field_value(result, "finish_reason")
-    if finish_reason is not None:
-        invocation.finish_reasons = [_text(finish_reason)]
+    raw_finish_reason = field_value(result, "finish_reason")
+    finish_reason = _finish_reason(raw_finish_reason)
+    if raw_finish_reason is not None:
+        invocation.finish_reasons = [finish_reason]
 
     usage = field_value(result, "usage")
     prompt_tokens = field_value(usage, "prompt_tokens")
@@ -270,7 +278,7 @@ def apply_create_result(
             OutputMessage(
                 role="assistant",
                 parts=parts,
-                finish_reason=_text(finish_reason or "unknown"),
+                finish_reason=finish_reason,
             )
         ]
 

@@ -203,6 +203,23 @@ def test_apply_create_result_populates_output_and_usage():
     assert invocation.output_messages[0].finish_reason == "stop"
 
 
+def test_apply_create_result_normalizes_tool_call_finish_reason():
+    invocation = make_llm_invocation(ModelClient(), [], [])
+
+    apply_create_result(
+        invocation,
+        CreateResult(
+            [FunctionCall("call-1", "lookup", {"q": "x"})],
+            "function_calls",
+            Usage(prompt_tokens=3, completion_tokens=5),
+        ),
+    )
+
+    assert invocation.finish_reasons == ["tool_calls"]
+    assert isinstance(invocation.output_messages[0].parts[0], ToolCall)
+    assert invocation.output_messages[0].finish_reason == "tool_calls"
+
+
 def test_make_agent_invocation_uses_assistant_metadata():
     class AssistantAgent:
         _name = "assistant"
