@@ -126,6 +126,40 @@ class FunctionExecutionResult:
     name = "add_numbers"
 
 
+class MemoryQueryEvent:
+    content = ["remembered preference"]
+    source = "assistant"
+
+
+class HandoffMessage:
+    content = "handoff to worker"
+    source = "planner"
+    target = "worker"
+    context = [UserMessage()]
+
+
+class CodeResult:
+    exit_code = 0
+    output = "ok"
+
+
+class CodeExecutionEvent:
+    retry_attempt = 1
+    result = CodeResult()
+    source = "coder"
+
+
+class TaskResult:
+    messages = [ChatMessage()]
+    stop_reason = "max turns reached"
+
+
+class Team:
+    _name = "research_team"
+    _description = "coordinates agents"
+    _participant_names = ["planner", "worker"]
+
+
 class ModelContext:
     async def get_messages(self):
         return []
@@ -133,6 +167,13 @@ class ModelContext:
 
 def _set_handler(handler: Handler):
     patch._get_handler.handler = handler  # type: ignore[attr-defined]
+
+
+def test_direct_model_patch_list_excludes_wrappers_and_replay_clients():
+    targets = {target for _, target in patch._DIRECT_MODEL_CLIENT_PATCHES}
+
+    assert "ChatCompletionCache" not in targets
+    assert "ReplayChatCompletionClient" not in targets
 
 
 @pytest.mark.asyncio
@@ -222,6 +263,28 @@ async def test_agent_wrapper_fails_invocation_on_exception():
     assert handler.calls == [
         ("start_agent", "assistant"),
         ("fail_agent", "assistant", "ValueError"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_agent_wrapper_resets_direct_model_context_when_closed_early():
+    handler = Handler()
+    _set_handler(handler)
+
+    async def wrapped():
+        assert patch._direct_model_agent_name.get() == "assistant"
+        yield "item"
+
+    generator = patch._on_messages_stream_wrapper(wrapped, Agent(), (), {})
+
+    assert await generator.__anext__() == "item"
+    assert patch._direct_model_agent_name.get() is None
+    await generator.aclose()
+    assert patch._direct_model_agent_name.get() is None
+
+    assert handler.calls == [
+        ("start_agent", "assistant"),
+        ("fail_agent", "assistant", "GeneratorExit"),
     ]
 
 
@@ -316,6 +379,147 @@ async def test_llm_wrapper_fails_invocation_when_closed_early():
         ("start_llm", "qwen-plus"),
         ("fail_llm", "qwen-plus", "GeneratorExit"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_direct_model_create_wrapper_records_fallback_llm_span():
+    handler = Handler()
+    _set_handler(handler)
+
+    async def wrapped(*args, **kwargs):
+        return CreateResult()
+
+    token = patch._direct_model_agent_name.set("selector")
+    try:
+        result = await patch._direct_model_create_wrapper(
+            wrapped,
+            ModelClient(),
+            ([UserMessage()],),
+            {"tools": [], "json_output": True},
+        )
+    finally:
+        patch._direct_model_agent_name.reset(token)
+
+    assert isinstance(result, CreateResult)
+    assert handler.calls == [
+        ("start_llm", "qwen-plus"),
+        ("stop_llm", "qwen-plus"),
+    ]
+    invocation = handler.invocations[0]
+    assert invocation.attributes["gen_ai.agent.name"] == "selector"
+    assert invocation.output_type == "json"
+    assert invocation.input_tokens == 1
+    assert invocation.output_tokens == 2
+    assert invocation.finish_reasons == ["stop"]
+
+
+@pytest.mark.asyncio
+async def test_direct_model_stream_wrapper_records_first_token():
+    handler = Handler()
+    _set_handler(handler)
+
+    async def wrapped(*args, **kwargs):
+        yield "chunk"
+        yield CreateResult()
+
+    items = [
+        item
+        async for item in patch._direct_model_create_stream_wrapper(
+            wrapped,
+            ModelClient(),
+            ([UserMessage()],),
+            {"tools": []},
+        )
+    ]
+
+    assert items[0] == "chunk"
+    assert isinstance(items[1], CreateResult)
+    assert handler.calls == [
+        ("start_llm", "qwen-plus"),
+        ("stop_llm", "qwen-plus"),
+    ]
+    assert handler.invocations[0].monotonic_first_token_s is not None
+
+
+@pytest.mark.asyncio
+async def test_direct_model_wrapper_skips_when_suppressed():
+    handler = Handler()
+    _set_handler(handler)
+
+    async def wrapped(*args, **kwargs):
+        return CreateResult()
+
+    token = patch._suppress_direct_model_span.set(True)
+    try:
+        result = await patch._direct_model_create_wrapper(
+            wrapped, ModelClient(), ([UserMessage()],), {}
+        )
+    finally:
+        patch._suppress_direct_model_span.reset(token)
+
+    assert isinstance(result, CreateResult)
+    assert handler.calls == []
+
+
+@pytest.mark.asyncio
+async def test_selector_wrapper_sets_direct_model_agent_name():
+    class Selector:
+        _name = "selector_manager"
+
+    async def wrapped(*args, **kwargs):
+        assert patch._direct_model_agent_name.get() == "selector_manager"
+        return "writer"
+
+    result = await patch._selector_select_speaker_wrapper(
+        wrapped, Selector(), (), {}
+    )
+
+    assert result == "writer"
+    assert patch._direct_model_agent_name.get() is None
+
+
+@pytest.mark.asyncio
+async def test_team_wrapper_records_team_and_framework_events():
+    handler = Handler()
+    _set_handler(handler)
+
+    async def wrapped(*args, **kwargs):
+        yield MemoryQueryEvent()
+        yield HandoffMessage()
+        yield CodeExecutionEvent()
+        yield TaskResult()
+
+    items = [
+        item
+        async for item in patch._team_run_stream_wrapper(
+            wrapped, Team(), (), {"task": "coordinate this task"}
+        )
+    ]
+
+    assert len(items) == 4
+    assert handler.calls == [
+        ("start_agent", "research_team"),
+        ("stop_agent", "research_team"),
+    ]
+    invocation = handler.invocations[0]
+    assert invocation.attributes["autogen.team.type"] == "Team"
+    assert invocation.attributes["autogen.team.participants"] == [
+        "planner",
+        "worker",
+    ]
+    assert invocation.attributes["autogen.memory.result_count"] == 1
+    assert invocation.attributes["autogen.handoff.source"] == "planner"
+    assert invocation.attributes["autogen.handoff.target"] == "worker"
+    assert invocation.attributes["autogen.handoff.context_count"] == 1
+    assert invocation.attributes["autogen.code.exit_code"] == 0
+    assert invocation.attributes["autogen.code.retry_attempt"] == 1
+    assert invocation.attributes["autogen.team.message_count"] == 1
+    assert invocation.attributes["autogen.team.stop_reason"] == (
+        "max turns reached"
+    )
+    assert invocation.input_messages[0].parts[0].content == (
+        "coordinate this task"
+    )
 
 
 @pytest.mark.asyncio

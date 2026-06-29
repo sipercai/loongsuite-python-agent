@@ -29,7 +29,7 @@ from opentelemetry.util.genai.extended_handler import ExtendedTelemetryHandler
 from opentelemetry.util.genai.extended_span_utils import (
     _apply_invoke_agent_finish_attributes,
 )
-from opentelemetry.util.genai.types import Error
+from opentelemetry.util.genai.types import Error, InputMessage, Text
 
 from .config import is_agent_span_enabled, is_llm_span_enabled
 from .semantic_conventions import (
@@ -54,10 +54,28 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 _ASSISTANT_AGENT_MODULE = "autogen_agentchat.agents._assistant_agent"
+_CODE_EXECUTOR_AGENT_MODULE = "autogen_agentchat.agents._code_executor_agent"
+_SOCIETY_OF_MIND_AGENT_MODULE = (
+    "autogen_agentchat.agents._society_of_mind_agent"
+)
+_USER_PROXY_AGENT_MODULE = "autogen_agentchat.agents._user_proxy_agent"
+_SELECTOR_GROUP_CHAT_MODULE = (
+    "autogen_agentchat.teams._group_chat._selector_group_chat"
+)
+_BASE_GROUP_CHAT_MODULE = (
+    "autogen_agentchat.teams._group_chat._base_group_chat"
+)
 _BASE_TOOL_MODULE = "autogen_core.tools._base"
 _applied = False
+_optional_wrappers: list[tuple[str, str]] = []
 _suppress_native_tool_span: ContextVar[bool] = ContextVar(
     "loongsuite_autogen_suppress_native_tool_span", default=False
+)
+_suppress_direct_model_span: ContextVar[bool] = ContextVar(
+    "loongsuite_autogen_suppress_direct_model_span", default=False
+)
+_direct_model_agent_name: ContextVar[str | None] = ContextVar(
+    "loongsuite_autogen_direct_model_agent_name", default=None
 )
 
 _CALL_LLM_PARAM_NAMES = (
@@ -85,6 +103,44 @@ _EXECUTE_TOOL_CALL_PARAM_NAMES = (
     "agent_name",
     "cancellation_token",
     "stream",
+)
+
+_MODEL_CLIENT_CREATE_PARAM_NAMES = (
+    "messages",
+    "tools",
+    "tool_choice",
+    "json_output",
+    "extra_create_args",
+    "cancellation_token",
+)
+
+# Patch model clients that can execute model requests directly. Cache and
+# replay wrappers are intentionally excluded to avoid duplicate or fake LLM spans.
+_DIRECT_MODEL_CLIENT_PATCHES = (
+    (
+        "autogen_ext.models.openai._openai_client",
+        "BaseOpenAIChatCompletionClient",
+    ),
+    (
+        "autogen_ext.models.anthropic._anthropic_client",
+        "BaseAnthropicChatCompletionClient",
+    ),
+    (
+        "autogen_ext.models.ollama._ollama_client",
+        "BaseOllamaChatCompletionClient",
+    ),
+    (
+        "autogen_ext.models.azure._azure_ai_client",
+        "AzureAIChatCompletionClient",
+    ),
+    (
+        "autogen_ext.models.semantic_kernel._sk_chat_completion_adapter",
+        "SKChatCompletionAdapter",
+    ),
+    (
+        "autogen_ext.models.llama_cpp._llama_cpp_completion_client",
+        "LlamaCppChatCompletionClient",
+    ),
 )
 
 
@@ -164,6 +220,10 @@ def _error_from_exception(exc: BaseException) -> Error:
     return Error(message=message, type=type(exc))
 
 
+def _json_output_type(value: Any) -> str | None:
+    return "json" if value else None
+
+
 def _apply_invoke_agent_attrs(
     invocation: Any, span: Any | None = None
 ) -> None:
@@ -177,6 +237,76 @@ def _apply_invoke_agent_attrs(
         _apply_invoke_agent_finish_attributes(span, invocation)
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug("AutoGen invoke_agent span enrichment failed: %s", exc)
+
+
+def _model_client_arg(
+    args: tuple[Any, ...], kwargs: dict[str, Any], name: str
+) -> Any:
+    return _named_arg_value(
+        args, kwargs, name, _MODEL_CLIENT_CREATE_PARAM_NAMES
+    )
+
+
+def _make_direct_model_invocation(
+    instance: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> Any:
+    agent_name = _direct_model_agent_name.get()
+    return make_llm_invocation(
+        instance,
+        _model_client_arg(args, kwargs, "messages"),
+        _model_client_arg(args, kwargs, "tools") or [],
+        agent_name=agent_name,
+        output_type=_json_output_type(
+            _model_client_arg(args, kwargs, "json_output")
+        ),
+    )
+
+
+def _apply_team_input(
+    invocation: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> None:
+    task = kwargs.get("task")
+    if task is None and args:
+        task = args[0]
+    if task is None:
+        return
+    if isinstance(task, str):
+        invocation.input_messages.append(
+            InputMessage(role="user", parts=[Text(content=task)])
+        )
+    elif isinstance(task, (list, tuple)):
+        apply_agent_input(invocation, list(task))
+    else:
+        apply_agent_input(invocation, [task])
+
+
+def _apply_team_attributes(invocation: Any, instance: Any) -> None:
+    invocation.attributes["autogen.team.type"] = type(instance).__name__
+    participants = getattr(instance, "_participant_names", None)
+    if participants:
+        invocation.attributes["autogen.team.participants"] = [
+            str(name) for name in participants
+        ]
+
+
+async def _contextual_async_iter(
+    async_iterable: Any, context_var: ContextVar[Any], value: Any
+):  # type: ignore[no-untyped-def]
+    iterator = async_iterable.__aiter__()
+    try:
+        while True:
+            token = context_var.set(value)
+            try:
+                item = await iterator.__anext__()
+            except StopAsyncIteration:
+                return
+            finally:
+                context_var.reset(token)
+            yield item
+    finally:
+        close = getattr(iterator, "aclose", None)
+        if callable(close):
+            await close()
 
 
 async def _collect_llm_messages(
@@ -229,7 +359,11 @@ def _on_messages_stream_wrapper(wrapped, instance, args, kwargs):  # type: ignor
         else:
             _apply_invoke_agent_attrs(invocation, native_agent_span)
         try:
-            async for item in wrapped(*args, **kwargs):
+            async for item in _contextual_async_iter(
+                wrapped(*args, **kwargs),
+                _direct_model_agent_name,
+                invocation.agent_name,
+            ):
                 apply_agent_stream_item(
                     invocation, item, timeit.default_timer()
                 )
@@ -263,6 +397,102 @@ def _on_messages_stream_wrapper(wrapped, instance, args, kwargs):  # type: ignor
     return _generator()
 
 
+def _team_run_stream_wrapper(wrapped, instance, args, kwargs):  # type: ignore[no-untyped-def]
+    if not is_agent_span_enabled(default=True):
+        return wrapped(*args, **kwargs)
+
+    async def _generator():  # type: ignore[no-untyped-def]
+        handler = _get_handler()
+        invocation = make_agent_invocation(instance)
+        _apply_team_input(invocation, args, kwargs)
+        _apply_team_attributes(invocation, instance)
+        handler.start_invoke_agent(invocation)
+        try:
+            async for item in wrapped(*args, **kwargs):
+                apply_agent_stream_item(
+                    invocation, item, timeit.default_timer()
+                )
+                yield item
+        except (GeneratorExit, asyncio.CancelledError) as exc:
+            handler.fail_invoke_agent(invocation, _error_from_exception(exc))
+            raise
+        except Exception as exc:
+            handler.fail_invoke_agent(invocation, _error_from_exception(exc))
+            raise
+        handler.stop_invoke_agent(invocation)
+
+    return _generator()
+
+
+async def _direct_model_create_wrapper(wrapped, instance, args, kwargs):  # type: ignore[no-untyped-def]
+    if _suppress_direct_model_span.get() or not is_llm_span_enabled(
+        default=True
+    ):
+        return await wrapped(*args, **kwargs)
+
+    handler = _get_handler()
+    invocation = _make_direct_model_invocation(instance, args, kwargs)
+    handler.start_llm(invocation)
+    try:
+        result = await wrapped(*args, **kwargs)
+        apply_create_result(invocation, result)
+        handler.stop_llm(invocation)
+        return result
+    except Exception as exc:
+        handler.fail_llm(invocation, _error_from_exception(exc))
+        raise
+
+
+def _direct_model_create_stream_wrapper(wrapped, instance, args, kwargs):  # type: ignore[no-untyped-def]
+    if _suppress_direct_model_span.get() or not is_llm_span_enabled(
+        default=True
+    ):
+        return wrapped(*args, **kwargs)
+
+    async def _generator():  # type: ignore[no-untyped-def]
+        handler = _get_handler()
+        invocation = _make_direct_model_invocation(instance, args, kwargs)
+        handler.start_llm(invocation)
+        try:
+            async for item in wrapped(*args, **kwargs):
+                if (
+                    isinstance(item, str)
+                    and invocation.monotonic_first_token_s is None
+                ):
+                    invocation.monotonic_first_token_s = timeit.default_timer()
+                elif type(item).__name__ == "CreateResult":
+                    apply_create_result(invocation, item)
+                yield item
+        except (GeneratorExit, asyncio.CancelledError) as exc:
+            handler.fail_llm(invocation, _error_from_exception(exc))
+            raise
+        except Exception as exc:
+            handler.fail_llm(invocation, _error_from_exception(exc))
+            raise
+        handler.stop_llm(invocation)
+
+    return _generator()
+
+
+async def _selector_select_speaker_wrapper(wrapped, instance, args, kwargs):  # type: ignore[no-untyped-def]
+    agent_name = _text_like(
+        getattr(instance, "_name", None) or type(instance).__name__
+    )
+    token = _direct_model_agent_name.set(agent_name)
+    try:
+        return await wrapped(*args, **kwargs)
+    finally:
+        _direct_model_agent_name.reset(token)
+
+
+def _text_like(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
 def _call_llm_wrapper(wrapped, instance, args, kwargs):  # type: ignore[no-untyped-def]
     if not is_llm_span_enabled(default=True):
         return wrapped(*args, **kwargs)
@@ -282,7 +512,11 @@ def _call_llm_wrapper(wrapped, instance, args, kwargs):  # type: ignore[no-untyp
         )
         handler.start_llm(invocation)
         try:
-            async for item in wrapped(*args, **kwargs):
+            async for item in _contextual_async_iter(
+                wrapped(*args, **kwargs),
+                _suppress_direct_model_span,
+                True,
+            ):
                 if (
                     type(item).__name__ == "ModelClientStreamingChunkEvent"
                     and invocation.monotonic_first_token_s is None
@@ -343,6 +577,34 @@ def _get_handler() -> ExtendedTelemetryHandler:
 _get_handler.handler = None  # type: ignore[attr-defined]
 
 
+def _wrap_optional(module: str, target: str, wrapper: Any) -> None:
+    try:
+        wrap_function_wrapper(module, target, wrapper)
+    except (ImportError, AttributeError) as exc:
+        logger.debug(
+            "AutoGen optional patch skipped for %s.%s: %s",
+            module,
+            target,
+            exc,
+        )
+        return
+    _optional_wrappers.append((module, target))
+
+
+def _unwrap_optional() -> None:
+    while _optional_wrappers:
+        module, target = _optional_wrappers.pop()
+        try:
+            unwrap(module, target)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug(
+                "AutoGen optional unwrap failed for %s.%s: %s",
+                module,
+                target,
+                exc,
+            )
+
+
 def apply_agentchat_patch(handler: ExtendedTelemetryHandler) -> None:
     global _applied
     if _applied:
@@ -385,6 +647,41 @@ def apply_agentchat_patch(handler: ExtendedTelemetryHandler) -> None:
             pass
         logger.warning("AutoGen AgentChat patch skipped: %s", exc)
         return
+
+    for module, target in (
+        (
+            _CODE_EXECUTOR_AGENT_MODULE,
+            "CodeExecutorAgent.on_messages_stream",
+        ),
+        (
+            _SOCIETY_OF_MIND_AGENT_MODULE,
+            "SocietyOfMindAgent.on_messages_stream",
+        ),
+        (_USER_PROXY_AGENT_MODULE, "UserProxyAgent.on_messages_stream"),
+    ):
+        _wrap_optional(module, target, _on_messages_stream_wrapper)
+
+    _wrap_optional(
+        _SELECTOR_GROUP_CHAT_MODULE,
+        "SelectorGroupChatManager._select_speaker",
+        _selector_select_speaker_wrapper,
+    )
+    _wrap_optional(
+        _BASE_GROUP_CHAT_MODULE,
+        "BaseGroupChat.run_stream",
+        _team_run_stream_wrapper,
+    )
+
+    for module, cls_name in _DIRECT_MODEL_CLIENT_PATCHES:
+        _wrap_optional(
+            module, f"{cls_name}.create", _direct_model_create_wrapper
+        )
+        _wrap_optional(
+            module,
+            f"{cls_name}.create_stream",
+            _direct_model_create_stream_wrapper,
+        )
+
     _applied = True
 
 
@@ -392,6 +689,7 @@ def revert_agentchat_patch() -> None:
     global _applied
     if not _applied:
         return
+    _unwrap_optional()
     try:
         unwrap(_ASSISTANT_AGENT_MODULE, "AssistantAgent.on_messages_stream")
         unwrap(_ASSISTANT_AGENT_MODULE, "AssistantAgent._call_llm")

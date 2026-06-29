@@ -355,6 +355,65 @@ def apply_agent_stream_item(
     if message is None:
         message = item
 
+    message_type = type(message).__name__
+    if message_type == "MemoryQueryEvent":
+        memories = field_value(message, "content") or []
+        invocation.attributes["autogen.memory.result_count"] = len(memories)
+    elif message_type == "HandoffMessage":
+        target = field_value(message, "target")
+        source = field_value(message, "source")
+        context = field_value(message, "context") or []
+        if source:
+            invocation.attributes["autogen.handoff.source"] = _text(source)
+        if target:
+            invocation.attributes["autogen.handoff.target"] = _text(target)
+        invocation.attributes["autogen.handoff.context_count"] = len(context)
+    elif message_type == "CodeExecutionEvent":
+        result = field_value(message, "result")
+        exit_code = field_value(result, "exit_code")
+        try:
+            if exit_code is not None:
+                invocation.attributes["autogen.code.exit_code"] = int(
+                    exit_code
+                )
+        except (TypeError, ValueError):
+            pass
+        invocation.attributes["autogen.code.retry_attempt"] = int(
+            field_value(message, "retry_attempt") or 0
+        )
+    elif message_type == "CodeGenerationEvent":
+        code_blocks = field_value(message, "code_blocks") or []
+        invocation.attributes["autogen.code.block_count"] = len(code_blocks)
+        invocation.attributes["autogen.code.retry_attempt"] = int(
+            field_value(message, "retry_attempt") or 0
+        )
+    elif message_type == "UserInputRequestedEvent":
+        request_id = field_value(message, "request_id")
+        if request_id:
+            invocation.attributes["autogen.user_input.request_id"] = _text(
+                request_id
+            )
+    elif message_type == "TaskResult":
+        messages = field_value(message, "messages") or []
+        stop_reason = field_value(message, "stop_reason")
+        invocation.attributes["autogen.team.message_count"] = len(messages)
+        if stop_reason:
+            invocation.attributes["autogen.team.stop_reason"] = _text(
+                stop_reason
+            )
+        if messages:
+            last_message = messages[-1]
+            parts = _content_parts(field_value(last_message, "content"))
+            if parts:
+                invocation.output_messages = [
+                    OutputMessage(
+                        role="assistant",
+                        parts=parts,
+                        finish_reason="stop",
+                    )
+                ]
+                invocation.finish_reasons = ["stop"]
+
     usage = field_value(message, "models_usage")
     prompt_tokens = field_value(usage, "prompt_tokens")
     completion_tokens = field_value(usage, "completion_tokens")
@@ -371,7 +430,7 @@ def apply_agent_stream_item(
 
     content = field_value(message, "content")
     parts = _content_parts(content)
-    if parts and type(message).__name__ != "ToolCallRequestEvent":
+    if parts and message_type != "ToolCallRequestEvent":
         invocation.output_messages = [
             OutputMessage(
                 role="assistant",
