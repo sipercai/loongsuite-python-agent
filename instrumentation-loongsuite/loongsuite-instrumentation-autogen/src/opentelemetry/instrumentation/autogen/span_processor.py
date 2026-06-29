@@ -153,7 +153,9 @@ def _is_autogen_span(
     return name.startswith(_AUTOGEN_NAME_PREFIXES)
 
 
-def _classify_span(name: str, operation: Optional[str]) -> tuple[str, str]:
+def _classify_span(
+    name: str, operation: Optional[str]
+) -> tuple[Optional[str], str]:
     op = operation or ""
     if not op:
         for prefix in _AUTOGEN_NAME_PREFIXES:
@@ -168,10 +170,9 @@ def _classify_span(name: str, operation: Optional[str]) -> tuple[str, str]:
         return GenAISpanKind.LLM, op
     if op == GenAIOperation.EXECUTE_TOOL:
         return GenAISpanKind.TOOL, op
-    if op in {
-        GenAIOperation.CREATE_AGENT,
-        GenAIOperation.INVOKE_AGENT,
-    }:
+    if op == GenAIOperation.CREATE_AGENT:
+        return None, op
+    if op == GenAIOperation.INVOKE_AGENT:
         return GenAISpanKind.AGENT, op
     return GenAISpanKind.CHAIN, op or GenAIOperation.INVOKE_AGENT
 
@@ -211,7 +212,7 @@ class AutoGenSemanticProcessor(SpanProcessor):
                 return
 
             span_kind, op_name = _classify_span(name, operation)
-            if not _attr_value(span, GEN_AI_SPAN_KIND):
+            if span_kind and not _attr_value(span, GEN_AI_SPAN_KIND):
                 _set_attr_on_both(live, span, GEN_AI_SPAN_KIND, span_kind)
             if not operation:
                 _set_attr_on_both(live, span, GEN_AI_OPERATION_NAME, op_name)
