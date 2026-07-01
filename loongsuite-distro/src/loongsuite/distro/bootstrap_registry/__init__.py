@@ -20,7 +20,6 @@ from importlib import import_module
 from pkgutil import iter_modules
 from typing import Any
 
-
 _SOURCE_SORT_ORDER = {
     "genai-renamed": 0,
     "upstream": 1,
