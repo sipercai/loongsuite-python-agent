@@ -24,7 +24,7 @@ REGISTRY = {
     "package": "loongsuite-instrumentation-agentscope",
     "instrumentation": "loongsuite-instrumentation-agentscope==0.7.0.dev",
     "libraries": [
-        "agentscope >= 1.0.0",
+        "agentscope >= 1.0.0, < 3.0.0",
     ],
     "default": False,
 }
