@@ -1,0 +1,32 @@
+name: Hosted Lint Baseline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CORE_REPO_SHA: 37dea4bbdb1a3c83b96fc22c2f68a848b4989fb5
+  CONTRIB_REPO_SHA: main
+  PIP_EXISTS_ACTION: w
+
+jobs:
+  lint-util-genai:
+    name: lint util-genai on ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo @ SHA - ${{ github.sha }}
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install tox
+        run: pip install tox-uv
+
+      - name: Run tox
+        run: tox -e lint-util-genai
