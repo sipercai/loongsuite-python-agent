@@ -26,7 +26,7 @@ jobs:
 
   {{ job_data.tox_env }}:
     name: {{ job_data.ui_name }}
-    runs-on: ubuntu-latest
+    runs-on: {{ runner }}
     timeout-minutes: 30
     steps:
       - name: Checkout contrib repo @ SHA - ${% raw %}{{ env.CONTRIB_REPO_SHA }}{% endraw %}

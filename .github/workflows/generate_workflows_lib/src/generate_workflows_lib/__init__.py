@@ -44,7 +44,11 @@ def get_tox_envs(tox_ini_path: Path) -> list:
 
 
 def get_test_job_datas(tox_envs: list, operating_systems: list) -> list:
-    os_alias = {"ubuntu-latest": "Ubuntu", "windows-latest": "Windows"}
+    os_alias = {
+        "ubuntu-latest": "Ubuntu",
+        "windows-latest": "Windows",
+        "loongsuite-python-agent-fork-arc": "ARC",
+    }
 
     python_version_alias = {
         "pypy3": "pypy-3.9",
@@ -172,7 +176,11 @@ def get_misc_job_datas(tox_envs: list) -> list:
 
 
 def _generate_workflow(
-    job_datas: list, name: str, workflow_directory_path: Path, max_jobs=250
+    job_datas: list,
+    name: str,
+    workflow_directory_path: Path,
+    max_jobs=250,
+    runner="ubuntu-latest",
 ):
     # Github seems to limit the amount of jobs in a workflow file, that is why
     # they are split in groups of 250 per workflow file.
@@ -188,7 +196,11 @@ def _generate_workflow(
             test_yml_file.write(
                 Environment(loader=FileSystemLoader(Path(__file__).parent))
                 .get_template(f"{name}.yml.j2")
-                .render(job_datas=job_datas, file_number=file_number)
+                .render(
+                    job_datas=job_datas,
+                    file_number=file_number,
+                    runner=runner,
+                )
             )
             test_yml_file.write("\n")
 
@@ -206,16 +218,19 @@ def generate_test_workflow(
 def generate_lint_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     _generate_workflow(
         get_lint_job_datas(get_tox_envs(tox_ini_path)),
         "lint",
         workflow_directory_path,
+        runner=runner,
     )
 
 
 def generate_contrib_workflow(
     workflow_directory_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     _generate_workflow(
         get_contrib_job_datas(
@@ -223,17 +238,20 @@ def generate_contrib_workflow(
         ),
         "core_contrib_test",
         workflow_directory_path,
+        runner=runner,
     )
 
 
 def generate_misc_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     _generate_workflow(
         get_misc_job_datas(get_tox_envs(tox_ini_path)),
         "misc",
         workflow_directory_path,
+        runner=runner,
     )
 
 
@@ -288,6 +306,7 @@ def generate_extension_lint_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
     additional_config_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
@@ -298,6 +317,7 @@ def generate_extension_lint_workflow(
         "loongsuite_lint",
         "loongsuite_lint",
         workflow_directory_path,
+        runner=runner,
     )
 
 
@@ -305,6 +325,7 @@ def generate_extension_misc_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
     additional_config_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
@@ -315,6 +336,7 @@ def generate_extension_misc_workflow(
         "loongsuite_misc",
         "loongsuite_misc",
         workflow_directory_path,
+        runner=runner,
     )
 
 
@@ -324,6 +346,7 @@ def _generate_workflow_with_template(
     template_name: str,
     workflow_directory_path: Path,
     max_jobs=250,
+    runner="ubuntu-latest",
 ):
     # Github seems to limit the amount of jobs in a workflow file, that is why
     # they are split in groups of 250 per workflow file.
@@ -339,6 +362,10 @@ def _generate_workflow_with_template(
             test_yml_file.write(
                 Environment(loader=FileSystemLoader(Path(__file__).parent))
                 .get_template(f"{template_name}.yml.j2")
-                .render(job_datas=job_datas, file_number=file_number)
+                .render(
+                    job_datas=job_datas,
+                    file_number=file_number,
+                    runner=runner,
+                )
             )
             test_yml_file.write("\n")

@@ -34,7 +34,7 @@ jobs:
 
   lint-loongsuite-instrumentation-agentscope:
     name: LoongSuite loongsuite-instrumentation-agentscope
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -53,7 +53,7 @@ jobs:
 
   lint-loongsuite-instrumentation-dashscope:
     name: LoongSuite loongsuite-instrumentation-dashscope
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -72,7 +72,7 @@ jobs:
 
   lint-loongsuite-instrumentation-claude-agent-sdk:
     name: LoongSuite loongsuite-instrumentation-claude-agent-sdk
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -91,7 +91,7 @@ jobs:
 
   lint-loongsuite-instrumentation-google-adk:
     name: LoongSuite loongsuite-instrumentation-google-adk
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -110,7 +110,7 @@ jobs:
 
   lint-loongsuite-instrumentation-langchain:
     name: LoongSuite loongsuite-instrumentation-langchain
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -129,7 +129,7 @@ jobs:
 
   lint-loongsuite-instrumentation-langgraph:
     name: LoongSuite loongsuite-instrumentation-langgraph
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -148,7 +148,7 @@ jobs:
 
   lint-loongsuite-instrumentation-qwen-agent:
     name: LoongSuite loongsuite-instrumentation-qwen-agent
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -167,7 +167,7 @@ jobs:
 
   lint-loongsuite-instrumentation-mem0:
     name: LoongSuite loongsuite-instrumentation-mem0
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -186,7 +186,7 @@ jobs:
 
   lint-util-genai:
     name: LoongSuite util-genai
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -205,7 +205,7 @@ jobs:
 
   lint-loongsuite-instrumentation-litellm:
     name: LoongSuite loongsuite-instrumentation-litellm
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -224,7 +224,7 @@ jobs:
 
   lint-loongsuite-instrumentation-crewai:
     name: LoongSuite loongsuite-instrumentation-crewai
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -243,7 +243,7 @@ jobs:
 
   lint-loongsuite-instrumentation-qwenpaw:
     name: LoongSuite loongsuite-instrumentation-qwenpaw
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}

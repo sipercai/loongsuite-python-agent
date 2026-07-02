@@ -35,7 +35,7 @@ jobs:
 
   lint-instrumentation-openai-v2:
     name: instrumentation-openai-v2
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -54,7 +54,7 @@ jobs:
 
   lint-instrumentation-openai_agents-v2:
     name: instrumentation-openai_agents-v2
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -73,7 +73,7 @@ jobs:
 
   lint-instrumentation-vertexai:
     name: instrumentation-vertexai
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -92,7 +92,7 @@ jobs:
 
   lint-instrumentation-google-genai:
     name: instrumentation-google-genai
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -111,7 +111,7 @@ jobs:
 
   lint-instrumentation-anthropic:
     name: instrumentation-anthropic
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -130,7 +130,7 @@ jobs:
 
   lint-instrumentation-claude-agent-sdk:
     name: instrumentation-claude-agent-sdk
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -149,7 +149,7 @@ jobs:
 
   lint-resource-detector-containerid:
     name: resource-detector-containerid
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -168,7 +168,7 @@ jobs:
 
   lint-resource-detector-azure:
     name: resource-detector-azure
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -187,7 +187,7 @@ jobs:
 
   lint-sdk-extension-aws:
     name: sdk-extension-aws
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -206,7 +206,7 @@ jobs:
 
   lint-distro:
     name: distro
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -225,7 +225,7 @@ jobs:
 
   lint-opentelemetry-instrumentation:
     name: opentelemetry-instrumentation
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -244,7 +244,7 @@ jobs:
 
   lint-instrumentation-aiohttp-client:
     name: instrumentation-aiohttp-client
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -263,7 +263,7 @@ jobs:
 
   lint-instrumentation-aiohttp-server:
     name: instrumentation-aiohttp-server
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -282,7 +282,7 @@ jobs:
 
   lint-instrumentation-aiopg:
     name: instrumentation-aiopg
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -301,7 +301,7 @@ jobs:
 
   lint-instrumentation-aws-lambda:
     name: instrumentation-aws-lambda
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -320,7 +320,7 @@ jobs:
 
   lint-instrumentation-botocore:
     name: instrumentation-botocore
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -339,7 +339,7 @@ jobs:
 
   lint-instrumentation-boto3sqs:
     name: instrumentation-boto3sqs
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -358,7 +358,7 @@ jobs:
 
   lint-instrumentation-django:
     name: instrumentation-django
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -377,7 +377,7 @@ jobs:
 
   lint-instrumentation-dbapi:
     name: instrumentation-dbapi
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -396,7 +396,7 @@ jobs:
 
   lint-instrumentation-boto:
     name: instrumentation-boto
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -415,7 +415,7 @@ jobs:
 
   lint-instrumentation-asyncclick:
     name: instrumentation-asyncclick
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -434,7 +434,7 @@ jobs:
 
   lint-instrumentation-click:
     name: instrumentation-click
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -453,7 +453,7 @@ jobs:
 
   lint-instrumentation-elasticsearch:
     name: instrumentation-elasticsearch
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -472,7 +472,7 @@ jobs:
 
   lint-instrumentation-falcon:
     name: instrumentation-falcon
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -491,7 +491,7 @@ jobs:
 
   lint-instrumentation-fastapi:
     name: instrumentation-fastapi
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -510,7 +510,7 @@ jobs:
 
   lint-instrumentation-flask:
     name: instrumentation-flask
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -529,7 +529,7 @@ jobs:
 
   lint-instrumentation-urllib:
     name: instrumentation-urllib
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -548,7 +548,7 @@ jobs:
 
   lint-instrumentation-urllib3:
     name: instrumentation-urllib3
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -567,7 +567,7 @@ jobs:
 
   lint-instrumentation-requests:
     name: instrumentation-requests
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -586,7 +586,7 @@ jobs:
 
   lint-instrumentation-starlette:
     name: instrumentation-starlette
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -605,7 +605,7 @@ jobs:
 
   lint-instrumentation-jinja2:
     name: instrumentation-jinja2
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -624,7 +624,7 @@ jobs:
 
   lint-instrumentation-logging:
     name: instrumentation-logging
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -643,7 +643,7 @@ jobs:
 
   lint-exporter-richconsole:
     name: exporter-richconsole
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -662,7 +662,7 @@ jobs:
 
   lint-exporter-prometheus-remote-write:
     name: exporter-prometheus-remote-write
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -681,7 +681,7 @@ jobs:
 
   lint-instrumentation-mysql:
     name: instrumentation-mysql
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -700,7 +700,7 @@ jobs:
 
   lint-instrumentation-mysqlclient:
     name: instrumentation-mysqlclient
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -719,7 +719,7 @@ jobs:
 
   lint-instrumentation-psycopg2:
     name: instrumentation-psycopg2
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -738,7 +738,7 @@ jobs:
 
   lint-instrumentation-psycopg:
     name: instrumentation-psycopg
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -757,7 +757,7 @@ jobs:
 
   lint-instrumentation-pymemcache:
     name: instrumentation-pymemcache
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -776,7 +776,7 @@ jobs:
 
   lint-instrumentation-pymongo:
     name: instrumentation-pymongo
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -795,7 +795,7 @@ jobs:
 
   lint-instrumentation-pymysql:
     name: instrumentation-pymysql
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -814,7 +814,7 @@ jobs:
 
   lint-instrumentation-pymssql:
     name: instrumentation-pymssql
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -833,7 +833,7 @@ jobs:
 
   lint-instrumentation-pyramid:
     name: instrumentation-pyramid
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -852,7 +852,7 @@ jobs:
 
   lint-instrumentation-asgi:
     name: instrumentation-asgi
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -871,7 +871,7 @@ jobs:
 
   lint-instrumentation-asyncpg:
     name: instrumentation-asyncpg
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -890,7 +890,7 @@ jobs:
 
   lint-instrumentation-sqlite3:
     name: instrumentation-sqlite3
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -909,7 +909,7 @@ jobs:
 
   lint-instrumentation-wsgi:
     name: instrumentation-wsgi
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -928,7 +928,7 @@ jobs:
 
   lint-instrumentation-grpc:
     name: instrumentation-grpc
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -947,7 +947,7 @@ jobs:
 
   lint-instrumentation-sqlalchemy:
     name: instrumentation-sqlalchemy
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -966,7 +966,7 @@ jobs:
 
   lint-instrumentation-redis:
     name: instrumentation-redis
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -985,7 +985,7 @@ jobs:
 
   lint-instrumentation-remoulade:
     name: instrumentation-remoulade
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1004,7 +1004,7 @@ jobs:
 
   lint-instrumentation-celery:
     name: instrumentation-celery
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1023,7 +1023,7 @@ jobs:
 
   lint-instrumentation-system-metrics:
     name: instrumentation-system-metrics
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1042,7 +1042,7 @@ jobs:
 
   lint-instrumentation-threading:
     name: instrumentation-threading
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1061,7 +1061,7 @@ jobs:
 
   lint-instrumentation-tornado:
     name: instrumentation-tornado
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1080,7 +1080,7 @@ jobs:
 
   lint-instrumentation-tortoiseorm:
     name: instrumentation-tortoiseorm
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1099,7 +1099,7 @@ jobs:
 
   lint-instrumentation-httpx:
     name: instrumentation-httpx
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1118,7 +1118,7 @@ jobs:
 
   lint-util-http:
     name: util-http
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1137,7 +1137,7 @@ jobs:
 
   lint-exporter-credential-provider-gcp:
     name: exporter-credential-provider-gcp
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1156,7 +1156,7 @@ jobs:
 
   lint-util-genai:
     name: util-genai
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1175,7 +1175,7 @@ jobs:
 
   lint-propagator-aws-xray:
     name: propagator-aws-xray
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1194,7 +1194,7 @@ jobs:
 
   lint-propagator-ot-trace:
     name: propagator-ot-trace
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1213,7 +1213,7 @@ jobs:
 
   lint-instrumentation-sio-pika:
     name: instrumentation-sio-pika
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1232,7 +1232,7 @@ jobs:
 
   lint-instrumentation-aio-pika:
     name: instrumentation-aio-pika
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1251,7 +1251,7 @@ jobs:
 
   lint-instrumentation-aiokafka:
     name: instrumentation-aiokafka
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1270,7 +1270,7 @@ jobs:
 
   lint-instrumentation-kafka-python:
     name: instrumentation-kafka-python
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1289,7 +1289,7 @@ jobs:
 
   lint-instrumentation-confluent-kafka:
     name: instrumentation-confluent-kafka
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1308,7 +1308,7 @@ jobs:
 
   lint-instrumentation-asyncio:
     name: instrumentation-asyncio
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1327,7 +1327,7 @@ jobs:
 
   lint-instrumentation-cassandra:
     name: instrumentation-cassandra
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1346,7 +1346,7 @@ jobs:
 
   lint-processor-baggage:
     name: processor-baggage
-    runs-on: ubuntu-latest
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
