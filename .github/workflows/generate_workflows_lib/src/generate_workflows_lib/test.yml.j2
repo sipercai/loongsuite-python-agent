@@ -56,5 +56,5 @@ jobs:
       {%- endif %}
 
       - name: Run tests
-        run: tox -e {{ job_data.tox_env }} -- -ra
+        run: tox run-parallel -p {{ job_data.parallelism }} -e {{ job_data.tox_envs | join(',') }} -- -ra
   {%- endfor %}

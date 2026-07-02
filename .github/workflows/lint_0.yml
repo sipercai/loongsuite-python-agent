@@ -33,8 +33,8 @@ env:
 
 jobs:
 
-  lint-instrumentation-openai-v2:
-    name: instrumentation-openai-v2
+  batch_001_tox:
+    name: tox batch 001 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -50,10 +50,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-openai-v2
+        run: tox run-parallel -p 4 -e lint-instrumentation-openai-v2,lint-instrumentation-openai_agents-v2,lint-instrumentation-vertexai,lint-instrumentation-google-genai
 
-  lint-instrumentation-openai_agents-v2:
-    name: instrumentation-openai_agents-v2
+  batch_002_tox:
+    name: tox batch 002 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -69,10 +69,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-openai_agents-v2
+        run: tox run-parallel -p 4 -e lint-instrumentation-anthropic,lint-instrumentation-claude-agent-sdk,lint-resource-detector-containerid,lint-resource-detector-azure
 
-  lint-instrumentation-vertexai:
-    name: instrumentation-vertexai
+  batch_003_tox:
+    name: tox batch 003 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -88,10 +88,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-vertexai
+        run: tox run-parallel -p 4 -e lint-sdk-extension-aws,lint-distro,lint-opentelemetry-instrumentation,lint-instrumentation-aiohttp-client
 
-  lint-instrumentation-google-genai:
-    name: instrumentation-google-genai
+  batch_004_tox:
+    name: tox batch 004 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -107,10 +107,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-google-genai
+        run: tox run-parallel -p 4 -e lint-instrumentation-aiohttp-server,lint-instrumentation-aiopg,lint-instrumentation-aws-lambda,lint-instrumentation-botocore
 
-  lint-instrumentation-anthropic:
-    name: instrumentation-anthropic
+  batch_005_tox:
+    name: tox batch 005 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -126,10 +126,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-anthropic
+        run: tox run-parallel -p 4 -e lint-instrumentation-boto3sqs,lint-instrumentation-django,lint-instrumentation-dbapi,lint-instrumentation-boto
 
-  lint-instrumentation-claude-agent-sdk:
-    name: instrumentation-claude-agent-sdk
+  batch_006_tox:
+    name: tox batch 006 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -145,10 +145,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-claude-agent-sdk
+        run: tox run-parallel -p 4 -e lint-instrumentation-asyncclick,lint-instrumentation-click,lint-instrumentation-elasticsearch,lint-instrumentation-falcon
 
-  lint-resource-detector-containerid:
-    name: resource-detector-containerid
+  batch_007_tox:
+    name: tox batch 007 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -164,10 +164,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-resource-detector-containerid
+        run: tox run-parallel -p 4 -e lint-instrumentation-fastapi,lint-instrumentation-flask,lint-instrumentation-urllib,lint-instrumentation-urllib3
 
-  lint-resource-detector-azure:
-    name: resource-detector-azure
+  batch_008_tox:
+    name: tox batch 008 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -183,10 +183,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-resource-detector-azure
+        run: tox run-parallel -p 4 -e lint-instrumentation-requests,lint-instrumentation-starlette,lint-instrumentation-jinja2,lint-instrumentation-logging
 
-  lint-sdk-extension-aws:
-    name: sdk-extension-aws
+  batch_009_tox:
+    name: tox batch 009 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -202,10 +202,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-sdk-extension-aws
+        run: tox run-parallel -p 4 -e lint-exporter-richconsole,lint-exporter-prometheus-remote-write,lint-instrumentation-mysql,lint-instrumentation-mysqlclient
 
-  lint-distro:
-    name: distro
+  batch_010_tox:
+    name: tox batch 010 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -221,10 +221,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-distro
+        run: tox run-parallel -p 4 -e lint-instrumentation-psycopg2,lint-instrumentation-psycopg,lint-instrumentation-pymemcache,lint-instrumentation-pymongo
 
-  lint-opentelemetry-instrumentation:
-    name: opentelemetry-instrumentation
+  batch_011_tox:
+    name: tox batch 011 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -240,10 +240,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-opentelemetry-instrumentation
+        run: tox run-parallel -p 4 -e lint-instrumentation-pymysql,lint-instrumentation-pymssql,lint-instrumentation-pyramid,lint-instrumentation-asgi
 
-  lint-instrumentation-aiohttp-client:
-    name: instrumentation-aiohttp-client
+  batch_012_tox:
+    name: tox batch 012 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -259,10 +259,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-aiohttp-client
+        run: tox run-parallel -p 4 -e lint-instrumentation-asyncpg,lint-instrumentation-sqlite3,lint-instrumentation-wsgi,lint-instrumentation-grpc
 
-  lint-instrumentation-aiohttp-server:
-    name: instrumentation-aiohttp-server
+  batch_013_tox:
+    name: tox batch 013 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -278,10 +278,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-aiohttp-server
+        run: tox run-parallel -p 4 -e lint-instrumentation-sqlalchemy,lint-instrumentation-redis,lint-instrumentation-remoulade,lint-instrumentation-celery
 
-  lint-instrumentation-aiopg:
-    name: instrumentation-aiopg
+  batch_014_tox:
+    name: tox batch 014 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -297,10 +297,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-aiopg
+        run: tox run-parallel -p 4 -e lint-instrumentation-system-metrics,lint-instrumentation-threading,lint-instrumentation-tornado,lint-instrumentation-tortoiseorm
 
-  lint-instrumentation-aws-lambda:
-    name: instrumentation-aws-lambda
+  batch_015_tox:
+    name: tox batch 015 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -316,10 +316,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-aws-lambda
+        run: tox run-parallel -p 4 -e lint-instrumentation-httpx,lint-util-http,lint-exporter-credential-provider-gcp,lint-util-genai
 
-  lint-instrumentation-botocore:
-    name: instrumentation-botocore
+  batch_016_tox:
+    name: tox batch 016 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -335,10 +335,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-botocore
+        run: tox run-parallel -p 4 -e lint-propagator-aws-xray,lint-propagator-ot-trace,lint-instrumentation-sio-pika,lint-instrumentation-aio-pika
 
-  lint-instrumentation-boto3sqs:
-    name: instrumentation-boto3sqs
+  batch_017_tox:
+    name: tox batch 017 (4 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -354,10 +354,10 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-boto3sqs
+        run: tox run-parallel -p 4 -e lint-instrumentation-aiokafka,lint-instrumentation-kafka-python,lint-instrumentation-confluent-kafka,lint-instrumentation-asyncio
 
-  lint-instrumentation-django:
-    name: instrumentation-django
+  batch_018_tox:
+    name: tox batch 018 (2 envs)
     runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
@@ -373,992 +373,4 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e lint-instrumentation-django
-
-  lint-instrumentation-dbapi:
-    name: instrumentation-dbapi
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-dbapi
-
-  lint-instrumentation-boto:
-    name: instrumentation-boto
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-boto
-
-  lint-instrumentation-asyncclick:
-    name: instrumentation-asyncclick
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-asyncclick
-
-  lint-instrumentation-click:
-    name: instrumentation-click
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-click
-
-  lint-instrumentation-elasticsearch:
-    name: instrumentation-elasticsearch
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-elasticsearch
-
-  lint-instrumentation-falcon:
-    name: instrumentation-falcon
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-falcon
-
-  lint-instrumentation-fastapi:
-    name: instrumentation-fastapi
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-fastapi
-
-  lint-instrumentation-flask:
-    name: instrumentation-flask
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-flask
-
-  lint-instrumentation-urllib:
-    name: instrumentation-urllib
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-urllib
-
-  lint-instrumentation-urllib3:
-    name: instrumentation-urllib3
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-urllib3
-
-  lint-instrumentation-requests:
-    name: instrumentation-requests
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-requests
-
-  lint-instrumentation-starlette:
-    name: instrumentation-starlette
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-starlette
-
-  lint-instrumentation-jinja2:
-    name: instrumentation-jinja2
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-jinja2
-
-  lint-instrumentation-logging:
-    name: instrumentation-logging
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-logging
-
-  lint-exporter-richconsole:
-    name: exporter-richconsole
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-exporter-richconsole
-
-  lint-exporter-prometheus-remote-write:
-    name: exporter-prometheus-remote-write
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-exporter-prometheus-remote-write
-
-  lint-instrumentation-mysql:
-    name: instrumentation-mysql
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-mysql
-
-  lint-instrumentation-mysqlclient:
-    name: instrumentation-mysqlclient
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-mysqlclient
-
-  lint-instrumentation-psycopg2:
-    name: instrumentation-psycopg2
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-psycopg2
-
-  lint-instrumentation-psycopg:
-    name: instrumentation-psycopg
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-psycopg
-
-  lint-instrumentation-pymemcache:
-    name: instrumentation-pymemcache
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-pymemcache
-
-  lint-instrumentation-pymongo:
-    name: instrumentation-pymongo
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-pymongo
-
-  lint-instrumentation-pymysql:
-    name: instrumentation-pymysql
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-pymysql
-
-  lint-instrumentation-pymssql:
-    name: instrumentation-pymssql
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-pymssql
-
-  lint-instrumentation-pyramid:
-    name: instrumentation-pyramid
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-pyramid
-
-  lint-instrumentation-asgi:
-    name: instrumentation-asgi
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-asgi
-
-  lint-instrumentation-asyncpg:
-    name: instrumentation-asyncpg
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-asyncpg
-
-  lint-instrumentation-sqlite3:
-    name: instrumentation-sqlite3
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-sqlite3
-
-  lint-instrumentation-wsgi:
-    name: instrumentation-wsgi
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-wsgi
-
-  lint-instrumentation-grpc:
-    name: instrumentation-grpc
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-grpc
-
-  lint-instrumentation-sqlalchemy:
-    name: instrumentation-sqlalchemy
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-sqlalchemy
-
-  lint-instrumentation-redis:
-    name: instrumentation-redis
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-redis
-
-  lint-instrumentation-remoulade:
-    name: instrumentation-remoulade
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-remoulade
-
-  lint-instrumentation-celery:
-    name: instrumentation-celery
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-celery
-
-  lint-instrumentation-system-metrics:
-    name: instrumentation-system-metrics
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-system-metrics
-
-  lint-instrumentation-threading:
-    name: instrumentation-threading
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-threading
-
-  lint-instrumentation-tornado:
-    name: instrumentation-tornado
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-tornado
-
-  lint-instrumentation-tortoiseorm:
-    name: instrumentation-tortoiseorm
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-tortoiseorm
-
-  lint-instrumentation-httpx:
-    name: instrumentation-httpx
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-httpx
-
-  lint-util-http:
-    name: util-http
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-util-http
-
-  lint-exporter-credential-provider-gcp:
-    name: exporter-credential-provider-gcp
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-exporter-credential-provider-gcp
-
-  lint-util-genai:
-    name: util-genai
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-util-genai
-
-  lint-propagator-aws-xray:
-    name: propagator-aws-xray
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-propagator-aws-xray
-
-  lint-propagator-ot-trace:
-    name: propagator-ot-trace
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-propagator-ot-trace
-
-  lint-instrumentation-sio-pika:
-    name: instrumentation-sio-pika
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-sio-pika
-
-  lint-instrumentation-aio-pika:
-    name: instrumentation-aio-pika
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-aio-pika
-
-  lint-instrumentation-aiokafka:
-    name: instrumentation-aiokafka
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-aiokafka
-
-  lint-instrumentation-kafka-python:
-    name: instrumentation-kafka-python
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-kafka-python
-
-  lint-instrumentation-confluent-kafka:
-    name: instrumentation-confluent-kafka
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-confluent-kafka
-
-  lint-instrumentation-asyncio:
-    name: instrumentation-asyncio
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-asyncio
-
-  lint-instrumentation-cassandra:
-    name: instrumentation-cassandra
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-instrumentation-cassandra
-
-  lint-processor-baggage:
-    name: processor-baggage
-    runs-on: loongsuite-python-agent-fork-arc
-    timeout-minutes: 30
-    steps:
-      - name: Checkout repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Install tox
-        run: pip install tox-uv
-
-      - name: Run tests
-        run: tox -e lint-processor-baggage
+        run: tox run-parallel -p 2 -e lint-instrumentation-cassandra,lint-processor-baggage

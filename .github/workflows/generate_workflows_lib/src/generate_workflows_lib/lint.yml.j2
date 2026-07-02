@@ -51,5 +51,5 @@ jobs:
         run: pip install tox-uv
 
       - name: Run tests
-        run: tox -e {{ job_data.tox_env }}
+        run: tox run-parallel -p {{ job_data.parallelism }} -e {{ job_data.tox_envs | join(',') }}
   {%- endfor %}
