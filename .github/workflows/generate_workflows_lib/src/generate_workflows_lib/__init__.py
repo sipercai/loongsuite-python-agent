@@ -18,6 +18,17 @@ _tox_contrib_env_regex = re_compile(
 )
 
 
+def _get_job_package_name(name: str, package_names=None) -> str:
+    if package_names is None:
+        return name
+
+    for package_name in sorted(package_names, key=len, reverse=True):
+        if name == package_name or name.startswith(f"{package_name}-"):
+            return package_name
+
+    return name
+
+
 def get_tox_envs(tox_ini_path: Path) -> list:
     tox_ini = ToxIni(tox_ini_path)
 
@@ -43,8 +54,16 @@ def get_tox_envs(tox_ini_path: Path) -> list:
     return core_config_set.load("env_list")
 
 
-def get_test_job_datas(tox_envs: list, operating_systems: list) -> list:
-    os_alias = {"ubuntu-latest": "Ubuntu", "windows-latest": "Windows"}
+def get_test_job_datas(
+    tox_envs: list,
+    operating_systems: list,
+    package_names=None,
+) -> list:
+    os_alias = {
+        "ubuntu-latest": "Ubuntu",
+        "windows-latest": "Windows",
+        "loongsuite-python-agent-fork-arc": "ARC",
+    }
 
     python_version_alias = {
         "pypy3": "pypy-3.9",
@@ -90,6 +109,10 @@ def get_test_job_datas(tox_envs: list, operating_systems: list) -> list:
                         f"{aliased_python_version} "
                         f"{os_alias[operating_system]}"
                     ),
+                    "package": _get_job_package_name(
+                        groups["name"],
+                        package_names,
+                    ),
                     "python_version": aliased_python_version,
                     "tox_env": tox_env,
                     "os": operating_system,
@@ -114,6 +137,9 @@ def get_lint_job_datas(tox_envs: list) -> list:
             {
                 "name": f"{tox_env}",
                 "ui_name": f"{tox_lint_env_match.groupdict()['name']}",
+                "package": _get_job_package_name(
+                    tox_lint_env_match.groupdict()["name"]
+                ),
                 "tox_env": tox_env,
             }
         )
@@ -172,7 +198,11 @@ def get_misc_job_datas(tox_envs: list) -> list:
 
 
 def _generate_workflow(
-    job_datas: list, name: str, workflow_directory_path: Path, max_jobs=250
+    job_datas: list,
+    name: str,
+    workflow_directory_path: Path,
+    max_jobs=250,
+    runner="ubuntu-latest",
 ):
     # Github seems to limit the amount of jobs in a workflow file, that is why
     # they are split in groups of 250 per workflow file.
@@ -188,7 +218,11 @@ def _generate_workflow(
             test_yml_file.write(
                 Environment(loader=FileSystemLoader(Path(__file__).parent))
                 .get_template(f"{name}.yml.j2")
-                .render(job_datas=job_datas, file_number=file_number)
+                .render(
+                    job_datas=job_datas,
+                    file_number=file_number,
+                    runner=runner,
+                )
             )
             test_yml_file.write("\n")
 
@@ -206,16 +240,19 @@ def generate_test_workflow(
 def generate_lint_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     _generate_workflow(
         get_lint_job_datas(get_tox_envs(tox_ini_path)),
         "lint",
         workflow_directory_path,
+        runner=runner,
     )
 
 
 def generate_contrib_workflow(
     workflow_directory_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     _generate_workflow(
         get_contrib_job_datas(
@@ -223,17 +260,20 @@ def generate_contrib_workflow(
         ),
         "core_contrib_test",
         workflow_directory_path,
+        runner=runner,
     )
 
 
 def generate_misc_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     _generate_workflow(
         get_misc_job_datas(get_tox_envs(tox_ini_path)),
         "misc",
         workflow_directory_path,
+        runner=runner,
     )
 
 
@@ -275,12 +315,21 @@ def generate_extension_test_workflow(
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
         return
+    runner = operating_systems[0] if operating_systems else "ubuntu-latest"
+    loongsuite_package_names = [
+        job_data["package"] for job_data in get_lint_job_datas(loongsuite_envs)
+    ]
 
     _generate_workflow_with_template(
-        get_test_job_datas(loongsuite_envs, list(operating_systems)),
+        get_test_job_datas(
+            loongsuite_envs,
+            list(operating_systems),
+            loongsuite_package_names,
+        ),
         "loongsuite_test",
         "loongsuite_test",
         workflow_directory_path,
+        runner=runner,
     )
 
 
@@ -288,6 +337,7 @@ def generate_extension_lint_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
     additional_config_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
@@ -298,6 +348,7 @@ def generate_extension_lint_workflow(
         "loongsuite_lint",
         "loongsuite_lint",
         workflow_directory_path,
+        runner=runner,
     )
 
 
@@ -305,6 +356,7 @@ def generate_extension_misc_workflow(
     tox_ini_path: Path,
     workflow_directory_path: Path,
     additional_config_path: Path,
+    runner="ubuntu-latest",
 ) -> None:
     loongsuite_envs = get_loongsuite_tox_envs(additional_config_path)
     if not loongsuite_envs:
@@ -315,6 +367,7 @@ def generate_extension_misc_workflow(
         "loongsuite_misc",
         "loongsuite_misc",
         workflow_directory_path,
+        runner=runner,
     )
 
 
@@ -324,7 +377,18 @@ def _generate_workflow_with_template(
     template_name: str,
     workflow_directory_path: Path,
     max_jobs=250,
+    runner="ubuntu-latest",
 ):
+    if (
+        name in {"loongsuite_lint", "loongsuite_test"}
+        and len(job_datas) > max_jobs
+    ):
+        raise RuntimeError(
+            f"{name} dynamic matrix has {len(job_datas)} jobs, which exceeds "
+            f"the {max_jobs}-job single-workflow limit. Add an explicit "
+            "cross-workflow aggregate before allowing generated chunks."
+        )
+
     # Github seems to limit the amount of jobs in a workflow file, that is why
     # they are split in groups of 250 per workflow file.
     for file_number, job_datas in enumerate(
@@ -339,6 +403,10 @@ def _generate_workflow_with_template(
             test_yml_file.write(
                 Environment(loader=FileSystemLoader(Path(__file__).parent))
                 .get_template(f"{template_name}.yml.j2")
-                .render(job_datas=job_datas, file_number=file_number)
+                .render(
+                    job_datas=job_datas,
+                    file_number=file_number,
+                    runner=runner,
+                )
             )
             test_yml_file.write("\n")

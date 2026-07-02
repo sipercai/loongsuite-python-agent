@@ -33,9 +33,9 @@ env:
 
 jobs:
 
-  py39-test-instrumentation-openai-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai-v2-oldest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-openai-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-oldest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -52,9 +52,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-openai-v2-oldest -- -ra
 
-  py39-test-instrumentation-openai-v2-latest_ubuntu-latest:
-    name: instrumentation-openai-v2-latest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-openai-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-latest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -71,9 +71,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-openai-v2-latest -- -ra
 
-  py310-test-instrumentation-openai-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai-v2-oldest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-openai-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-oldest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -90,9 +90,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-openai-v2-oldest -- -ra
 
-  py310-test-instrumentation-openai-v2-latest_ubuntu-latest:
-    name: instrumentation-openai-v2-latest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-openai-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-latest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -109,9 +109,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-openai-v2-latest -- -ra
 
-  py311-test-instrumentation-openai-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai-v2-oldest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-openai-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-oldest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -128,9 +128,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-openai-v2-oldest -- -ra
 
-  py311-test-instrumentation-openai-v2-latest_ubuntu-latest:
-    name: instrumentation-openai-v2-latest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-openai-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-latest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -147,9 +147,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-openai-v2-latest -- -ra
 
-  py312-test-instrumentation-openai-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai-v2-oldest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-openai-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-oldest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -166,9 +166,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-openai-v2-oldest -- -ra
 
-  py312-test-instrumentation-openai-v2-latest_ubuntu-latest:
-    name: instrumentation-openai-v2-latest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-openai-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-latest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -185,9 +185,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-openai-v2-latest -- -ra
 
-  py313-test-instrumentation-openai-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai-v2-oldest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-openai-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-oldest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -204,9 +204,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-openai-v2-oldest -- -ra
 
-  py313-test-instrumentation-openai-v2-latest_ubuntu-latest:
-    name: instrumentation-openai-v2-latest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-openai-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-latest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -223,9 +223,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-openai-v2-latest -- -ra
 
-  py314-test-instrumentation-openai-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai-v2-oldest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-openai-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-oldest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -242,9 +242,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-openai-v2-oldest -- -ra
 
-  py314-test-instrumentation-openai-v2-latest_ubuntu-latest:
-    name: instrumentation-openai-v2-latest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-openai-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-latest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -261,9 +261,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-openai-v2-latest -- -ra
 
-  pypy3-test-instrumentation-openai-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai-v2-oldest pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-openai-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-oldest pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -280,9 +280,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-openai-v2-oldest -- -ra
 
-  pypy3-test-instrumentation-openai-v2-latest_ubuntu-latest:
-    name: instrumentation-openai-v2-latest pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-openai-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai-v2-latest pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -299,9 +299,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-openai-v2-latest -- -ra
 
-  py310-test-instrumentation-openai_agents-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-oldest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-openai_agents-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-oldest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -318,9 +318,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-openai_agents-v2-oldest -- -ra
 
-  py310-test-instrumentation-openai_agents-v2-latest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-latest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-openai_agents-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-latest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -337,9 +337,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-openai_agents-v2-latest -- -ra
 
-  py311-test-instrumentation-openai_agents-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-oldest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-openai_agents-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-oldest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -356,9 +356,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-openai_agents-v2-oldest -- -ra
 
-  py311-test-instrumentation-openai_agents-v2-latest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-latest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-openai_agents-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-latest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -375,9 +375,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-openai_agents-v2-latest -- -ra
 
-  py312-test-instrumentation-openai_agents-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-oldest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-openai_agents-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-oldest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -394,9 +394,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-openai_agents-v2-oldest -- -ra
 
-  py312-test-instrumentation-openai_agents-v2-latest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-latest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-openai_agents-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-latest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -413,9 +413,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-openai_agents-v2-latest -- -ra
 
-  py313-test-instrumentation-openai_agents-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-oldest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-openai_agents-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-oldest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -432,9 +432,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-openai_agents-v2-oldest -- -ra
 
-  py313-test-instrumentation-openai_agents-v2-latest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-latest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-openai_agents-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-latest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -451,9 +451,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-openai_agents-v2-latest -- -ra
 
-  py314-test-instrumentation-openai_agents-v2-oldest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-oldest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-openai_agents-v2-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-oldest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -470,9 +470,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-openai_agents-v2-oldest -- -ra
 
-  py314-test-instrumentation-openai_agents-v2-latest_ubuntu-latest:
-    name: instrumentation-openai_agents-v2-latest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-openai_agents-v2-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-openai_agents-v2-latest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -489,9 +489,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-openai_agents-v2-latest -- -ra
 
-  py39-test-instrumentation-vertexai-oldest_ubuntu-latest:
-    name: instrumentation-vertexai-oldest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-vertexai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-oldest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -508,9 +508,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-vertexai-oldest -- -ra
 
-  py39-test-instrumentation-vertexai-latest_ubuntu-latest:
-    name: instrumentation-vertexai-latest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-vertexai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-latest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -527,9 +527,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-vertexai-latest -- -ra
 
-  py310-test-instrumentation-vertexai-oldest_ubuntu-latest:
-    name: instrumentation-vertexai-oldest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-vertexai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-oldest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -546,9 +546,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-vertexai-oldest -- -ra
 
-  py310-test-instrumentation-vertexai-latest_ubuntu-latest:
-    name: instrumentation-vertexai-latest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-vertexai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-latest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -565,9 +565,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-vertexai-latest -- -ra
 
-  py311-test-instrumentation-vertexai-oldest_ubuntu-latest:
-    name: instrumentation-vertexai-oldest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-vertexai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-oldest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -584,9 +584,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-vertexai-oldest -- -ra
 
-  py311-test-instrumentation-vertexai-latest_ubuntu-latest:
-    name: instrumentation-vertexai-latest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-vertexai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-latest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -603,9 +603,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-vertexai-latest -- -ra
 
-  py312-test-instrumentation-vertexai-oldest_ubuntu-latest:
-    name: instrumentation-vertexai-oldest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-vertexai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-oldest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -622,9 +622,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-vertexai-oldest -- -ra
 
-  py312-test-instrumentation-vertexai-latest_ubuntu-latest:
-    name: instrumentation-vertexai-latest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-vertexai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-latest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -641,9 +641,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-vertexai-latest -- -ra
 
-  py313-test-instrumentation-vertexai-oldest_ubuntu-latest:
-    name: instrumentation-vertexai-oldest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-vertexai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-oldest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -660,9 +660,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-vertexai-oldest -- -ra
 
-  py313-test-instrumentation-vertexai-latest_ubuntu-latest:
-    name: instrumentation-vertexai-latest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-vertexai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-latest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -679,9 +679,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-vertexai-latest -- -ra
 
-  py314-test-instrumentation-vertexai-oldest_ubuntu-latest:
-    name: instrumentation-vertexai-oldest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-vertexai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-oldest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -698,9 +698,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-vertexai-oldest -- -ra
 
-  py314-test-instrumentation-vertexai-latest_ubuntu-latest:
-    name: instrumentation-vertexai-latest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-vertexai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-vertexai-latest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -717,9 +717,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-vertexai-latest -- -ra
 
-  py39-test-instrumentation-google-genai-oldest_ubuntu-latest:
-    name: instrumentation-google-genai-oldest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-google-genai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-oldest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -736,9 +736,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-google-genai-oldest -- -ra
 
-  py39-test-instrumentation-google-genai-latest_ubuntu-latest:
-    name: instrumentation-google-genai-latest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-google-genai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-latest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -755,9 +755,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-google-genai-latest -- -ra
 
-  py310-test-instrumentation-google-genai-oldest_ubuntu-latest:
-    name: instrumentation-google-genai-oldest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-google-genai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-oldest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -774,9 +774,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-google-genai-oldest -- -ra
 
-  py310-test-instrumentation-google-genai-latest_ubuntu-latest:
-    name: instrumentation-google-genai-latest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-google-genai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-latest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -793,9 +793,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-google-genai-latest -- -ra
 
-  py311-test-instrumentation-google-genai-oldest_ubuntu-latest:
-    name: instrumentation-google-genai-oldest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-google-genai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-oldest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -812,9 +812,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-google-genai-oldest -- -ra
 
-  py311-test-instrumentation-google-genai-latest_ubuntu-latest:
-    name: instrumentation-google-genai-latest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-google-genai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-latest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -831,9 +831,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-google-genai-latest -- -ra
 
-  py312-test-instrumentation-google-genai-oldest_ubuntu-latest:
-    name: instrumentation-google-genai-oldest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-google-genai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-oldest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -850,9 +850,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-google-genai-oldest -- -ra
 
-  py312-test-instrumentation-google-genai-latest_ubuntu-latest:
-    name: instrumentation-google-genai-latest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-google-genai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-latest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -869,9 +869,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-google-genai-latest -- -ra
 
-  py313-test-instrumentation-google-genai-oldest_ubuntu-latest:
-    name: instrumentation-google-genai-oldest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-google-genai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-oldest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -888,9 +888,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-google-genai-oldest -- -ra
 
-  py313-test-instrumentation-google-genai-latest_ubuntu-latest:
-    name: instrumentation-google-genai-latest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-google-genai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-latest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -907,9 +907,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-google-genai-latest -- -ra
 
-  py314-test-instrumentation-google-genai-oldest_ubuntu-latest:
-    name: instrumentation-google-genai-oldest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-google-genai-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-oldest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -926,9 +926,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-google-genai-oldest -- -ra
 
-  py314-test-instrumentation-google-genai-latest_ubuntu-latest:
-    name: instrumentation-google-genai-latest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-google-genai-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-google-genai-latest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -945,9 +945,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-google-genai-latest -- -ra
 
-  py39-test-instrumentation-anthropic-oldest_ubuntu-latest:
-    name: instrumentation-anthropic-oldest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-anthropic-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-oldest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -964,9 +964,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-anthropic-oldest -- -ra
 
-  py39-test-instrumentation-anthropic-latest_ubuntu-latest:
-    name: instrumentation-anthropic-latest 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-anthropic-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-latest 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -983,9 +983,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-anthropic-latest -- -ra
 
-  py310-test-instrumentation-anthropic-oldest_ubuntu-latest:
-    name: instrumentation-anthropic-oldest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-anthropic-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-oldest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1002,9 +1002,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-anthropic-oldest -- -ra
 
-  py310-test-instrumentation-anthropic-latest_ubuntu-latest:
-    name: instrumentation-anthropic-latest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-anthropic-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-latest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1021,9 +1021,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-anthropic-latest -- -ra
 
-  py311-test-instrumentation-anthropic-oldest_ubuntu-latest:
-    name: instrumentation-anthropic-oldest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-anthropic-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-oldest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1040,9 +1040,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-anthropic-oldest -- -ra
 
-  py311-test-instrumentation-anthropic-latest_ubuntu-latest:
-    name: instrumentation-anthropic-latest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-anthropic-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-latest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1059,9 +1059,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-anthropic-latest -- -ra
 
-  py312-test-instrumentation-anthropic-oldest_ubuntu-latest:
-    name: instrumentation-anthropic-oldest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-anthropic-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-oldest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1078,9 +1078,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-anthropic-oldest -- -ra
 
-  py312-test-instrumentation-anthropic-latest_ubuntu-latest:
-    name: instrumentation-anthropic-latest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-anthropic-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-latest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1097,9 +1097,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-anthropic-latest -- -ra
 
-  py313-test-instrumentation-anthropic-oldest_ubuntu-latest:
-    name: instrumentation-anthropic-oldest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-anthropic-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-oldest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1116,9 +1116,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-anthropic-oldest -- -ra
 
-  py313-test-instrumentation-anthropic-latest_ubuntu-latest:
-    name: instrumentation-anthropic-latest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-anthropic-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-latest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1135,9 +1135,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-anthropic-latest -- -ra
 
-  py314-test-instrumentation-anthropic-oldest_ubuntu-latest:
-    name: instrumentation-anthropic-oldest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-anthropic-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-oldest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1154,9 +1154,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-anthropic-oldest -- -ra
 
-  py314-test-instrumentation-anthropic-latest_ubuntu-latest:
-    name: instrumentation-anthropic-latest 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-anthropic-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-anthropic-latest 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1173,9 +1173,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-anthropic-latest -- -ra
 
-  py310-test-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-oldest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-claude-agent-sdk-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-oldest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1192,9 +1192,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-claude-agent-sdk-oldest -- -ra
 
-  py310-test-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-latest 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-claude-agent-sdk-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-latest 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1211,9 +1211,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-claude-agent-sdk-latest -- -ra
 
-  py311-test-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-oldest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-claude-agent-sdk-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-oldest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1230,9 +1230,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-claude-agent-sdk-oldest -- -ra
 
-  py311-test-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-latest 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-claude-agent-sdk-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-latest 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1249,9 +1249,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-claude-agent-sdk-latest -- -ra
 
-  py312-test-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-oldest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-claude-agent-sdk-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-oldest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1268,9 +1268,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-claude-agent-sdk-oldest -- -ra
 
-  py312-test-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-latest 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-claude-agent-sdk-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-latest 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1287,9 +1287,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-claude-agent-sdk-latest -- -ra
 
-  py313-test-instrumentation-claude-agent-sdk-oldest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-oldest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-claude-agent-sdk-oldest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-oldest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1306,9 +1306,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-claude-agent-sdk-oldest -- -ra
 
-  py313-test-instrumentation-claude-agent-sdk-latest_ubuntu-latest:
-    name: instrumentation-claude-agent-sdk-latest 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-claude-agent-sdk-latest_loongsuite-python-agent-fork-arc:
+    name: instrumentation-claude-agent-sdk-latest 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1325,9 +1325,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-claude-agent-sdk-latest -- -ra
 
-  py39-test-resource-detector-containerid_ubuntu-latest:
-    name: resource-detector-containerid 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-resource-detector-containerid_loongsuite-python-agent-fork-arc:
+    name: resource-detector-containerid 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1344,9 +1344,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-resource-detector-containerid -- -ra
 
-  py310-test-resource-detector-containerid_ubuntu-latest:
-    name: resource-detector-containerid 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-resource-detector-containerid_loongsuite-python-agent-fork-arc:
+    name: resource-detector-containerid 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1363,9 +1363,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-resource-detector-containerid -- -ra
 
-  py311-test-resource-detector-containerid_ubuntu-latest:
-    name: resource-detector-containerid 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-resource-detector-containerid_loongsuite-python-agent-fork-arc:
+    name: resource-detector-containerid 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1382,9 +1382,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-resource-detector-containerid -- -ra
 
-  py312-test-resource-detector-containerid_ubuntu-latest:
-    name: resource-detector-containerid 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-resource-detector-containerid_loongsuite-python-agent-fork-arc:
+    name: resource-detector-containerid 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1401,9 +1401,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-resource-detector-containerid -- -ra
 
-  py313-test-resource-detector-containerid_ubuntu-latest:
-    name: resource-detector-containerid 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-resource-detector-containerid_loongsuite-python-agent-fork-arc:
+    name: resource-detector-containerid 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1420,9 +1420,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-resource-detector-containerid -- -ra
 
-  py314-test-resource-detector-containerid_ubuntu-latest:
-    name: resource-detector-containerid 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-resource-detector-containerid_loongsuite-python-agent-fork-arc:
+    name: resource-detector-containerid 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1439,9 +1439,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-resource-detector-containerid -- -ra
 
-  pypy3-test-resource-detector-containerid_ubuntu-latest:
-    name: resource-detector-containerid pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-resource-detector-containerid_loongsuite-python-agent-fork-arc:
+    name: resource-detector-containerid pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1458,9 +1458,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-resource-detector-containerid -- -ra
 
-  py39-test-resource-detector-azure-0_ubuntu-latest:
-    name: resource-detector-azure-0 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-resource-detector-azure-0_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-0 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1477,9 +1477,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-resource-detector-azure-0 -- -ra
 
-  py39-test-resource-detector-azure-1_ubuntu-latest:
-    name: resource-detector-azure-1 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-resource-detector-azure-1_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-1 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1496,9 +1496,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-resource-detector-azure-1 -- -ra
 
-  py310-test-resource-detector-azure-0_ubuntu-latest:
-    name: resource-detector-azure-0 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-resource-detector-azure-0_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-0 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1515,9 +1515,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-resource-detector-azure-0 -- -ra
 
-  py310-test-resource-detector-azure-1_ubuntu-latest:
-    name: resource-detector-azure-1 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-resource-detector-azure-1_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-1 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1534,9 +1534,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-resource-detector-azure-1 -- -ra
 
-  py311-test-resource-detector-azure-0_ubuntu-latest:
-    name: resource-detector-azure-0 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-resource-detector-azure-0_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-0 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1553,9 +1553,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-resource-detector-azure-0 -- -ra
 
-  py311-test-resource-detector-azure-1_ubuntu-latest:
-    name: resource-detector-azure-1 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-resource-detector-azure-1_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-1 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1572,9 +1572,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-resource-detector-azure-1 -- -ra
 
-  py312-test-resource-detector-azure-0_ubuntu-latest:
-    name: resource-detector-azure-0 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-resource-detector-azure-0_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-0 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1591,9 +1591,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-resource-detector-azure-0 -- -ra
 
-  py312-test-resource-detector-azure-1_ubuntu-latest:
-    name: resource-detector-azure-1 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-resource-detector-azure-1_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-1 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1610,9 +1610,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-resource-detector-azure-1 -- -ra
 
-  py313-test-resource-detector-azure-0_ubuntu-latest:
-    name: resource-detector-azure-0 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-resource-detector-azure-0_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-0 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1629,9 +1629,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-resource-detector-azure-0 -- -ra
 
-  py313-test-resource-detector-azure-1_ubuntu-latest:
-    name: resource-detector-azure-1 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-resource-detector-azure-1_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-1 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1648,9 +1648,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-resource-detector-azure-1 -- -ra
 
-  py314-test-resource-detector-azure-0_ubuntu-latest:
-    name: resource-detector-azure-0 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-resource-detector-azure-0_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-0 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1667,9 +1667,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-resource-detector-azure-0 -- -ra
 
-  py314-test-resource-detector-azure-1_ubuntu-latest:
-    name: resource-detector-azure-1 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-resource-detector-azure-1_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-1 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1686,9 +1686,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-resource-detector-azure-1 -- -ra
 
-  pypy3-test-resource-detector-azure-0_ubuntu-latest:
-    name: resource-detector-azure-0 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-resource-detector-azure-0_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-0 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1705,9 +1705,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-resource-detector-azure-0 -- -ra
 
-  pypy3-test-resource-detector-azure-1_ubuntu-latest:
-    name: resource-detector-azure-1 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-resource-detector-azure-1_loongsuite-python-agent-fork-arc:
+    name: resource-detector-azure-1 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1724,9 +1724,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-resource-detector-azure-1 -- -ra
 
-  py39-test-sdk-extension-aws-0_ubuntu-latest:
-    name: sdk-extension-aws-0 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-sdk-extension-aws-0_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-0 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1743,9 +1743,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-sdk-extension-aws-0 -- -ra
 
-  py39-test-sdk-extension-aws-1_ubuntu-latest:
-    name: sdk-extension-aws-1 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-sdk-extension-aws-1_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-1 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1762,9 +1762,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-sdk-extension-aws-1 -- -ra
 
-  py310-test-sdk-extension-aws-0_ubuntu-latest:
-    name: sdk-extension-aws-0 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-sdk-extension-aws-0_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-0 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1781,9 +1781,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-sdk-extension-aws-0 -- -ra
 
-  py310-test-sdk-extension-aws-1_ubuntu-latest:
-    name: sdk-extension-aws-1 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-sdk-extension-aws-1_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-1 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1800,9 +1800,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-sdk-extension-aws-1 -- -ra
 
-  py311-test-sdk-extension-aws-0_ubuntu-latest:
-    name: sdk-extension-aws-0 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-sdk-extension-aws-0_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-0 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1819,9 +1819,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-sdk-extension-aws-0 -- -ra
 
-  py311-test-sdk-extension-aws-1_ubuntu-latest:
-    name: sdk-extension-aws-1 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-sdk-extension-aws-1_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-1 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1838,9 +1838,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-sdk-extension-aws-1 -- -ra
 
-  py312-test-sdk-extension-aws-0_ubuntu-latest:
-    name: sdk-extension-aws-0 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-sdk-extension-aws-0_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-0 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1857,9 +1857,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-sdk-extension-aws-0 -- -ra
 
-  py312-test-sdk-extension-aws-1_ubuntu-latest:
-    name: sdk-extension-aws-1 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-sdk-extension-aws-1_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-1 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1876,9 +1876,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-sdk-extension-aws-1 -- -ra
 
-  py313-test-sdk-extension-aws-0_ubuntu-latest:
-    name: sdk-extension-aws-0 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-sdk-extension-aws-0_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-0 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1895,9 +1895,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-sdk-extension-aws-0 -- -ra
 
-  py313-test-sdk-extension-aws-1_ubuntu-latest:
-    name: sdk-extension-aws-1 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-sdk-extension-aws-1_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-1 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1914,9 +1914,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-sdk-extension-aws-1 -- -ra
 
-  py314-test-sdk-extension-aws-0_ubuntu-latest:
-    name: sdk-extension-aws-0 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-sdk-extension-aws-0_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-0 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1933,9 +1933,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-sdk-extension-aws-0 -- -ra
 
-  py314-test-sdk-extension-aws-1_ubuntu-latest:
-    name: sdk-extension-aws-1 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-sdk-extension-aws-1_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-1 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1952,9 +1952,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-sdk-extension-aws-1 -- -ra
 
-  pypy3-test-sdk-extension-aws-0_ubuntu-latest:
-    name: sdk-extension-aws-0 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-sdk-extension-aws-0_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-0 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1971,9 +1971,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-sdk-extension-aws-0 -- -ra
 
-  pypy3-test-sdk-extension-aws-1_ubuntu-latest:
-    name: sdk-extension-aws-1 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-sdk-extension-aws-1_loongsuite-python-agent-fork-arc:
+    name: sdk-extension-aws-1 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -1990,9 +1990,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-sdk-extension-aws-1 -- -ra
 
-  py39-test-distro_ubuntu-latest:
-    name: distro 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-distro_loongsuite-python-agent-fork-arc:
+    name: distro 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2009,9 +2009,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-distro -- -ra
 
-  py310-test-distro_ubuntu-latest:
-    name: distro 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-distro_loongsuite-python-agent-fork-arc:
+    name: distro 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2028,9 +2028,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-distro -- -ra
 
-  py311-test-distro_ubuntu-latest:
-    name: distro 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-distro_loongsuite-python-agent-fork-arc:
+    name: distro 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2047,9 +2047,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-distro -- -ra
 
-  py312-test-distro_ubuntu-latest:
-    name: distro 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-distro_loongsuite-python-agent-fork-arc:
+    name: distro 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2066,9 +2066,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-distro -- -ra
 
-  py313-test-distro_ubuntu-latest:
-    name: distro 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-distro_loongsuite-python-agent-fork-arc:
+    name: distro 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2085,9 +2085,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-distro -- -ra
 
-  py314-test-distro_ubuntu-latest:
-    name: distro 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-distro_loongsuite-python-agent-fork-arc:
+    name: distro 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2104,9 +2104,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-distro -- -ra
 
-  pypy3-test-distro_ubuntu-latest:
-    name: distro pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-distro_loongsuite-python-agent-fork-arc:
+    name: distro pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2123,9 +2123,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-distro -- -ra
 
-  py39-test-opentelemetry-instrumentation_ubuntu-latest:
-    name: opentelemetry-instrumentation 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-opentelemetry-instrumentation_loongsuite-python-agent-fork-arc:
+    name: opentelemetry-instrumentation 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2142,9 +2142,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-opentelemetry-instrumentation -- -ra
 
-  py310-test-opentelemetry-instrumentation_ubuntu-latest:
-    name: opentelemetry-instrumentation 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-opentelemetry-instrumentation_loongsuite-python-agent-fork-arc:
+    name: opentelemetry-instrumentation 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2161,9 +2161,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-opentelemetry-instrumentation -- -ra
 
-  py311-test-opentelemetry-instrumentation_ubuntu-latest:
-    name: opentelemetry-instrumentation 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-opentelemetry-instrumentation_loongsuite-python-agent-fork-arc:
+    name: opentelemetry-instrumentation 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2180,9 +2180,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-opentelemetry-instrumentation -- -ra
 
-  py312-test-opentelemetry-instrumentation_ubuntu-latest:
-    name: opentelemetry-instrumentation 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-opentelemetry-instrumentation_loongsuite-python-agent-fork-arc:
+    name: opentelemetry-instrumentation 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2199,9 +2199,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-opentelemetry-instrumentation -- -ra
 
-  py313-test-opentelemetry-instrumentation_ubuntu-latest:
-    name: opentelemetry-instrumentation 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-opentelemetry-instrumentation_loongsuite-python-agent-fork-arc:
+    name: opentelemetry-instrumentation 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2218,9 +2218,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-opentelemetry-instrumentation -- -ra
 
-  py314-test-opentelemetry-instrumentation_ubuntu-latest:
-    name: opentelemetry-instrumentation 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-opentelemetry-instrumentation_loongsuite-python-agent-fork-arc:
+    name: opentelemetry-instrumentation 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2237,9 +2237,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-opentelemetry-instrumentation -- -ra
 
-  pypy3-test-opentelemetry-instrumentation_ubuntu-latest:
-    name: opentelemetry-instrumentation pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-opentelemetry-instrumentation_loongsuite-python-agent-fork-arc:
+    name: opentelemetry-instrumentation pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2256,9 +2256,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-opentelemetry-instrumentation -- -ra
 
-  py39-test-instrumentation-aiohttp-client_ubuntu-latest:
-    name: instrumentation-aiohttp-client 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-aiohttp-client_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-client 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2275,9 +2275,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-aiohttp-client -- -ra
 
-  py310-test-instrumentation-aiohttp-client_ubuntu-latest:
-    name: instrumentation-aiohttp-client 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-aiohttp-client_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-client 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2294,9 +2294,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-aiohttp-client -- -ra
 
-  py311-test-instrumentation-aiohttp-client_ubuntu-latest:
-    name: instrumentation-aiohttp-client 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-aiohttp-client_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-client 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2313,9 +2313,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-aiohttp-client -- -ra
 
-  py312-test-instrumentation-aiohttp-client_ubuntu-latest:
-    name: instrumentation-aiohttp-client 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-aiohttp-client_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-client 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2332,9 +2332,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-aiohttp-client -- -ra
 
-  py313-test-instrumentation-aiohttp-client_ubuntu-latest:
-    name: instrumentation-aiohttp-client 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-aiohttp-client_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-client 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2351,9 +2351,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-aiohttp-client -- -ra
 
-  py314-test-instrumentation-aiohttp-client_ubuntu-latest:
-    name: instrumentation-aiohttp-client 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-aiohttp-client_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-client 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2370,9 +2370,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-aiohttp-client -- -ra
 
-  pypy3-test-instrumentation-aiohttp-client_ubuntu-latest:
-    name: instrumentation-aiohttp-client pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-aiohttp-client_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-client pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2389,9 +2389,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-aiohttp-client -- -ra
 
-  py39-test-instrumentation-aiohttp-server_ubuntu-latest:
-    name: instrumentation-aiohttp-server 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-aiohttp-server_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-server 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2408,9 +2408,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-aiohttp-server -- -ra
 
-  py310-test-instrumentation-aiohttp-server_ubuntu-latest:
-    name: instrumentation-aiohttp-server 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-aiohttp-server_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-server 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2427,9 +2427,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-aiohttp-server -- -ra
 
-  py311-test-instrumentation-aiohttp-server_ubuntu-latest:
-    name: instrumentation-aiohttp-server 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-aiohttp-server_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-server 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2446,9 +2446,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-aiohttp-server -- -ra
 
-  py312-test-instrumentation-aiohttp-server_ubuntu-latest:
-    name: instrumentation-aiohttp-server 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-aiohttp-server_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-server 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2465,9 +2465,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-aiohttp-server -- -ra
 
-  py313-test-instrumentation-aiohttp-server_ubuntu-latest:
-    name: instrumentation-aiohttp-server 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-aiohttp-server_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-server 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2484,9 +2484,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-aiohttp-server -- -ra
 
-  py314-test-instrumentation-aiohttp-server_ubuntu-latest:
-    name: instrumentation-aiohttp-server 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-aiohttp-server_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-server 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2503,9 +2503,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-aiohttp-server -- -ra
 
-  pypy3-test-instrumentation-aiohttp-server_ubuntu-latest:
-    name: instrumentation-aiohttp-server pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-aiohttp-server_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiohttp-server pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2522,9 +2522,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-aiohttp-server -- -ra
 
-  py39-test-instrumentation-aiopg_ubuntu-latest:
-    name: instrumentation-aiopg 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-aiopg_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiopg 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2541,9 +2541,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-aiopg -- -ra
 
-  py310-test-instrumentation-aiopg_ubuntu-latest:
-    name: instrumentation-aiopg 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-aiopg_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiopg 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2560,9 +2560,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-aiopg -- -ra
 
-  py311-test-instrumentation-aiopg_ubuntu-latest:
-    name: instrumentation-aiopg 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-aiopg_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiopg 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2579,9 +2579,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-aiopg -- -ra
 
-  py312-test-instrumentation-aiopg_ubuntu-latest:
-    name: instrumentation-aiopg 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-aiopg_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiopg 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2598,9 +2598,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-aiopg -- -ra
 
-  py313-test-instrumentation-aiopg_ubuntu-latest:
-    name: instrumentation-aiopg 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-aiopg_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiopg 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2617,9 +2617,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-aiopg -- -ra
 
-  py314-test-instrumentation-aiopg_ubuntu-latest:
-    name: instrumentation-aiopg 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-aiopg_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aiopg 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2636,9 +2636,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-aiopg -- -ra
 
-  py39-test-instrumentation-aws-lambda_ubuntu-latest:
-    name: instrumentation-aws-lambda 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-aws-lambda_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aws-lambda 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2655,9 +2655,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-aws-lambda -- -ra
 
-  py310-test-instrumentation-aws-lambda_ubuntu-latest:
-    name: instrumentation-aws-lambda 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-aws-lambda_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aws-lambda 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2674,9 +2674,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-aws-lambda -- -ra
 
-  py311-test-instrumentation-aws-lambda_ubuntu-latest:
-    name: instrumentation-aws-lambda 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-aws-lambda_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aws-lambda 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2693,9 +2693,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-aws-lambda -- -ra
 
-  py312-test-instrumentation-aws-lambda_ubuntu-latest:
-    name: instrumentation-aws-lambda 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-aws-lambda_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aws-lambda 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2712,9 +2712,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-aws-lambda -- -ra
 
-  py313-test-instrumentation-aws-lambda_ubuntu-latest:
-    name: instrumentation-aws-lambda 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-aws-lambda_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aws-lambda 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2731,9 +2731,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-aws-lambda -- -ra
 
-  py314-test-instrumentation-aws-lambda_ubuntu-latest:
-    name: instrumentation-aws-lambda 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-aws-lambda_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aws-lambda 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2750,9 +2750,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-aws-lambda -- -ra
 
-  pypy3-test-instrumentation-aws-lambda_ubuntu-latest:
-    name: instrumentation-aws-lambda pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-aws-lambda_loongsuite-python-agent-fork-arc:
+    name: instrumentation-aws-lambda pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2769,9 +2769,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-aws-lambda -- -ra
 
-  py39-test-instrumentation-botocore-0_ubuntu-latest:
-    name: instrumentation-botocore-0 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-botocore-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-0 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2788,9 +2788,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-botocore-0 -- -ra
 
-  py39-test-instrumentation-botocore-1_ubuntu-latest:
-    name: instrumentation-botocore-1 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-botocore-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-1 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2807,9 +2807,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-botocore-1 -- -ra
 
-  py310-test-instrumentation-botocore-0_ubuntu-latest:
-    name: instrumentation-botocore-0 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-botocore-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-0 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2826,9 +2826,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-botocore-0 -- -ra
 
-  py310-test-instrumentation-botocore-1_ubuntu-latest:
-    name: instrumentation-botocore-1 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-botocore-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-1 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2845,9 +2845,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-botocore-1 -- -ra
 
-  py311-test-instrumentation-botocore-0_ubuntu-latest:
-    name: instrumentation-botocore-0 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-botocore-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-0 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2864,9 +2864,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-botocore-0 -- -ra
 
-  py311-test-instrumentation-botocore-1_ubuntu-latest:
-    name: instrumentation-botocore-1 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-botocore-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-1 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2883,9 +2883,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-botocore-1 -- -ra
 
-  py312-test-instrumentation-botocore-0_ubuntu-latest:
-    name: instrumentation-botocore-0 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-botocore-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-0 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2902,9 +2902,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-botocore-0 -- -ra
 
-  py312-test-instrumentation-botocore-1_ubuntu-latest:
-    name: instrumentation-botocore-1 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-botocore-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-1 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2921,9 +2921,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-botocore-1 -- -ra
 
-  py313-test-instrumentation-botocore-0_ubuntu-latest:
-    name: instrumentation-botocore-0 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-botocore-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-0 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2940,9 +2940,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-botocore-0 -- -ra
 
-  py313-test-instrumentation-botocore-1_ubuntu-latest:
-    name: instrumentation-botocore-1 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-botocore-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-1 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2959,9 +2959,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-botocore-1 -- -ra
 
-  py314-test-instrumentation-botocore-0_ubuntu-latest:
-    name: instrumentation-botocore-0 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-botocore-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-0 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2978,9 +2978,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-botocore-0 -- -ra
 
-  py314-test-instrumentation-botocore-1_ubuntu-latest:
-    name: instrumentation-botocore-1 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-botocore-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-botocore-1 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -2997,9 +2997,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-botocore-1 -- -ra
 
-  py39-test-instrumentation-boto3sqs_ubuntu-latest:
-    name: instrumentation-boto3sqs 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-boto3sqs_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto3sqs 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3016,9 +3016,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-boto3sqs -- -ra
 
-  py310-test-instrumentation-boto3sqs_ubuntu-latest:
-    name: instrumentation-boto3sqs 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-boto3sqs_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto3sqs 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3035,9 +3035,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-boto3sqs -- -ra
 
-  py311-test-instrumentation-boto3sqs_ubuntu-latest:
-    name: instrumentation-boto3sqs 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-boto3sqs_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto3sqs 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3054,9 +3054,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-boto3sqs -- -ra
 
-  py312-test-instrumentation-boto3sqs_ubuntu-latest:
-    name: instrumentation-boto3sqs 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-boto3sqs_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto3sqs 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3073,9 +3073,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-boto3sqs -- -ra
 
-  py313-test-instrumentation-boto3sqs_ubuntu-latest:
-    name: instrumentation-boto3sqs 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-boto3sqs_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto3sqs 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3092,9 +3092,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-boto3sqs -- -ra
 
-  py314-test-instrumentation-boto3sqs_ubuntu-latest:
-    name: instrumentation-boto3sqs 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-boto3sqs_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto3sqs 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3111,9 +3111,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-boto3sqs -- -ra
 
-  pypy3-test-instrumentation-boto3sqs_ubuntu-latest:
-    name: instrumentation-boto3sqs pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-boto3sqs_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto3sqs pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3130,9 +3130,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-boto3sqs -- -ra
 
-  py39-test-instrumentation-django-0_ubuntu-latest:
-    name: instrumentation-django-0 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-django-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-0 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3149,9 +3149,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-django-0 -- -ra
 
-  py39-test-instrumentation-django-1_ubuntu-latest:
-    name: instrumentation-django-1 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-django-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-1 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3168,9 +3168,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-django-1 -- -ra
 
-  py39-test-instrumentation-django-2_ubuntu-latest:
-    name: instrumentation-django-2 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-django-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-2 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3187,9 +3187,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-django-2 -- -ra
 
-  py310-test-instrumentation-django-1_ubuntu-latest:
-    name: instrumentation-django-1 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-django-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-1 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3206,9 +3206,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-django-1 -- -ra
 
-  py310-test-instrumentation-django-3_ubuntu-latest:
-    name: instrumentation-django-3 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-django-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-3 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3225,9 +3225,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-django-3 -- -ra
 
-  py311-test-instrumentation-django-1_ubuntu-latest:
-    name: instrumentation-django-1 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-django-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-1 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3244,9 +3244,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-django-1 -- -ra
 
-  py311-test-instrumentation-django-3_ubuntu-latest:
-    name: instrumentation-django-3 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-django-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-3 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3263,9 +3263,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-django-3 -- -ra
 
-  py312-test-instrumentation-django-1_ubuntu-latest:
-    name: instrumentation-django-1 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-django-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-1 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3282,9 +3282,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-django-1 -- -ra
 
-  py312-test-instrumentation-django-3_ubuntu-latest:
-    name: instrumentation-django-3 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-django-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-3 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3301,9 +3301,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-django-3 -- -ra
 
-  py313-test-instrumentation-django-3_ubuntu-latest:
-    name: instrumentation-django-3 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-django-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-3 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3320,9 +3320,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-django-3 -- -ra
 
-  py314-test-instrumentation-django-3_ubuntu-latest:
-    name: instrumentation-django-3 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-django-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-3 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3339,9 +3339,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-django-3 -- -ra
 
-  pypy3-test-instrumentation-django-0_ubuntu-latest:
-    name: instrumentation-django-0 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-django-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-0 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3358,9 +3358,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-django-0 -- -ra
 
-  pypy3-test-instrumentation-django-1_ubuntu-latest:
-    name: instrumentation-django-1 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-django-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-django-1 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3377,9 +3377,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-django-1 -- -ra
 
-  py39-test-instrumentation-dbapi_ubuntu-latest:
-    name: instrumentation-dbapi 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-dbapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-dbapi 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3396,9 +3396,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-dbapi -- -ra
 
-  py310-test-instrumentation-dbapi_ubuntu-latest:
-    name: instrumentation-dbapi 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-dbapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-dbapi 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3415,9 +3415,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-dbapi -- -ra
 
-  py311-test-instrumentation-dbapi_ubuntu-latest:
-    name: instrumentation-dbapi 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-dbapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-dbapi 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3434,9 +3434,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-dbapi -- -ra
 
-  py312-test-instrumentation-dbapi_ubuntu-latest:
-    name: instrumentation-dbapi 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-dbapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-dbapi 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3453,9 +3453,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-dbapi -- -ra
 
-  py313-test-instrumentation-dbapi_ubuntu-latest:
-    name: instrumentation-dbapi 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-dbapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-dbapi 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3472,9 +3472,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-dbapi -- -ra
 
-  py314-test-instrumentation-dbapi_ubuntu-latest:
-    name: instrumentation-dbapi 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-dbapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-dbapi 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3491,9 +3491,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-dbapi -- -ra
 
-  pypy3-test-instrumentation-dbapi_ubuntu-latest:
-    name: instrumentation-dbapi pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-dbapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-dbapi pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3510,9 +3510,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-dbapi -- -ra
 
-  py39-test-instrumentation-boto_ubuntu-latest:
-    name: instrumentation-boto 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-boto_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3529,9 +3529,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-boto -- -ra
 
-  py310-test-instrumentation-boto_ubuntu-latest:
-    name: instrumentation-boto 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-boto_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3548,9 +3548,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-boto -- -ra
 
-  py311-test-instrumentation-boto_ubuntu-latest:
-    name: instrumentation-boto 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-boto_loongsuite-python-agent-fork-arc:
+    name: instrumentation-boto 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3567,9 +3567,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-boto -- -ra
 
-  py39-test-instrumentation-asyncclick_ubuntu-latest:
-    name: instrumentation-asyncclick 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-asyncclick_loongsuite-python-agent-fork-arc:
+    name: instrumentation-asyncclick 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3586,9 +3586,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-asyncclick -- -ra
 
-  py310-test-instrumentation-asyncclick_ubuntu-latest:
-    name: instrumentation-asyncclick 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-asyncclick_loongsuite-python-agent-fork-arc:
+    name: instrumentation-asyncclick 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3605,9 +3605,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-asyncclick -- -ra
 
-  py311-test-instrumentation-asyncclick_ubuntu-latest:
-    name: instrumentation-asyncclick 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-asyncclick_loongsuite-python-agent-fork-arc:
+    name: instrumentation-asyncclick 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3624,9 +3624,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-asyncclick -- -ra
 
-  py312-test-instrumentation-asyncclick_ubuntu-latest:
-    name: instrumentation-asyncclick 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-asyncclick_loongsuite-python-agent-fork-arc:
+    name: instrumentation-asyncclick 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3643,9 +3643,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-asyncclick -- -ra
 
-  py313-test-instrumentation-asyncclick_ubuntu-latest:
-    name: instrumentation-asyncclick 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-asyncclick_loongsuite-python-agent-fork-arc:
+    name: instrumentation-asyncclick 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3662,9 +3662,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-asyncclick -- -ra
 
-  py314-test-instrumentation-asyncclick_ubuntu-latest:
-    name: instrumentation-asyncclick 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-asyncclick_loongsuite-python-agent-fork-arc:
+    name: instrumentation-asyncclick 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3681,9 +3681,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-asyncclick -- -ra
 
-  pypy3-test-instrumentation-asyncclick_ubuntu-latest:
-    name: instrumentation-asyncclick pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-asyncclick_loongsuite-python-agent-fork-arc:
+    name: instrumentation-asyncclick pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3700,9 +3700,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-asyncclick -- -ra
 
-  py39-test-instrumentation-click_ubuntu-latest:
-    name: instrumentation-click 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-click_loongsuite-python-agent-fork-arc:
+    name: instrumentation-click 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3719,9 +3719,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-click -- -ra
 
-  py310-test-instrumentation-click_ubuntu-latest:
-    name: instrumentation-click 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-click_loongsuite-python-agent-fork-arc:
+    name: instrumentation-click 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3738,9 +3738,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-click -- -ra
 
-  py311-test-instrumentation-click_ubuntu-latest:
-    name: instrumentation-click 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-click_loongsuite-python-agent-fork-arc:
+    name: instrumentation-click 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3757,9 +3757,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-click -- -ra
 
-  py312-test-instrumentation-click_ubuntu-latest:
-    name: instrumentation-click 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-click_loongsuite-python-agent-fork-arc:
+    name: instrumentation-click 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3776,9 +3776,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-click -- -ra
 
-  py313-test-instrumentation-click_ubuntu-latest:
-    name: instrumentation-click 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-click_loongsuite-python-agent-fork-arc:
+    name: instrumentation-click 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3795,9 +3795,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-click -- -ra
 
-  py314-test-instrumentation-click_ubuntu-latest:
-    name: instrumentation-click 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-click_loongsuite-python-agent-fork-arc:
+    name: instrumentation-click 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3814,9 +3814,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-click -- -ra
 
-  pypy3-test-instrumentation-click_ubuntu-latest:
-    name: instrumentation-click pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-click_loongsuite-python-agent-fork-arc:
+    name: instrumentation-click pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3833,9 +3833,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-click -- -ra
 
-  py39-test-instrumentation-elasticsearch-0_ubuntu-latest:
-    name: instrumentation-elasticsearch-0 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-elasticsearch-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-0 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3852,9 +3852,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-elasticsearch-0 -- -ra
 
-  py39-test-instrumentation-elasticsearch-1_ubuntu-latest:
-    name: instrumentation-elasticsearch-1 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-elasticsearch-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-1 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3871,9 +3871,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-elasticsearch-1 -- -ra
 
-  py39-test-instrumentation-elasticsearch-2_ubuntu-latest:
-    name: instrumentation-elasticsearch-2 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-elasticsearch-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-2 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3890,9 +3890,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-elasticsearch-2 -- -ra
 
-  py310-test-instrumentation-elasticsearch-0_ubuntu-latest:
-    name: instrumentation-elasticsearch-0 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-elasticsearch-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-0 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3909,9 +3909,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-elasticsearch-0 -- -ra
 
-  py310-test-instrumentation-elasticsearch-1_ubuntu-latest:
-    name: instrumentation-elasticsearch-1 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-elasticsearch-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-1 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3928,9 +3928,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-elasticsearch-1 -- -ra
 
-  py310-test-instrumentation-elasticsearch-2_ubuntu-latest:
-    name: instrumentation-elasticsearch-2 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-elasticsearch-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-2 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3947,9 +3947,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-elasticsearch-2 -- -ra
 
-  py311-test-instrumentation-elasticsearch-0_ubuntu-latest:
-    name: instrumentation-elasticsearch-0 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-elasticsearch-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-0 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3966,9 +3966,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-elasticsearch-0 -- -ra
 
-  py311-test-instrumentation-elasticsearch-1_ubuntu-latest:
-    name: instrumentation-elasticsearch-1 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-elasticsearch-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-1 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -3985,9 +3985,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-elasticsearch-1 -- -ra
 
-  py311-test-instrumentation-elasticsearch-2_ubuntu-latest:
-    name: instrumentation-elasticsearch-2 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-elasticsearch-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-2 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4004,9 +4004,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-elasticsearch-2 -- -ra
 
-  py312-test-instrumentation-elasticsearch-0_ubuntu-latest:
-    name: instrumentation-elasticsearch-0 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-elasticsearch-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-0 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4023,9 +4023,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-elasticsearch-0 -- -ra
 
-  py312-test-instrumentation-elasticsearch-1_ubuntu-latest:
-    name: instrumentation-elasticsearch-1 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-elasticsearch-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-1 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4042,9 +4042,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-elasticsearch-1 -- -ra
 
-  py312-test-instrumentation-elasticsearch-2_ubuntu-latest:
-    name: instrumentation-elasticsearch-2 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-elasticsearch-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-2 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4061,9 +4061,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-elasticsearch-2 -- -ra
 
-  py313-test-instrumentation-elasticsearch-0_ubuntu-latest:
-    name: instrumentation-elasticsearch-0 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-elasticsearch-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-0 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4080,9 +4080,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-elasticsearch-0 -- -ra
 
-  py313-test-instrumentation-elasticsearch-1_ubuntu-latest:
-    name: instrumentation-elasticsearch-1 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-elasticsearch-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-1 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4099,9 +4099,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-elasticsearch-1 -- -ra
 
-  py313-test-instrumentation-elasticsearch-2_ubuntu-latest:
-    name: instrumentation-elasticsearch-2 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-elasticsearch-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-2 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4118,9 +4118,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-elasticsearch-2 -- -ra
 
-  py314-test-instrumentation-elasticsearch-0_ubuntu-latest:
-    name: instrumentation-elasticsearch-0 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-elasticsearch-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-0 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4137,9 +4137,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-elasticsearch-0 -- -ra
 
-  py314-test-instrumentation-elasticsearch-1_ubuntu-latest:
-    name: instrumentation-elasticsearch-1 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-elasticsearch-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-1 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4156,9 +4156,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-elasticsearch-1 -- -ra
 
-  py314-test-instrumentation-elasticsearch-2_ubuntu-latest:
-    name: instrumentation-elasticsearch-2 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-elasticsearch-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-2 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4175,9 +4175,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-elasticsearch-2 -- -ra
 
-  pypy3-test-instrumentation-elasticsearch-0_ubuntu-latest:
-    name: instrumentation-elasticsearch-0 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-elasticsearch-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-0 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4194,9 +4194,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-elasticsearch-0 -- -ra
 
-  pypy3-test-instrumentation-elasticsearch-1_ubuntu-latest:
-    name: instrumentation-elasticsearch-1 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-elasticsearch-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-1 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4213,9 +4213,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-elasticsearch-1 -- -ra
 
-  pypy3-test-instrumentation-elasticsearch-2_ubuntu-latest:
-    name: instrumentation-elasticsearch-2 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-elasticsearch-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-elasticsearch-2 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4232,9 +4232,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-elasticsearch-2 -- -ra
 
-  py39-test-instrumentation-falcon-0_ubuntu-latest:
-    name: instrumentation-falcon-0 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-falcon-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-0 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4251,9 +4251,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-falcon-0 -- -ra
 
-  py39-test-instrumentation-falcon-1_ubuntu-latest:
-    name: instrumentation-falcon-1 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-falcon-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-1 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4270,9 +4270,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-falcon-1 -- -ra
 
-  py39-test-instrumentation-falcon-2_ubuntu-latest:
-    name: instrumentation-falcon-2 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-falcon-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-2 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4289,9 +4289,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-falcon-2 -- -ra
 
-  py39-test-instrumentation-falcon-3_ubuntu-latest:
-    name: instrumentation-falcon-3 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-falcon-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-3 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4308,9 +4308,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-falcon-3 -- -ra
 
-  py310-test-instrumentation-falcon-1_ubuntu-latest:
-    name: instrumentation-falcon-1 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-falcon-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-1 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4327,9 +4327,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-falcon-1 -- -ra
 
-  py310-test-instrumentation-falcon-2_ubuntu-latest:
-    name: instrumentation-falcon-2 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-falcon-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-2 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4346,9 +4346,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-falcon-2 -- -ra
 
-  py310-test-instrumentation-falcon-3_ubuntu-latest:
-    name: instrumentation-falcon-3 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-falcon-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-3 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4365,9 +4365,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-falcon-3 -- -ra
 
-  py310-test-instrumentation-falcon-4_ubuntu-latest:
-    name: instrumentation-falcon-4 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-falcon-4_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-4 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4384,9 +4384,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-falcon-4 -- -ra
 
-  py311-test-instrumentation-falcon-1_ubuntu-latest:
-    name: instrumentation-falcon-1 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-falcon-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-1 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4403,9 +4403,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-falcon-1 -- -ra
 
-  py311-test-instrumentation-falcon-2_ubuntu-latest:
-    name: instrumentation-falcon-2 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-falcon-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-2 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4422,9 +4422,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-falcon-2 -- -ra
 
-  py311-test-instrumentation-falcon-3_ubuntu-latest:
-    name: instrumentation-falcon-3 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-falcon-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-3 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4441,9 +4441,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-falcon-3 -- -ra
 
-  py311-test-instrumentation-falcon-4_ubuntu-latest:
-    name: instrumentation-falcon-4 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-falcon-4_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-4 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4460,9 +4460,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-falcon-4 -- -ra
 
-  py312-test-instrumentation-falcon-1_ubuntu-latest:
-    name: instrumentation-falcon-1 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-falcon-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-1 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4479,9 +4479,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-falcon-1 -- -ra
 
-  py312-test-instrumentation-falcon-2_ubuntu-latest:
-    name: instrumentation-falcon-2 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-falcon-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-2 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4498,9 +4498,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-falcon-2 -- -ra
 
-  py312-test-instrumentation-falcon-3_ubuntu-latest:
-    name: instrumentation-falcon-3 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-falcon-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-3 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4517,9 +4517,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-falcon-3 -- -ra
 
-  py312-test-instrumentation-falcon-4_ubuntu-latest:
-    name: instrumentation-falcon-4 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-falcon-4_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-4 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4536,9 +4536,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-falcon-4 -- -ra
 
-  py313-test-instrumentation-falcon-4_ubuntu-latest:
-    name: instrumentation-falcon-4 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-falcon-4_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-4 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4555,9 +4555,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-falcon-4 -- -ra
 
-  py314-test-instrumentation-falcon-4_ubuntu-latest:
-    name: instrumentation-falcon-4 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-falcon-4_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-4 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4574,9 +4574,9 @@ jobs:
       - name: Run tests
         run: tox -e py314-test-instrumentation-falcon-4 -- -ra
 
-  pypy3-test-instrumentation-falcon-0_ubuntu-latest:
-    name: instrumentation-falcon-0 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-falcon-0_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-0 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4593,9 +4593,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-falcon-0 -- -ra
 
-  pypy3-test-instrumentation-falcon-1_ubuntu-latest:
-    name: instrumentation-falcon-1 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-falcon-1_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-1 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4612,9 +4612,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-falcon-1 -- -ra
 
-  pypy3-test-instrumentation-falcon-2_ubuntu-latest:
-    name: instrumentation-falcon-2 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-falcon-2_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-2 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4631,9 +4631,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-falcon-2 -- -ra
 
-  pypy3-test-instrumentation-falcon-3_ubuntu-latest:
-    name: instrumentation-falcon-3 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-falcon-3_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-3 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4650,9 +4650,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-falcon-3 -- -ra
 
-  pypy3-test-instrumentation-falcon-4_ubuntu-latest:
-    name: instrumentation-falcon-4 pypy-3.9 Ubuntu
-    runs-on: ubuntu-latest
+  pypy3-test-instrumentation-falcon-4_loongsuite-python-agent-fork-arc:
+    name: instrumentation-falcon-4 pypy-3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4669,9 +4669,9 @@ jobs:
       - name: Run tests
         run: tox -e pypy3-test-instrumentation-falcon-4 -- -ra
 
-  py39-test-instrumentation-fastapi_ubuntu-latest:
-    name: instrumentation-fastapi 3.9 Ubuntu
-    runs-on: ubuntu-latest
+  py39-test-instrumentation-fastapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-fastapi 3.9 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4688,9 +4688,9 @@ jobs:
       - name: Run tests
         run: tox -e py39-test-instrumentation-fastapi -- -ra
 
-  py310-test-instrumentation-fastapi_ubuntu-latest:
-    name: instrumentation-fastapi 3.10 Ubuntu
-    runs-on: ubuntu-latest
+  py310-test-instrumentation-fastapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-fastapi 3.10 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4707,9 +4707,9 @@ jobs:
       - name: Run tests
         run: tox -e py310-test-instrumentation-fastapi -- -ra
 
-  py311-test-instrumentation-fastapi_ubuntu-latest:
-    name: instrumentation-fastapi 3.11 Ubuntu
-    runs-on: ubuntu-latest
+  py311-test-instrumentation-fastapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-fastapi 3.11 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4726,9 +4726,9 @@ jobs:
       - name: Run tests
         run: tox -e py311-test-instrumentation-fastapi -- -ra
 
-  py312-test-instrumentation-fastapi_ubuntu-latest:
-    name: instrumentation-fastapi 3.12 Ubuntu
-    runs-on: ubuntu-latest
+  py312-test-instrumentation-fastapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-fastapi 3.12 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4745,9 +4745,9 @@ jobs:
       - name: Run tests
         run: tox -e py312-test-instrumentation-fastapi -- -ra
 
-  py313-test-instrumentation-fastapi_ubuntu-latest:
-    name: instrumentation-fastapi 3.13 Ubuntu
-    runs-on: ubuntu-latest
+  py313-test-instrumentation-fastapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-fastapi 3.13 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}
@@ -4764,9 +4764,9 @@ jobs:
       - name: Run tests
         run: tox -e py313-test-instrumentation-fastapi -- -ra
 
-  py314-test-instrumentation-fastapi_ubuntu-latest:
-    name: instrumentation-fastapi 3.14 Ubuntu
-    runs-on: ubuntu-latest
+  py314-test-instrumentation-fastapi_loongsuite-python-agent-fork-arc:
+    name: instrumentation-fastapi 3.14 ARC
+    runs-on: loongsuite-python-agent-fork-arc
     timeout-minutes: 30
     steps:
       - name: Checkout repo @ SHA - ${{ github.sha }}

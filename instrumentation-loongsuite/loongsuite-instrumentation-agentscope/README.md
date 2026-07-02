@@ -133,7 +133,7 @@ Export telemetry data to:
 
 ## Examples
 
-See the [main README](https://github.com/alibaba/loongsuite-python-agent/blob/main/README.md) for complete usage examples.
+See the [main README](https://github.com/alibaba/loongsuite-python/blob/main/README.md) for complete usage examples.
 
 ## License
 

@@ -16,7 +16,6 @@
 Wrapper functions for LiteLLM completion instrumentation.
 """
 
-import json
 import logging
 import os
 from typing import Any, Callable, Optional
@@ -28,15 +27,12 @@ from opentelemetry.instrumentation.litellm._stream_wrapper import (
     StreamWrapper,
 )
 from opentelemetry.instrumentation.litellm._utils import (
+    apply_litellm_llm_response_to_invocation,
     create_llm_invocation_from_litellm,
-    extract_output_from_litellm_response,
+    extract_finish_reasons_from_litellm_response,
+    normalize_litellm_completion_kwargs,
 )
-from opentelemetry.util.genai.types import (
-    Error,
-    OutputMessage,
-    Text,
-    ToolCall,
-)
+from opentelemetry.util.genai.types import Error
 
 logger = logging.getLogger(__name__)
 
@@ -67,18 +63,21 @@ class CompletionWrapper:
         if context.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
             return self.original_func(*args, **kwargs)
 
-        # Extract request parameters
-        is_stream = kwargs.get("stream", False)
+        request_kwargs = normalize_litellm_completion_kwargs(
+            self.original_func, args, kwargs
+        )
+        is_stream = request_kwargs.get("stream", False)
 
         # For streaming, enable usage tracking if not explicitly disabled
         # This ensures we get token usage information in the final chunk
-        if is_stream and "stream_options" not in kwargs:
+        if is_stream and "stream_options" not in request_kwargs:
             kwargs["stream_options"] = {"include_usage": True}
+            request_kwargs["stream_options"] = kwargs["stream_options"]
 
         # For streaming, we need special handling
         if is_stream:
             # Create invocation object
-            invocation = create_llm_invocation_from_litellm(**kwargs)
+            invocation = create_llm_invocation_from_litellm(**request_kwargs)
 
             # Start LLM invocation
             self._handler.start_llm(invocation)
@@ -93,6 +92,7 @@ class CompletionWrapper:
                     stream=response,
                     span=invocation.span,  # For TTFT tracking
                     callback=None,
+                    invocation=invocation,
                 )
                 stream_wrapper.callback = (
                     lambda span,
@@ -113,7 +113,7 @@ class CompletionWrapper:
 
         else:
             # Create invocation object
-            invocation = create_llm_invocation_from_litellm(**kwargs)
+            invocation = create_llm_invocation_from_litellm(**request_kwargs)
 
             # Start LLM invocation (handler creates and manages span)
             self._handler.start_llm(invocation)
@@ -122,37 +122,7 @@ class CompletionWrapper:
                 # Call original function
                 response = self.original_func(*args, **kwargs)
 
-                # Fill response data into invocation
-                invocation.output_messages = (
-                    extract_output_from_litellm_response(response)
-                )
-
-                # Extract token usage
-                if hasattr(response, "usage") and response.usage:
-                    invocation.input_tokens = getattr(
-                        response.usage, "prompt_tokens", None
-                    )
-                    invocation.output_tokens = getattr(
-                        response.usage, "completion_tokens", None
-                    )
-
-                # Extract response metadata
-                if hasattr(response, "id"):
-                    invocation.response_id = response.id
-                if hasattr(response, "model"):
-                    invocation.response_model_name = response.model
-
-                # Extract finish reasons
-                if hasattr(response, "choices") and response.choices:
-                    finish_reasons = []
-                    for choice in response.choices:
-                        if (
-                            hasattr(choice, "finish_reason")
-                            and choice.finish_reason
-                        ):
-                            finish_reasons.append(choice.finish_reason)
-                    if finish_reasons:
-                        invocation.finish_reasons = finish_reasons
+                apply_litellm_llm_response_to_invocation(invocation, response)
 
                 # End LLM invocation successfully (handler ends span and records metrics)
                 self._handler.stop_llm(invocation)
@@ -183,78 +153,28 @@ class CompletionWrapper:
                 )
                 return
 
-            # Construct output message from accumulated content
-            parts = []
             if stream_wrapper and hasattr(
-                stream_wrapper, "accumulated_content"
+                stream_wrapper, "get_output_messages"
             ):
-                full_content = "".join(stream_wrapper.accumulated_content)
-                if full_content:
-                    parts.append(Text(content=full_content))
+                output_messages = stream_wrapper.get_output_messages()
+                if output_messages:
+                    invocation.output_messages = output_messages
 
-                # Handle accumulated tool calls if any
-                if (
-                    hasattr(stream_wrapper, "accumulated_tool_calls")
-                    and stream_wrapper.accumulated_tool_calls
-                ):
-                    for tc in stream_wrapper.accumulated_tool_calls:
-                        if hasattr(tc, "function"):
-                            # Parse arguments if it's a JSON string
-                            arguments = getattr(tc.function, "arguments", "")
-                            if isinstance(arguments, str) and arguments:
-                                try:
-                                    arguments = json.loads(arguments)
-                                except Exception:
-                                    # If arguments are not valid JSON, keep the original string
-                                    pass
-
-                            parts.append(
-                                ToolCall(
-                                    id=getattr(tc, "id", None),
-                                    name=getattr(tc.function, "name", ""),
-                                    arguments=arguments,
-                                )
-                            )
-
-            # If we have parts, create output message
-            if parts:
-                invocation.output_messages = [
-                    OutputMessage(
-                        role="assistant", parts=parts, finish_reason="stop"
-                    )
-                ]
-
-            # Extract token usage from last chunk
-            if (
-                last_chunk
-                and hasattr(last_chunk, "usage")
-                and last_chunk.usage
-            ):
-                invocation.input_tokens = getattr(
-                    last_chunk.usage, "prompt_tokens", None
-                )
-                invocation.output_tokens = getattr(
-                    last_chunk.usage, "completion_tokens", None
-                )
-
-            # Extract response metadata
             if last_chunk:
-                if hasattr(last_chunk, "id"):
-                    invocation.response_id = last_chunk.id
-                if hasattr(last_chunk, "model"):
-                    invocation.response_model_name = last_chunk.model
+                apply_litellm_llm_response_to_invocation(
+                    invocation,
+                    last_chunk,
+                    include_output_messages=False,
+                )
 
-                # Extract finish_reason from last chunk's choice
-                if hasattr(last_chunk, "choices") and last_chunk.choices:
-                    finish_reasons = []
-                    for choice in last_chunk.choices:
-                        if (
-                            hasattr(choice, "finish_reason")
-                            and choice.finish_reason
-                        ):
-                            finish_reasons.append(choice.finish_reason)
-                    if finish_reasons:
-                        invocation.finish_reasons = finish_reasons
+            if stream_wrapper and hasattr(stream_wrapper, "finish_reasons"):
+                finish_reasons = stream_wrapper.finish_reasons()
+            else:
+                finish_reasons = extract_finish_reasons_from_litellm_response(
+                    last_chunk
+                )
+            if finish_reasons:
+                invocation.finish_reasons = finish_reasons
 
             # End LLM invocation successfully
             self._handler.stop_llm(invocation)
@@ -291,17 +211,20 @@ class AsyncCompletionWrapper:
         if context.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
             return await self.original_func(*args, **kwargs)
 
-        # Extract request parameters
-        is_stream = kwargs.get("stream", False)
+        request_kwargs = normalize_litellm_completion_kwargs(
+            self.original_func, args, kwargs
+        )
+        is_stream = request_kwargs.get("stream", False)
 
         # For streaming, enable usage tracking if not explicitly disabled
-        if is_stream and "stream_options" not in kwargs:
+        if is_stream and "stream_options" not in request_kwargs:
             kwargs["stream_options"] = {"include_usage": True}
+            request_kwargs["stream_options"] = kwargs["stream_options"]
 
         # For streaming, we need special handling
         if is_stream:
             # Create invocation object
-            invocation = create_llm_invocation_from_litellm(**kwargs)
+            invocation = create_llm_invocation_from_litellm(**request_kwargs)
 
             # Start LLM invocation
             self._handler.start_llm(invocation)
@@ -315,6 +238,7 @@ class AsyncCompletionWrapper:
                     stream=response,
                     span=invocation.span,  # For TTFT tracking
                     callback=None,
+                    invocation=invocation,
                 )
                 stream_wrapper.callback = (
                     lambda span,
@@ -336,7 +260,7 @@ class AsyncCompletionWrapper:
         else:
             # Non-streaming: use Handler pattern
             # Create invocation object
-            invocation = create_llm_invocation_from_litellm(**kwargs)
+            invocation = create_llm_invocation_from_litellm(**request_kwargs)
 
             # Start LLM invocation
             self._handler.start_llm(invocation)
@@ -345,37 +269,7 @@ class AsyncCompletionWrapper:
                 # Call original function
                 response = await self.original_func(*args, **kwargs)
 
-                # Fill response data into invocation
-                invocation.output_messages = (
-                    extract_output_from_litellm_response(response)
-                )
-
-                # Extract token usage
-                if hasattr(response, "usage") and response.usage:
-                    invocation.input_tokens = getattr(
-                        response.usage, "prompt_tokens", None
-                    )
-                    invocation.output_tokens = getattr(
-                        response.usage, "completion_tokens", None
-                    )
-
-                # Extract response metadata
-                if hasattr(response, "id"):
-                    invocation.response_id = response.id
-                if hasattr(response, "model"):
-                    invocation.response_model_name = response.model
-
-                # Extract finish reasons
-                if hasattr(response, "choices") and response.choices:
-                    finish_reasons = []
-                    for choice in response.choices:
-                        if (
-                            hasattr(choice, "finish_reason")
-                            and choice.finish_reason
-                        ):
-                            finish_reasons.append(choice.finish_reason)
-                    if finish_reasons:
-                        invocation.finish_reasons = finish_reasons
+                apply_litellm_llm_response_to_invocation(invocation, response)
 
                 # End LLM invocation successfully
                 self._handler.stop_llm(invocation)

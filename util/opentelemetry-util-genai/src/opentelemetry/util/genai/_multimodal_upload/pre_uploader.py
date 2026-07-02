@@ -78,12 +78,6 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-# Log warning if audio libraries are not available
-if not _audio_libs_available:
-    _logger.warning(
-        "numpy or soundfile not available, PCM16 to WAV conversion will be skipped"
-    )
-
 # Supported modality types for pre-upload (derived from Modality type)
 _SUPPORTED_MODALITIES = get_args(Modality)
 
@@ -591,9 +585,6 @@ class MultimodalPreUploader(PreUploader):
             Byte data in WAV format, None if conversion fails
         """
         if not _audio_libs_available or np is None or sf is None:
-            _logger.warning(
-                "Cannot convert PCM16 to WAV: numpy or soundfile not available"
-            )
             return None
 
         try:

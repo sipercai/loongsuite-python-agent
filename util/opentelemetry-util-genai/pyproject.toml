@@ -54,8 +54,8 @@ audio_conversion = ["numpy", "soundfile"]
 
 [project.urls]
 # LoongSuite Extension
-Homepage = "https://github.com/alibaba/loongsuite-python-agent/tree/main/util/opentelemetry-util-genai"
-Repository = "https://github.com/alibaba/loongsuite-python-agent"
+Homepage = "https://github.com/alibaba/loongsuite-python/tree/main/util/opentelemetry-util-genai"
+Repository = "https://github.com/alibaba/loongsuite-python"
 
 [tool.hatch.version]
 path = "src/opentelemetry/util/genai/version.py"
