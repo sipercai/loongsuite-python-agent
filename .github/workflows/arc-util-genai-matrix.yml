@@ -1,0 +1,53 @@
+name: ARC Util GenAI Matrix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+env:
+  CORE_REPO_SHA: 37dea4bbdb1a3c83b96fc22c2f68a848b4989fb5
+  CONTRIB_REPO_SHA: main
+  PIP_EXISTS_ACTION: w
+
+jobs:
+  test-util-genai:
+    name: util-genai ${{ matrix.python }}
+    runs-on: loongsuite-python-agent-fork-arc
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - python: "3.9"
+            tox-env: py39-test-util-genai
+          - python: "3.10"
+            tox-env: py310-test-util-genai
+          - python: "3.11"
+            tox-env: py311-test-util-genai
+          - python: "3.12"
+            tox-env: py312-test-util-genai
+          - python: "3.13"
+            tox-env: py313-test-util-genai
+          - python: "3.14"
+            tox-env: py314-test-util-genai
+    steps:
+      - name: Checkout repo @ SHA - ${{ github.sha }}
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install tox
+        run: pip install tox-uv
+
+      - name: Run tox
+        run: tox -e "${{ matrix.tox-env }}" -- -ra
