@@ -1,0 +1,43 @@
+name: ARC Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: ARC runner smoke
+    runs-on: loongsuite-python-agent-fork-arc
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check bundled Python toolchain
+        shell: bash
+        run: |
+          set -euxo pipefail
+          uname -a
+          df -h
+          for bin in python3.9 python3.10 python3.11 python3.12 python3.13 python3.14; do
+            command -v "$bin"
+            "$bin" --version
+          done
+          uv --version
+          python3.11 -m tox --version
+          python3.14 -m pip config list
+
+      - name: Verify setup-python can use Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Check active Python after setup-python
+        shell: bash
+        run: |
+          set -euxo pipefail
+          command -v python
+          python --version
+          python -m pip --version
