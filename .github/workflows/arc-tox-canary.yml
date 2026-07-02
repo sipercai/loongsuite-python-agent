@@ -1,0 +1,56 @@
+name: ARC Tox Canary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+env:
+  CORE_REPO_SHA: 37dea4bbdb1a3c83b96fc22c2f68a848b4989fb5
+  CONTRIB_REPO_SHA: main
+  PIP_EXISTS_ACTION: w
+
+jobs:
+  tox:
+    name: ${{ matrix.name }}
+    runs-on: loongsuite-python-agent-fork-arc
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - name: util-genai py311
+            python: "3.11"
+            tox-env: py311-test-util-genai
+            tox-extra: "-- -ra"
+          - name: util-genai py314
+            python: "3.14"
+            tox-env: py314-test-util-genai
+            tox-extra: "-- -ra"
+          - name: lint util-genai
+            python: "3.14"
+            tox-env: lint-util-genai
+            tox-extra: ""
+    steps:
+      - name: Checkout repo @ SHA - ${{ github.sha }}
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install tox
+        run: pip install tox-uv
+
+      - name: Run tox
+        shell: bash
+        run: |
+          set -euxo pipefail
+          tox -e "${{ matrix.tox-env }}" ${{ matrix.tox-extra }}
